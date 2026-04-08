@@ -20,7 +20,7 @@ export default function SignUp() {
 
   const isEmailValid = EMAIL_REGEX.test(email)
   const isPhoneValid = PHONE_REGEX.test(phone)
-  const canSubmit = isEmailValid && isPhoneValid && fullName.trim() && institutionCode.trim() && password && password === confirmPassword
+  const canSubmit = isEmailValid && isPhoneValid && fullName.trim() && password && password === confirmPassword
 
   async function onSubmit(event) {
     event.preventDefault()
@@ -36,7 +36,7 @@ export default function SignUp() {
           email,
           password,
           role: 'student',
-          tenant_id: institutionCode.trim(),
+          ...(institutionCode.trim() ? { tenant_id: institutionCode.trim() } : {}),
         }),
       })
       setAuthSession(data.access_token, data.role, data.tenant_id)
@@ -79,11 +79,6 @@ export default function SignUp() {
 
         {/* Card Section */}
         <section className="relative w-full max-w-[520px] mx-auto lg:h-full lg:max-w-none">
-          <img 
-            src={DECORATIVE_IMG} 
-            alt="Education icon" 
-            className="absolute -top-9 -right-9 w-[110px] h-[110px] rounded-full border-6 border-white object-cover shadow-lg bg-white max-lg:hidden z-[1]" 
-          />
           <div className="relative flex w-full flex-col rounded-2xl bg-white p-5 shadow-2xl sm:p-8 lg:h-full lg:max-h-[820px] lg:p-10">
             {/* Tabs */}
             <div className="flex gap-1.5 p-1.5 rounded-xl bg-[#f3f6f8] mb-7">
@@ -141,7 +136,7 @@ export default function SignUp() {
               </label>
 
               <label className="flex flex-col gap-2">
-                <span className="text-[#0b1020] text-sm font-semibold">Institution Code <span className="text-[#dc2626]">*</span></span>
+                <span className="text-[#0b1020] text-sm font-semibold">Institution Code <span className="text-[#6b7480]">(optional)</span></span>
                 <input 
                   value={institutionCode}
                   onChange={(event) => setInstitutionCode(event.target.value)}
@@ -149,8 +144,7 @@ export default function SignUp() {
                   type="text" 
                   placeholder="e.g., nannaware-901630" 
                 />
-                <p className="text-xs text-[#6b7480]">Ask your institution for the code to enroll in courses</p>
-                {submitted && !institutionCode.trim() ? <span className="text-xs font-medium text-[#dc2626]">Institution code is required.</span> : null}
+                <p className="text-xs text-[#6b7480]">Leave this blank if you want to create a direct student account first and enroll later.</p>
               </label>
 
               <label className="flex flex-col gap-2">
@@ -188,21 +182,6 @@ export default function SignUp() {
               </button>
               {error ? <p className="text-xs font-medium text-[#dc2626]">{error}</p> : null}
             </form>
-            </div>
-
-            <div className="my-5.5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-[#6b7480] text-xs font-semibold">
-              <div className="border-t border-black/10"></div>
-              <span>Or sign up with</span>
-              <div className="border-t border-black/10"></div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-              <button type="button" className="border border-black/10 rounded-md bg-white text-[#0b1020] p-3 text-sm font-bold cursor-pointer">
-                Google
-              </button>
-              <button type="button" className="border border-black/10 rounded-md bg-white text-[#0b1020] p-3 text-sm font-bold cursor-pointer">
-                Apple
-              </button>
             </div>
           </div>
         </section>

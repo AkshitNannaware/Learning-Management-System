@@ -218,7 +218,7 @@ async def list_courses(
     limit: int = 100,
     q: str | None = None,
 ):
-    query = {"tenant_id": tenant_id}
+    query = {"tenant_id": tenant_id} if tenant_id else {}
     if q:
         query["title"] = {"$regex": q, "$options": "i"}
     return await paged(db.courses, query, "created_at", -1, skip, limit)
@@ -345,7 +345,7 @@ async def list_live_classes(
     limit: int = 100,
     status: str | None = None,
 ):
-    query = {"tenant_id": tenant_id}
+    query = {"tenant_id": tenant_id} if tenant_id else {}
     if status:
         query["status"] = status
     return await paged(db.live_classes, query, "start_at", 1, skip, limit)
@@ -621,8 +621,38 @@ async def mark_notifications_read(user=Depends(get_current_user)):
 @router.post("/payments/order")
 async def create_payment_order(payload: RazorpayOrderIn, tenant_id: str = Depends(get_tenant_id), user=Depends(get_current_user)):
     now = datetime.now(timezone.utc)
-    amount_paise = int(payload.amount * 100)
+    amount_paise = int(round(payload.amount * 100))
+    if amount_paise <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than zero")
+
     order_id = f"order_local_{ObjectId()}"
+    currency = "INR"
+
+    # Create a real Razorpay order when keys are configured; otherwise keep local fallback for development.
+    if settings.razorpay_key_id and settings.razorpay_key_secret:
+        try:
+            import razorpay
+
+            client = razorpay.Client(auth=(settings.razorpay_key_id, settings.razorpay_key_secret))
+            razorpay_order = client.order.create(
+                {
+                    "amount": amount_paise,
+                    "currency": currency,
+                    "receipt": f"lms_{ObjectId()}",
+                    "notes": {
+                        "tenant_id": tenant_id or "",
+                        "user_id": user.get("sub", ""),
+                        "target_id": payload.target_id,
+                        "enrollment_type": payload.enrollment_type,
+                    },
+                }
+            )
+            if razorpay_order and razorpay_order.get("id"):
+                order_id = razorpay_order["id"]
+                currency = razorpay_order.get("currency", currency)
+        except Exception:  # noqa: BLE001
+            pass
+
     data = {
         "tenant_id": tenant_id,
         "user_id": user["sub"],
@@ -630,11 +660,12 @@ async def create_payment_order(payload: RazorpayOrderIn, tenant_id: str = Depend
         "amount": payload.amount,
         "amount_paise": amount_paise,
         "order_id": order_id,
+        "currency": currency,
         "status": "created",
         "created_at": now,
     }
     await db.payments.insert_one(data)
-    return {"order_id": order_id, "amount": amount_paise, "currency": "INR", "key_id": settings.razorpay_key_id}
+    return {"order_id": order_id, "amount": amount_paise, "currency": currency, "key_id": settings.razorpay_key_id}
 
 
 @router.get("/payments")
@@ -717,15 +748,40 @@ async def update_platform_settings(payload: PlatformSettingsIn, _=Depends(requir
 
 
 @router.post("/plans")
-async def create_plan(payload: PlanIn, _=Depends(require_roles(Role.SUPER_ADMIN))):
-    data = payload.model_dump() | {"created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc)}
+async def create_plan(
+    payload: PlanIn,
+    tenant_id: str = Depends(get_tenant_id),
+    user=Depends(require_roles(Role.SUPER_ADMIN, Role.ADMIN)),
+):
+    now = datetime.now(timezone.utc)
+    data = payload.model_dump() | {
+        "tenant_id": tenant_id,
+        "created_by": user.get("sub"),
+        "created_at": now,
+        "updated_at": now,
+    }
     res = await db.plans.insert_one(data)
     return inserted_response(data, res.inserted_id)
 
 
 @router.get("/plans")
-async def list_plans(skip: int = 0, limit: int = 100, _=Depends(require_roles(Role.SUPER_ADMIN, Role.ADMIN))):
-    return await paged(db.plans, {}, "created_at", -1, skip, limit)
+async def list_plans(
+    tenant_id: str = Depends(get_tenant_id),
+    user=Depends(get_current_user),
+    skip: int = 0,
+    limit: int = 100,
+    active_only: bool = False,
+):
+    role = user.get("role")
+    query = {"tenant_id": tenant_id} if tenant_id else {}
+
+    if role == Role.SUPER_ADMIN.value and not tenant_id:
+        query = {}
+
+    if active_only:
+        query["active"] = True
+
+    return await paged(db.plans, query, "created_at", -1, skip, limit)
 
 
 @router.post("/library-resources")
@@ -754,7 +810,7 @@ async def list_library_resources(
     limit: int = 100,
     q: str | None = None,
 ):
-    query = {"tenant_id": tenant_id}
+    query = {"tenant_id": tenant_id} if tenant_id else {}
     if q:
         query["title"] = {"$regex": q, "$options": "i"}
     return await paged(db.library_resources, query, "created_at", -1, skip, limit)

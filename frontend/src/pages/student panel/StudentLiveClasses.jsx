@@ -14,126 +14,7 @@ const A3 = 'https://i.pravatar.cc/40?img=3'
 const A4 = 'https://i.pravatar.cc/40?img=4'
 const A5 = 'https://i.pravatar.cc/40?img=5'
 
-// Student ke enrolled courses (yahan aap real data connect kar sakte ho)
-const ENROLLED_COURSE_IDS = [1, 3] // student ne inhe enroll kiya hua hai
-
-const FALLBACK_LIVE_SESSIONS = [
-  {
-    id: 1,
-    title: 'Math Mastery Live',
-    course: 'Mathematics Level 3',
-    instructor: 'Aisha Verma',
-    instructorAvatar: A1,
-    instructorRole: 'Mathematics Expert',
-    date: 'Today',
-    time: '4:00 PM',
-    duration: '60 mins',
-    platform: 'Zoom',
-    status: 'live',
-    link: 'https://zoom.us/j/123456',
-    topic: 'Quadratic Equations – Chapter 4',
-    attendanceRate: 75,
-    studentsEnrolled: 32,
-    studentsPresent: 24,
-    chatMessages: 18,
-    currentSlide: 'Slide 7 / 20',
-    tags: ['Live today', 'Mathematics', 'Chapter 4'],
-    price: '₹1,299',
-    rating: '4.9',
-  },
-  {
-    id: 2,
-    title: 'Science Lab Workshop',
-    course: 'Science Grade 8',
-    instructor: 'Liam Carter',
-    instructorAvatar: A2,
-    instructorRole: 'Science Specialist',
-    date: 'Tomorrow',
-    time: '11:00 AM',
-    duration: '90 mins',
-    platform: 'Google Meet',
-    status: 'upcoming',
-    link: '',
-    topic: 'Chemical Bonding Lab Session',
-    attendanceRate: 0,
-    studentsEnrolled: 28,
-    studentsPresent: 0,
-    chatMessages: 0,
-    currentSlide: '—',
-    tags: ['Tomorrow', 'Science', 'Lab'],
-    price: '₹999',
-    rating: '4.7',
-  },
-  {
-    id: 3,
-    title: 'English Speaking Club',
-    course: 'Creative English Level 1',
-    instructor: 'Nadia Brown',
-    instructorAvatar: A3,
-    instructorRole: 'Language Coach',
-    date: 'Fri',
-    time: '5:30 PM',
-    duration: '60 mins',
-    platform: 'Zoom',
-    status: 'upcoming',
-    link: 'https://zoom.us/j/789012',
-    topic: 'Public Speaking Techniques',
-    attendanceRate: 0,
-    studentsEnrolled: 20,
-    studentsPresent: 0,
-    chatMessages: 0,
-    currentSlide: '—',
-    tags: ['Fri', 'English', 'Speaking'],
-    price: '₹799',
-    rating: '4.8',
-  },
-  {
-    id: 4,
-    title: 'Coding for Kids Bootcamp',
-    course: 'Coding Beginners',
-    instructor: 'Arjun Singh',
-    instructorAvatar: A4,
-    instructorRole: 'Full Stack Developer',
-    date: 'Sat',
-    time: '10:00 AM',
-    duration: '120 mins',
-    platform: 'Zoom',
-    status: 'upcoming',
-    link: '',
-    topic: 'Loops & Conditions in Scratch',
-    attendanceRate: 0,
-    studentsEnrolled: 18,
-    studentsPresent: 0,
-    chatMessages: 0,
-    currentSlide: '—',
-    tags: ['Sat', 'Coding', 'Beginner'],
-    price: '₹1,499',
-    rating: '4.6',
-  },
-  {
-    id: 5,
-    title: 'Physics Fundamentals',
-    course: 'Physics Grade 10',
-    instructor: 'Sara Malik',
-    instructorAvatar: A5,
-    instructorRole: 'Physics Educator',
-    date: 'Wed',
-    time: '3:00 PM',
-    duration: '75 mins',
-    platform: 'Google Meet',
-    status: 'upcoming',
-    link: 'https://meet.google.com/abc-xyz',
-    topic: "Newton's Laws of Motion",
-    attendanceRate: 0,
-    studentsEnrolled: 25,
-    studentsPresent: 0,
-    chatMessages: 0,
-    currentSlide: '—',
-    tags: ['Wed', 'Physics', 'Grade 10'],
-    price: '₹1,199',
-    rating: '4.5',
-  },
-]
+const AVATARS = [A1, A2, A3, A4, A5]
 
 const STATUS_CONFIG = {
   live: { label: 'Live', bg: 'bg-[#fee2e2]', text: 'text-[#991b1b]', dot: 'bg-[#ef4444]' },
@@ -154,7 +35,7 @@ function StatusBadge({ status }) {
 }
 
 // Payment/Enrollment Modal
-function EnrollmentModal({ session, onClose, onSuccess }) {
+function EnrollmentModal({ session, me, onClose, onSuccess }) {
   const [step, setStep] = useState('details') // details | payment | success
   const [paymentMethod, setPaymentMethod] = useState('card')
   const [loading, setLoading] = useState(false)
@@ -162,45 +43,59 @@ function EnrollmentModal({ session, onClose, onSuccess }) {
   const handlePay = async () => {
     setLoading(true)
     try {
-      const loaded = await loadRazorpayScript()
-      if (!loaded) throw new Error('Razorpay SDK load failed')
-      const order = await api('/lms/payments/order', {
+      if (!me?._id) throw new Error('User not found')
+
+      const amount = Number(session.priceAmount || 0)
+      if (amount > 0) {
+        const loaded = await loadRazorpayScript()
+        if (!loaded) throw new Error('Razorpay SDK load failed')
+        const order = await api('/lms/payments/order', {
+          method: 'POST',
+          body: JSON.stringify({
+            amount,
+            enrollment_type: 'live_class',
+            target_id: String(session.id),
+          }),
+        })
+        await new Promise((resolve, reject) => {
+          const rz = new window.Razorpay({
+            key: order.key_id || '',
+            amount: order.amount,
+            currency: order.currency || 'INR',
+            name: 'LMS',
+            description: session.title,
+            order_id: order.order_id,
+            handler: async (response) => {
+              try {
+                await api('/lms/payments/verify', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature || 'dev_signature',
+                  }),
+                })
+                resolve(true)
+              } catch (e) {
+                reject(e)
+              }
+            },
+            modal: {
+              ondismiss: () => reject(new Error('Payment cancelled')),
+            },
+          })
+          rz.open()
+        })
+      }
+
+      await api('/lms/enrollments', {
         method: 'POST',
         body: JSON.stringify({
-          amount: Number(String(session.price || '0').replace(/[^\d.]/g, '')) || 0,
-          enrollment_type: 'live_class',
-          target_id: String(session.id),
+          course_id: session.courseId,
+          student_id: me._id,
         }),
       })
-      await new Promise((resolve, reject) => {
-        const rz = new window.Razorpay({
-          key: order.key_id || '',
-          amount: order.amount,
-          currency: order.currency || 'INR',
-          name: 'LMS',
-          description: session.title,
-          order_id: order.order_id,
-          handler: async (response) => {
-            try {
-              await api('/lms/payments/verify', {
-                method: 'POST',
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature || 'dev_signature',
-                }),
-              })
-              resolve(true)
-            } catch (e) {
-              reject(e)
-            }
-          },
-          modal: {
-            ondismiss: () => reject(new Error('Payment cancelled')),
-          },
-        })
-        rz.open()
-      })
+
       setStep('success')
     } catch {
       // keep same UI; silently fail to preserve design behavior
@@ -229,7 +124,7 @@ function EnrollmentModal({ session, onClose, onSuccess }) {
               </div>
             </div>
             <button
-              onClick={() => { onSuccess(session.id); onClose() }}
+              onClick={() => { onSuccess(session.courseId); onClose() }}
               className="mt-5 w-full h-11 rounded-[10px] bg-[#5b3df6] text-[14px] font-semibold text-white hover:bg-[#4a2ed8] transition-colors"
             >
               {session.status === 'live' ? 'Join Class Now' : 'Go to My Sessions'}
@@ -580,42 +475,68 @@ function SessionCard({ session, isEnrolled, onJoinClick, onEnrollClick }) {
 }
 
 export default function StudentLiveClasses() {
-  const [liveSessions, setLiveSessions] = useState(FALLBACK_LIVE_SESSIONS)
+  const [liveSessions, setLiveSessions] = useState([])
+  const [me, setMe] = useState(null)
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState([])
   const tenantId = localStorage.getItem('lms_tenant_id')
 
-  const loadLiveClasses = () =>
-    api('/lms/live-classes')
-      .then((res) => {
-        const rows = res.items || res || []
-        if (!Array.isArray(rows) || rows.length === 0) return
-        const mapped = rows.map((r, idx) => ({
-          id: Number(String(r._id || idx).slice(-6).replace(/\D/g, '')) || idx + 1,
-          title: r.title,
-          course: r.course_id || 'Course',
+  const loadLiveClasses = async () => {
+    try {
+      const [classesRes, coursesRes, enrollRes] = await Promise.all([
+        api('/lms/live-classes?limit=300').catch(() => ({ items: [] })),
+        api('/lms/courses?limit=500').catch(() => ({ items: [] })),
+        api('/lms/enrollments?limit=500').catch(() => ({ items: [] })),
+      ])
+
+      const courseMap = new Map((coursesRes.items || []).map((c) => [c._id, c]))
+      const enrollmentRows = enrollRes.items || []
+      const enrolledSet = new Set(enrollmentRows.map((e) => e.course_id).filter(Boolean))
+      setEnrolledCourseIds([...enrolledSet])
+
+      const rows = classesRes.items || []
+      const mapped = rows.map((r, idx) => {
+        const course = courseMap.get(r.course_id) || {}
+        const startAt = r.start_at ? new Date(r.start_at) : new Date()
+        const numericPrice = Number(course.price || 0)
+        const status = r.status === 'live' || r.status === 'recent' ? r.status : 'upcoming'
+        const tags = [
+          status === 'live' ? 'Live today' : 'Upcoming',
+          course.title ? 'Course Linked' : 'Live Class',
+        ]
+        return {
+          id: r._id,
+          courseId: r.course_id,
+          title: r.title || 'Live Class',
+          course: course.title || 'Course',
           instructor: r.instructor_id || 'Instructor',
-          instructorAvatar: A1,
+          instructorAvatar: AVATARS[idx % AVATARS.length],
           instructorRole: 'Instructor',
-          date: new Date(r.start_at).toLocaleDateString(),
-          time: new Date(r.start_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          date: startAt.toLocaleDateString(),
+          time: startAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           duration: `${r.duration_minutes || 60} mins`,
-          platform: 'Zoom',
-          status: r.status === 'upcoming' ? 'upcoming' : 'live',
+          platform: (r.meeting_provider || 'Zoom').toString().toUpperCase(),
+          status,
           link: r.join_url || '',
-          topic: r.title,
+          topic: r.title || 'Session Topic',
           attendanceRate: 0,
-          studentsEnrolled: 0,
+          studentsEnrolled: enrollmentRows.filter((e) => e.course_id === r.course_id).length,
           studentsPresent: 0,
           chatMessages: 0,
           currentSlide: '—',
-          tags: ['Live Class'],
-          price: '₹999',
+          tags,
+          price: `₹${numericPrice.toLocaleString('en-IN')}`,
+          priceAmount: numericPrice,
           rating: '4.8',
-        }))
-        setLiveSessions(mapped)
+        }
       })
-      .catch(() => {})
+      setLiveSessions(mapped)
+    } catch {
+      setLiveSessions([])
+    }
+  }
 
   useEffect(() => {
+    api('/auth/me').then(setMe).catch(() => setMe(null))
     loadLiveClasses()
   }, [])
 
@@ -623,12 +544,11 @@ export default function StudentLiveClasses() {
 
   const [activeFilter, setActiveFilter] = useState('All Sessions')
   const [search, setSearch] = useState('')
-  const [enrolledIds, setEnrolledIds] = useState(ENROLLED_COURSE_IDS)
   const [enrollModal, setEnrollModal] = useState(null)   // session to enroll
   const [detailModal, setDetailModal] = useState(null)   // session to view detail
 
-  const handleEnrollSuccess = (id) => {
-    setEnrolledIds(prev => [...prev, id])
+  const handleEnrollSuccess = (courseId) => {
+    setEnrolledCourseIds((prev) => (prev.includes(courseId) ? prev : [...prev, courseId]))
   }
 
   const filtered = liveSessions.filter(s => {
@@ -636,7 +556,7 @@ export default function StudentLiveClasses() {
       activeFilter === 'All Sessions' ||
       (activeFilter === 'Live Now' && s.status === 'live') ||
       (activeFilter === 'Upcoming' && s.status === 'upcoming') ||
-      (activeFilter === 'Enrolled' && enrolledIds.includes(s.id))
+      (activeFilter === 'Enrolled' && enrolledCourseIds.includes(s.courseId))
     const matchSearch =
       s.title.toLowerCase().includes(search.toLowerCase()) ||
       s.instructor.toLowerCase().includes(search.toLowerCase()) ||
@@ -645,7 +565,7 @@ export default function StudentLiveClasses() {
   })
 
   const liveCount = liveSessions.filter(s => s.status === 'live').length
-  const enrolledCount = enrolledIds.length
+  const enrolledCount = enrolledCourseIds.length
 
   return (
     <div className="min-h-full bg-[#F7FAFD]">
@@ -684,7 +604,7 @@ export default function StudentLiveClasses() {
                   <div className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> {s.studentsPresent} students in class</div>
                   <div className="flex items-center gap-1.5"><Video className="h-3.5 w-3.5" /> {s.platform} • {s.duration}</div>
                 </div>
-                {enrolledIds.includes(s.id) ? (
+                {enrolledCourseIds.includes(s.courseId) ? (
                   <button
                     onClick={() => window.open(s.link, '_blank')}
                     className="mt-4 w-full h-10 rounded-[8px] bg-[#ef4444] text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-[#dc2626] transition-colors"
@@ -763,7 +683,7 @@ export default function StudentLiveClasses() {
                 <SessionCard
                   key={session.id}
                   session={session}
-                  isEnrolled={enrolledIds.includes(session.id)}
+                  isEnrolled={enrolledCourseIds.includes(session.courseId)}
                   onJoinClick={(s) => setDetailModal(s)}
                   onEnrollClick={(s) => setEnrollModal(s)}
                 />
@@ -777,6 +697,7 @@ export default function StudentLiveClasses() {
       {enrollModal && (
         <EnrollmentModal
           session={enrollModal}
+          me={me}
           onClose={() => setEnrollModal(null)}
           onSuccess={handleEnrollSuccess}
         />

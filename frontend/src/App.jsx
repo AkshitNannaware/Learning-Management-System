@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { getDashboardPathByRole } from './lib/api'
 import Layout from './components/layout'
 import Login from './components/Login'
 import SignUp from './components/SignUp'
@@ -51,6 +52,21 @@ import StudentLiveClasses from './pages/student panel/StudentLiveClasses'
 import StudentCertificates from './pages/student panel/StudentCertificates'
 import StudentProfile from './pages/student panel/StudentProfile'
 
+function ProtectedPanel({ children, allowedRoles = [] }) {
+  const token = localStorage.getItem('lms_token')
+  const role = localStorage.getItem('lms_role') || ''
+
+  if (!token) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
+    return <Navigate to={getDashboardPathByRole(role)} replace />
+  }
+
+  return children
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -69,7 +85,7 @@ function App() {
         <Route path="/superadmin-signup" element={<SuperAdminSignup />} />
         <Route path="/admin-signup" element={<AdminSignup />} />
         <Route path="/instructor-signup" element={<InstructorSignup />} />
-        <Route path="/superadmin" element={<SuperAdminLayout />}>
+        <Route path="/superadmin" element={<ProtectedPanel allowedRoles={['super_admin']}><SuperAdminLayout /></ProtectedPanel>}>
           <Route index element={<SuperAdminOverview />} />
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="tenant-management" element={<SuperAdminTenantManagement />} />
@@ -80,7 +96,7 @@ function App() {
           <Route path="platform-settings" element={<SuperAdminSettings />} />
           <Route path="profile" element={<SuperAdminProfile />} />
         </Route>
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route path="/admin" element={<ProtectedPanel allowedRoles={['admin']}><AdminLayout /></ProtectedPanel>}>
           <Route index element={<AdminDashboard />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="course-management" element={<AdminCourseManagement />} />
@@ -95,7 +111,7 @@ function App() {
           <Route path="notification" element={<AdminNotification />} />
           <Route path="profile" element={<AdminProfile />} />
         </Route>
-        <Route path="/instructor" element={<InstructorLayout />}>
+        <Route path="/instructor" element={<ProtectedPanel allowedRoles={['instructor']}><InstructorLayout /></ProtectedPanel>}>
           <Route index element={<InstructorDashboard />} />
           <Route path="dashboard" element={<InstructorDashboard />} />
           <Route path="my-courses" element={<InstructorMycourses />} />
@@ -104,7 +120,7 @@ function App() {
           <Route path="student-insights" element={<InstructorStudentInsights />} />
           <Route path="profile" element={<InstructorProfile />} />
         </Route>
-        <Route path="/student-panel" element={<StudentLayout />}>
+        <Route path="/student-panel" element={<ProtectedPanel allowedRoles={['student']}><StudentLayout /></ProtectedPanel>}>
           <Route index element={<StudentDashboard />} />
           <Route path="dashboard" element={<StudentDashboard />} />
           <Route path="continue-learning" element={<StudentContinueLearning />} />

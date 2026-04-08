@@ -132,7 +132,7 @@ export default function StudentManagement() {
   const tenantId = localStorage.getItem('lms_tenant_id')
 
   const loadStudents = () =>
-    api('/lms/users?role=student')
+    api('/lms/users?limit=300')
       .then((res) => {
         const rows = res.items || res || []
         if (!Array.isArray(rows) || rows.length === 0) {
@@ -140,6 +140,7 @@ export default function StudentManagement() {
           return
         }
         const mapped = rows.map((u, idx) => ({
+          role: (u.role || 'student').toLowerCase(),
           id: u._id || `STU${String(idx + 1).padStart(3, '0')}`,
           name: u.full_name || 'Student',
           email: u.email || '',
@@ -148,10 +149,10 @@ export default function StudentManagement() {
           avatar: ['#c7d2fe', '#fce7f3', '#d1fae5', '#fef3c7'][idx % 4],
           enrollment: {
             class: u.class || 'class-general',
-            className: u.class_name || 'General Class',
+            className: u.class_name || (u.role ? String(u.role).replace('_', ' ').toUpperCase() : 'General Class'),
             grade: u.grade || 'General',
             section: u.section || 'A',
-            rollNumber: u.roll_number || String(idx + 1),
+            rollNumber: u.roll_number || '-',
             enrollmentDate: u.created_at || new Date().toISOString(),
             status: u.is_active ? 'active' : 'inactive',
             paymentStatus: 'pending',
@@ -197,7 +198,9 @@ export default function StudentManagement() {
 
   const filteredStudents = useMemo(() => students.filter(student => {
     if (searchTerm && !student.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        !student.id.toLowerCase().includes(searchTerm.toLowerCase())) {
+        !student.id.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !student.email.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !student.role.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false
     }
     if (filters.enrollmentStatus !== 'all' && student.enrollment.status !== filters.enrollmentStatus) return false
@@ -290,7 +293,7 @@ export default function StudentManagement() {
           </div>
           <div className="flex w-full flex-col gap-3 sm:min-w-[200px] lg:w-auto">
             <div className="rounded-[8px] border border-black/[0.08] bg-white px-5 py-4">
-              <p className="mb-1 text-[12px] text-[#94a3b8]">Active Students</p>
+              <p className="mb-1 text-[12px] text-[#94a3b8]">Active Users</p>
               <p className="text-[28px] font-bold text-[#0f172a]">{students.filter(s => s.enrollment.status === 'active').length}</p>
             </div>
             <div className="rounded-[8px] border border-black/[0.08] bg-white px-5 py-4">
@@ -304,7 +307,7 @@ export default function StudentManagement() {
         {/* Stats Cards - matching instructor management style */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            label="Total Students"
+            label="Total Users"
             value={students.length}
             sub="+12 this month"
             subVariant="success"
@@ -339,7 +342,7 @@ export default function StudentManagement() {
             <div>
               <h2 className="text-[20px] font-bold text-[#0f172a]">Student directory</h2>
               <p className="mt-0.5 text-[13px] text-[#94a3b8]">
-                Monitor enrollment, progress, payment status, and next actions from a single operational list.
+                Monitor users, enrollment, payment status, and next actions from a single operational list.
               </p>
             </div>
             <div className="relative flex flex-wrap items-center gap-2">
@@ -423,7 +426,7 @@ export default function StudentManagement() {
                     : 'text-[#64748b] hover:bg-gray-50'
                 }`}
               >
-                All Students
+                All Users
               </button>
               <button
                 onClick={() => setFilters({ ...filters, enrollmentStatus: 'active' })}
