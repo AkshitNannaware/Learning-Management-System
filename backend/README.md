@@ -2,11 +2,28 @@
 
 ## Run locally
 
-1. Create `.env` from `.env.example`
-2. Install dependencies
+### Windows PowerShell
+
+1. Open a terminal in `backend/`
+2. Create a virtual environment if needed
+   - `python -m venv venv`
+3. Activate the environment
+   - `venv\Scripts\Activate`
+4. Install dependencies
    - `pip install -r requirements.txt`
-3. Run API
+5. Create `.env` from `.env.example` and set your MongoDB and auth values
+6. Start the API
    - `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
+
+### Access
+
+- API: `http://localhost:8000`
+- OpenAPI docs: `http://localhost:8000/docs`
+
+### Notes
+
+- If MongoDB is not running or the Atlas URI is invalid, the server may start but requests will fail.
+- If you prefer Docker, run the project from the root with `docker-compose.yml` instead of starting the backend manually.
 
 ## Core modules
 
