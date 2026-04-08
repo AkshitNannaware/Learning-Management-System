@@ -116,23 +116,9 @@
 
 
 
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { FileText, Download, Calendar, Plus, Upload, BarChart3, TrendingUp, Clock, FileSpreadsheet } from 'lucide-react'
-
-const reports = [
-  { id: 1, title: 'Revenue summary report', description: 'CSV export for monthly billing data', format: 'CSV', icon: '💰' },
-  { id: 2, title: 'Tenant activity report', description: 'PDF overview of active and inactive clients', format: 'PDF', icon: '🏢' },
-  { id: 3, title: 'User moderation report', description: 'CSV export of blocked and unblocked users', format: 'CSV', icon: '👥' },
-  { id: 4, title: 'Payment transactions report', description: 'Detailed transaction history', format: 'CSV', icon: '💳' },
-]
-
-const recentReports = [
-  { name: 'Revenue_Summary_Feb_2026.csv', date: 'Feb 28, 2026', size: '2.4 MB', downloads: 124 },
-  { name: 'Tenant_Activity_Jan_2026.pdf', date: 'Jan 31, 2026', size: '1.8 MB', downloads: 86 },
-  { name: 'User_Moderation_Feb_2026.csv', date: 'Feb 15, 2026', size: '3.1 MB', downloads: 93 },
-  { name: 'Payment_Transactions_Q1_2026.csv', date: 'Mar 1, 2026', size: '5.2 MB', downloads: 67 },
-  { name: 'Course_Completion_Report_Feb_2026.pdf', date: 'Feb 28, 2026', size: '2.1 MB', downloads: 112 },
-]
+import { api } from '../../lib/api'
 
 function StatCard({ title, value, meta, icon }) {
   return (
@@ -171,6 +157,19 @@ function Pill({ children, variant }) {
 }
 
 export default function SuperAdminReports() {
+  const [reports, setReports] = useState([])
+  const reportTypes = useMemo(
+    () => ['revenue_summary', 'tenant_activity', 'user_moderation', 'payment_transactions'],
+    [],
+  )
+  const loadReports = () => api('/lms/reports').then((res) => setReports(res.items || [])).catch(() => {})
+  useEffect(() => { loadReports() }, [])
+
+  const generate = (type) =>
+    api('/lms/reports/generate', { method: 'POST', body: JSON.stringify({ report_type: type }) })
+      .then(loadReports)
+      .catch(() => {})
+
   return (
     <div className="min-h-full bg-[#F7FAFD]">
       {/* Header */}
@@ -247,49 +246,49 @@ export default function SuperAdminReports() {
         <div className="gap-x-[16px] gap-y-[16px] grid grid-cols-[repeat(4,minmax(0,1fr))]">
           <StatCard 
             title="Reports Generated" 
-            value="247" 
+            value={String(reports.length)} 
             meta="This month" 
             icon={<FileText className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="Total Downloads" 
-            value="1,842" 
-            meta="All time" 
+            value={String(reports.length)} 
+            meta="Generated files" 
             icon={<Download className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="Most Popular" 
-            value="Revenue Report" 
-            meta="428 downloads" 
+            value={reports[0]?.report_type || 'N/A'} 
+            meta="Latest type" 
             icon={<TrendingUp className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="Last Generated" 
-            value="2 hours ago" 
-            meta="Payment Report" 
+            value={reports[0]?.created_at ? new Date(reports[0].created_at).toLocaleString() : 'N/A'} 
+            meta="Latest generation" 
             icon={<Clock className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
         </div>
 
         {/* Report Cards Grid */}
         <div className="gap-x-[24px] gap-y-[24px] grid grid-cols-2">
-          {reports.map((report) => (
-            <div key={report.id} className="bg-white border border-black/[0.08] border-solid flex flex-col gap-[18px] items-start p-[21px] rounded-[8px]">
+          {reportTypes.map((type) => (
+            <div key={type} className="bg-white border border-black/[0.08] border-solid flex flex-col gap-[18px] items-start p-[21px] rounded-[8px]">
               <div className="flex items-start justify-between w-full">
                 <div className="flex items-center gap-[12px]">
                   <div className="bg-[#e8f5ff] flex items-center justify-center rounded-[6px] shrink-0 size-[48px] text-[24px]">
-                    {report.icon}
+                    📄
                   </div>
                   <div>
-                    <div className="font-bold text-[16px] text-[#0f172a]">{report.title}</div>
-                    <div className="text-[13px] text-[#94a3b8] mt-[4px]">{report.description}</div>
+                    <div className="font-bold text-[16px] text-[#0f172a]">{type.replaceAll('_', ' ')}</div>
+                    <div className="text-[13px] text-[#94a3b8] mt-[4px]">Generate real export metadata entry</div>
                   </div>
                 </div>
-                <Pill variant={report.format === 'CSV' ? 'csv' : 'pdf'}>
-                  {report.format}
+                <Pill variant='csv'>
+                  CSV
                 </Pill>
               </div>
-              <button className="bg-[#5b3df6] flex items-center gap-[8px] h-[40px] justify-center rounded-[6px] w-full">
+              <button onClick={() => generate(type)} className="bg-[#5b3df6] flex items-center gap-[8px] h-[40px] justify-center rounded-[6px] w-full">
                 <Download className="h-[18px] w-[18px] text-white" />
                 <div className="flex flex-col font-medium h-[17px] justify-center leading-[0] text-white text-[14px]">
                   Generate Report
@@ -326,21 +325,21 @@ export default function SuperAdminReports() {
                 </tr>
               </thead>
               <tbody>
-                {recentReports.map((report, idx) => {
-                  const isCSV = report.name.endsWith('.csv')
+                {reports.map((report, idx) => {
+                  const isCSV = (report.file_name || '').endsWith('.csv')
                   return (
-                    <tr key={report.name} className={`border-b border-black/[0.08] ${idx === recentReports.length - 1 ? 'border-b-0' : ''}`}>
+                    <tr key={report._id || idx} className={`border-b border-black/[0.08] ${idx === reports.length - 1 ? 'border-b-0' : ''}`}>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-[12px]">
                           <div className="bg-[#e8f5ff] flex items-center justify-center rounded-[6px] shrink-0 size-[36px]">
                             <FileText className={`h-[16px] w-[16px] ${isCSV ? 'text-[#2dd4bf]' : 'text-[#ffd966]'}`} />
                           </div>
-                          <span className="font-semibold text-[14px] text-[#0f172a]">{report.name}</span>
+                          <span className="font-semibold text-[14px] text-[#0f172a]">{report.file_name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-[14px] text-[#94a3b8]">{report.date}</td>
-                      <td className="px-4 py-4 text-[14px] text-[#94a3b8]">{report.size}</td>
-                      <td className="px-4 py-4 text-[14px] text-[#0f172a]">{report.downloads}</td>
+                      <td className="px-4 py-4 text-[14px] text-[#94a3b8]">{report.created_at ? new Date(report.created_at).toLocaleString() : '-'}</td>
+                      <td className="px-4 py-4 text-[14px] text-[#94a3b8]">{report.size_kb ? `${report.size_kb} KB` : '-'}</td>
+                      <td className="px-4 py-4 text-[14px] text-[#0f172a]">-</td>
                       <td className="px-4 py-4">
                         <button className="border border-black/[0.08] flex items-center gap-[8px] h-[36px] justify-center px-[16px] rounded-[6px] hover:bg-[#f1f5f9] transition-colors">
                           <Download className="h-[14px] w-[14px] text-[#5b3df6]" />

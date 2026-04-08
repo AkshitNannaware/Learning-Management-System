@@ -133,7 +133,7 @@
 
 
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { TrendingUp, TrendingDown, Users, DollarSign, BookOpen, Activity } from 'lucide-react'
 import {
   LineChart,
@@ -146,6 +146,8 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
+import { api } from '../../lib/api'
+import useRealtime from '../../hooks/useRealtime'
 
 // Figma avatar assets (reused from admin dashboard)
 const AVATAR_RAHUL = 'https://www.figma.com/api/mcp/asset/5b24609b-97ad-4bea-af20-b4f4df404b75'
@@ -243,6 +245,23 @@ const revenueGrowth = [
 ]
 
 export default function SuperAdminDashboard() {
+  const [metrics, setMetrics] = useState({
+    total_users: 0,
+    revenue: 0,
+    active_courses: 0,
+    active_subscriptions: 0,
+  })
+
+  useEffect(() => {
+    api('/lms/dashboard/super-admin').then(setMetrics).catch(() => {})
+  }, [])
+
+  useRealtime('tenant:platform', (payload) => {
+    if (payload?.type?.startsWith('payment') || payload?.type?.startsWith('course')) {
+      api('/lms/dashboard/super-admin').then(setMetrics).catch(() => {})
+    }
+  })
+
   return (
     <div className="min-h-full bg-[#F7FAFD]">
       <Header />
@@ -287,7 +306,7 @@ export default function SuperAdminDashboard() {
         <div className="gap-x-[16px] gap-y-[16px] grid grid-cols-[repeat(4,minmax(0,1fr))]">
           <KpiCard 
             title="Total Users" 
-            value="54,832" 
+            value={Number(metrics.total_users || 0).toLocaleString('en-IN')}
             meta="12.5%" 
             icon={<Users className="h-[18px] w-[18px] text-[#5b3df6]" />}
             trend="up"
@@ -296,7 +315,7 @@ export default function SuperAdminDashboard() {
           />
           <KpiCard 
             title="Monthly Revenue" 
-            value="₹18.4L" 
+            value={`₹${Number(metrics.revenue || 0).toLocaleString('en-IN')}`}
             meta="8.2%" 
             icon={<DollarSign className="h-[18px] w-[18px] text-[#5b3df6]" />}
             trend="up"
@@ -305,7 +324,7 @@ export default function SuperAdminDashboard() {
           />
           <KpiCard 
             title="Active Courses" 
-            value="2,946" 
+            value={Number(metrics.active_courses || 0).toLocaleString('en-IN')}
             meta="5.3%" 
             icon={<BookOpen className="h-[18px] w-[18px] text-[#5b3df6]" />}
             trend="up"
@@ -313,8 +332,8 @@ export default function SuperAdminDashboard() {
             badgeVariant="ready"
           />
           <KpiCard 
-            title="Engagement Rate" 
-            value="86.4%" 
+            title="Active Subscriptions" 
+            value={Number(metrics.active_subscriptions || 0).toLocaleString('en-IN')}
             meta="2.1%" 
             icon={<Activity className="h-[18px] w-[18px] text-[#5b3df6]" />}
             trend="up"

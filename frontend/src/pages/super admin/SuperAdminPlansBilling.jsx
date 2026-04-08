@@ -129,8 +129,9 @@
 
 
 
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { CreditCard, Check, TrendingUp, Plus, Calendar, Download, Users, Wallet, Zap } from 'lucide-react'
+import { api } from '../../lib/api'
 
 const plans = [
   { id: 1, name: 'Basic Plan', price: '₹999', period: 'per month', tenants: 28, revenue: '₹27,972', features: ['Up to 500 users', '10 courses', 'Basic analytics', 'Email support'] },
@@ -184,6 +185,24 @@ function Pill({ children, variant }) {
 }
 
 export default function SuperAdminPlansBilling() {
+  const [tenants, setTenants] = useState([])
+  const [payments, setPayments] = useState([])
+
+  useEffect(() => {
+    Promise.all([api('/lms/tenants').catch(() => ({ items: [] })), api('/lms/payments').catch(() => ({ items: [] }))]).then(([t, p]) => {
+      setTenants(t.items || t || [])
+      setPayments(p.items || p || [])
+    })
+  }, [])
+
+  const mrr = useMemo(
+    () => payments.filter((p) => p.status === 'captured').reduce((acc, cur) => acc + Number(cur.amount || 0), 0),
+    [payments],
+  )
+  const activeSubs = tenants.filter((t) => t.active).length
+  const pendingPayments = payments.filter((p) => p.status !== 'captured').length
+  const arpu = activeSubs ? Math.round(mrr / activeSubs) : 0
+
   return (
     <div className="min-h-full bg-[#F7FAFD]">
       {/* Header */}
@@ -260,25 +279,25 @@ export default function SuperAdminPlansBilling() {
         <div className="gap-x-[16px] gap-y-[16px] grid grid-cols-[repeat(4,minmax(0,1fr))]">
           <StatCard 
             title="MRR" 
-            value="₹18.4L" 
+            value={`₹${mrr.toLocaleString('en-IN')}`} 
             meta="↑ 12.5% vs last month" 
             icon={<TrendingUp className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="Active Subscriptions" 
-            value="128" 
+            value={String(activeSubs)} 
             meta="Across all plans" 
             icon={<Users className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="Pending Payments" 
-            value="12" 
+            value={String(pendingPayments)} 
             meta="Require attention" 
             icon={<Wallet className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="ARPU" 
-            value="₹1,438" 
+            value={`₹${arpu.toLocaleString('en-IN')}`} 
             meta="Per tenant" 
             icon={<CreditCard className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />

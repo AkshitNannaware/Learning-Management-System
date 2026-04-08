@@ -1,12 +1,14 @@
 import React, { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { User, Mail, Building2, Lock, Eye, EyeOff, CheckCircle2, ShieldCheck } from 'lucide-react'
+import { api, getDashboardPathByRole, setAuthSession } from '../lib/api'
 
 const DECORATIVE_IMG = 'https://www.figma.com/api/mcp/asset/ce009895-65be-4c55-8e2c-8114666b793d'
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const PHONE_REGEX = /^\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}$/
 
 export default function AdminSignup() {
+	const navigate = useNavigate()
 	const [formData, setFormData] = useState({
 		fullName: '',
 		instituteName: '',
@@ -18,6 +20,8 @@ export default function AdminSignup() {
 	const [showPassword, setShowPassword] = useState(false)
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 	const [submitted, setSubmitted] = useState(false)
+	const [loading, setLoading] = useState(false)
+	const [error, setError] = useState('')
 	const [phone, setPhone] = useState('')
 
 	const passwordStrength = useMemo(() => {
@@ -47,12 +51,54 @@ export default function AdminSignup() {
 		setFormData((prev) => ({ ...prev, [field]: value }))
 	}
 
-	const handleSubmit = (e) => {
+	const buildTenantId = (name) => {
+		const base = String(name || '')
+			.toLowerCase()
+			.trim()
+			.replace(/[^a-z0-9]+/g, '-')
+			.replace(/^-+|-+$/g, '')
+		return `${base || 'tenant'}-${Date.now().toString().slice(-6)}`
+	}
+
+	const handleSubmit = async (e) => {
 		e.preventDefault()
 		setSubmitted(true)
+		setError('')
 		if (!isFormValid) return
-		// Replace with API integration when backend is ready.
-		console.log('Admin signup payload:', formData)
+		try {
+			setLoading(true)
+			let data
+			try {
+				data = await api('/auth/register', {
+					method: 'POST',
+					body: JSON.stringify({
+						full_name: formData.fullName,
+						email: formData.email,
+						password: formData.password,
+						role: 'admin',
+						tenant_id: buildTenantId(formData.instituteName),
+					}),
+				})
+			} catch (registerErr) {
+				if ((registerErr?.message || '').toLowerCase().includes('email already exists')) {
+					data = await api('/auth/login', {
+						method: 'POST',
+						body: JSON.stringify({
+							email: formData.email,
+							password: formData.password,
+						}),
+					})
+				} else {
+					throw registerErr
+				}
+			}
+			setAuthSession(data.access_token, data.role, data.tenant_id)
+			navigate(getDashboardPathByRole(data.role))
+		} catch (err) {
+			setError(err.message || 'Admin signup failed')
+		} finally {
+			setLoading(false)
+		}
 	}
 
 	return (
@@ -222,9 +268,10 @@ export default function AdminSignup() {
 								</p>
 							) : null}
 
-							<button type="submit" disabled={!isFormValid} className="border-0 rounded-md bg-[#ff8a33] text-white text-base font-bold p-3.5 cursor-pointer mt-1 disabled:cursor-not-allowed disabled:opacity-60">
-								Create Admin Account
+							<button type="submit" disabled={!isFormValid || loading} className="border-0 rounded-md bg-[#ff8a33] text-white text-base font-bold p-3.5 cursor-pointer mt-1 disabled:cursor-not-allowed disabled:opacity-60">
+								{loading ? 'Creating Admin Account...' : 'Create Admin Account'}
 							</button>
+							{error ? <p className="text-xs font-medium text-[#dc2626]">{error}</p> : null}
 						</form>
 						</div>
 					</div>

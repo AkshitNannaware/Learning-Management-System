@@ -1,16 +1,30 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Search, Bell, Menu } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { api } from '../lib/api'
 
-const AVATAR = 'https://www.figma.com/api/mcp/asset/cac9530e-475b-4f0c-b716-69a17ab9bc2f'
+function Avatar({ src, alt = '', name = '', className = '' }) {
+  const initials = useMemo(() => {
+    const parts = String(name || alt || 'U')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+    const first = parts[0]?.[0] || 'U'
+    const second = parts.length > 1 ? parts[parts.length - 1]?.[0] : ''
+    return `${first}${second}`.toUpperCase()
+  }, [alt, name])
 
-function Avatar({ src, alt = '', className = '' }) {
+  if (src) {
+    return <img src={src} alt={alt} className={`h-[36px] w-[36px] rounded-[6px] object-cover ${className}`} />
+  }
+
   return (
-    <img
-      src={src}
-      alt={alt}
-      className={`h-[36px] w-[36px] rounded-[6px] object-cover ${className}`}
-    />
+    <div
+      aria-label={alt}
+      className={`flex h-[36px] w-[36px] items-center justify-center rounded-[6px] bg-[#0f172a] text-[12px] font-semibold text-white ${className}`}
+    >
+      {initials}
+    </div>
   )
 }
 
@@ -64,58 +78,89 @@ const getPageTitle = (pathname) => {
   return 'Dashboard'
 }
 
+const roleLabelMap = {
+  super_admin: 'Super Admin',
+  admin: 'Institute Owner',
+  instructor: 'Lead Instructor',
+  student: 'Learner',
+}
+
+const panelLabelMap = {
+  super_admin: 'Super Admin Panel',
+  admin: 'Admin Panel',
+  instructor: 'Instructor Panel',
+  student: 'Student Panel',
+}
+
+const getRoleFromPath = (pathname) => {
+  if (pathname.includes('/superadmin')) return 'super_admin'
+  if (pathname.includes('/admin')) return 'admin'
+  if (pathname.includes('/instructor')) return 'instructor'
+  if (pathname.includes('/student-panel') || pathname.includes('/student')) return 'student'
+  return ''
+}
+
+const formatRole = (role) => roleLabelMap[role] || role || 'User'
+const formatPanelLabel = (role, fallback = 'LMS') => panelLabelMap[role] || fallback
+
 export default function HeaderPanel({ onMenuToggle }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const [currentUser, setCurrentUser] = useState(null)
 
-  // Determine which panel we're in based on the route
-  const isSuperAdmin = location.pathname.includes('/superadmin')
-  const isAdmin = location.pathname.includes('/admin')
-  const isInstructor = location.pathname.includes('/instructor')
-  const isStudent = location.pathname.includes('/student-panel') || location.pathname.includes('/student')
+  const routeRole = getRoleFromPath(location.pathname)
+  const storedRole = localStorage.getItem('lms_role') || ''
+  const resolvedRole = currentUser?.role || storedRole || routeRole
 
-  // Set dynamic content based on panel type
-  let panelLabel = "LMS"
-  let userName = "Rahul Mehta"
-  let userRole = "Institute Owner"
-  let placeholderText = "Search students, courses, or classes"
-
-  if (isSuperAdmin) {
-    panelLabel = "Super Admin Panel"
-    userName = "Platform Admin"
-    userRole = "Super Admin"
-    placeholderText = "Search tenants, reports, or plans"
-  } else if (isAdmin) {
-    panelLabel = "Admin Panel"
-    userName = "Rahul Mehta"
-    userRole = "Institute Owner"
-    placeholderText = "Search students, courses, or classes"
-  } else if (isInstructor) {
-    panelLabel = "Instructor Panel"
-    userName = "Aisha Verma"
-    userRole = "Lead Instructor"
-    placeholderText = "Search courses, students, or materials"
-  } else if (isStudent) {
-    panelLabel = "Student Panel"
-    userName = "Aarohi Shah"
-    userRole = "Learner"
-    placeholderText = "Search modules, tests..."
-  }
+  const panelLabel = formatPanelLabel(resolvedRole)
+  const userName = currentUser?.full_name || currentUser?.email || 'User'
+  const userRole = formatRole(resolvedRole)
+  const placeholderText =
+    resolvedRole === 'super_admin'
+      ? 'Search tenants, reports, or plans'
+      : resolvedRole === 'instructor'
+        ? 'Search courses, students, or materials'
+        : resolvedRole === 'student'
+          ? 'Search modules, tests...'
+          : 'Search students, courses, or classes'
 
   // Get the current page title
   const pageTitle = getPageTitle(location.pathname)
 
   let profilePath = '/profile'
   let notificationPath = ''
-  if (isSuperAdmin) profilePath = '/superadmin/profile'
-  else if (isAdmin) {
+  if (resolvedRole === 'super_admin') profilePath = '/superadmin/profile'
+  else if (resolvedRole === 'admin') {
     profilePath = '/admin/profile'
     notificationPath = '/admin/notification'
-  } else if (isInstructor) {
+  } else if (resolvedRole === 'instructor') {
     profilePath = '/instructor/profile'
-  } else if (isStudent) {
+  } else if (resolvedRole === 'student') {
     profilePath = '/student-panel/profile'
   }
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadCurrentUser = async () => {
+      try {
+        const data = await api('/auth/me')
+        if (isMounted) setCurrentUser(data)
+      } catch {
+        if (isMounted) setCurrentUser(null)
+      }
+    }
+
+    if (localStorage.getItem('lms_token')) {
+      loadCurrentUser()
+    } else {
+      setCurrentUser(null)
+    }
+
+    return () => {
+      isMounted = false
+    }
+  }, [location.pathname])
 
   return (
     <header className="flex min-h-[72px] items-center justify-between border-b border-black/[0.08] bg-white px-4 py-3 sm:px-6 lg:px-7">
@@ -129,12 +174,12 @@ export default function HeaderPanel({ onMenuToggle }) {
           <Menu className="h-5 w-5" />
         </button>
         <div className="relative min-w-0 shrink">
-        <div className="flex h-[16px] flex-col justify-center text-[11px] font-medium leading-[0] text-[#94a3b8] sm:text-[13px]">
-          {panelLabel}
-        </div>
-        <div className="line-clamp-1 flex h-[29px] flex-col justify-center text-[18px] font-bold leading-[0] text-[#0f172a] sm:text-[22px] lg:text-[24px]">
-          {pageTitle}
-        </div>
+          <div className="flex h-[16px] flex-col justify-center text-[11px] font-medium leading-[0] text-[#94a3b8] sm:text-[13px]">
+            {panelLabel}
+          </div>
+          <div className="line-clamp-1 flex h-[29px] flex-col justify-center text-[18px] font-bold leading-[0] text-[#0f172a] sm:text-[22px] lg:text-[24px]">
+            {pageTitle}
+          </div>
         </div>
       </div>
 
@@ -159,7 +204,7 @@ export default function HeaderPanel({ onMenuToggle }) {
           onClick={() => navigate(profilePath)}
           className="flex items-center gap-2 rounded-[6px] border border-black/[0.08] bg-white px-2.5 py-2 transition-colors hover:bg-[#f8fafc] sm:gap-3 sm:px-[11px] sm:py-[9px]"
         >
-          <Avatar src={AVATAR} alt={userName} />
+          <Avatar src={currentUser?.avatar_url || ''} alt={userName} name={currentUser?.full_name || currentUser?.email || ''} />
           <div className="hidden items-start gap-[0.01px] sm:flex sm:flex-col">
             <div className="flex flex-col font-semibold h-[17px] justify-center leading-[0] text-[#0f172a] text-[14px]">
               {userName}

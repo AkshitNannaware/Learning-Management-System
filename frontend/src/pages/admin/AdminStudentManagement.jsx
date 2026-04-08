@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Search,
   Upload,
@@ -28,6 +28,8 @@ import {
   CheckCircle,
   XCircle as XCircleIcon,
 } from 'lucide-react'
+import { api } from '../../lib/api'
+import useRealtime from '../../hooks/useRealtime'
 
 // ── Helper Components ──────────────────────────────────────────
 function StatusBadge({ status, type }) {
@@ -112,291 +114,9 @@ function StatCard({ label, value, sub, subVariant, icon }) {
   )
 }
 
-// ── Sample Data ────────────────────────────────────────────────
-const sampleStudents = [
-  {
-    id: 'STU001',
-    name: 'Arjun Singh',
-    email: 'arjun.singh@example.com',
-    phone: '+91 98765 43210',
-    address: '123, Green Park, New Delhi - 110016',
-    avatar: '#c7d2fe',
-    enrollment: {
-      class: 'class-8',
-      className: 'Class 8 - Einstein',
-      grade: '8th Grade',
-      section: 'A',
-      rollNumber: '24001',
-      enrollmentDate: '2024-04-15',
-      status: 'active',
-      paymentStatus: 'paid',
-    },
-    subscription: {
-      plan: 'Annual Academic Plus',
-      amount: 29999,
-      billingCycle: 'yearly',
-      startDate: '2024-04-15',
-      endDate: '2025-04-14',
-      autoRenew: true,
-      status: 'active',
-    },
-    certificates: [
-      {
-        id: 'CERT001',
-        name: 'Python Programming Certificate',
-        issueDate: '2024-12-20',
-        grade: 'A',
-        url: '#',
-      },
-    ],
-    bills: [
-      {
-        id: 'BILL001',
-        invoiceNumber: 'INV-2024-001',
-        amount: 29999,
-        date: '2024-04-15',
-        dueDate: '2024-05-15',
-        status: 'paid',
-        items: [{ description: 'Annual Academic Plus Subscription', amount: 29999 }],
-      },
-    ],
-    progress: {
-      overall: 82,
-      subjects: [
-        { name: 'Mathematics', percentage: 85 },
-        { name: 'Science', percentage: 78 },
-        { name: 'English', percentage: 92 },
-        { name: 'Computer Science', percentage: 88 },
-      ],
-      attendance: 93,
-      assignmentsCompleted: 24,
-      totalAssignments: 28,
-      averageQuizScore: 79,
-      teacherRemarks: ['Excellent progress in Mathematics'],
-      performanceHistory: [
-        { month: 'Sep', score: 75 },
-        { month: 'Oct', score: 78 },
-        { month: 'Nov', score: 80 },
-        { month: 'Dec', score: 82 },
-        { month: 'Jan', score: 85 },
-      ],
-    },
-    parent: {
-      name: 'Kavita Singh',
-      relation: 'Mother',
-      phone: '+91 99887 66554',
-      email: 'kavita.singh@example.com',
-    },
-    notes: [],
-  },
-  {
-    id: 'STU002',
-    name: 'Mia Chen',
-    email: 'mia.chen@example.com',
-    phone: '+91 87654 32109',
-    address: '456, Lake View, Bangalore - 560001',
-    avatar: '#fce7f3',
-    enrollment: {
-      class: 'class-7',
-      className: 'Class 7 - Newton',
-      grade: '7th Grade',
-      section: 'B',
-      rollNumber: '24056',
-      enrollmentDate: '2024-06-10',
-      status: 'active',
-      paymentStatus: 'pending',
-    },
-    subscription: {
-      plan: 'Quarterly STEM Pro',
-      amount: 8999,
-      billingCycle: 'quarterly',
-      startDate: '2024-12-01',
-      endDate: '2025-02-28',
-      autoRenew: true,
-      status: 'active',
-    },
-    certificates: [],
-    bills: [
-      {
-        id: 'BILL003',
-        invoiceNumber: 'INV-2024-089',
-        amount: 8999,
-        date: '2024-12-01',
-        dueDate: '2024-12-15',
-        status: 'pending',
-        items: [{ description: 'Quarterly STEM Pro Subscription', amount: 8999 }],
-      },
-    ],
-    progress: {
-      overall: 64,
-      subjects: [
-        { name: 'Mathematics', percentage: 68 },
-        { name: 'Science', percentage: 72 },
-        { name: 'English', percentage: 85 },
-        { name: 'Robotics', percentage: 45 },
-      ],
-      attendance: 71,
-      assignmentsCompleted: 18,
-      totalAssignments: 26,
-      averageQuizScore: 65,
-      teacherRemarks: ['Struggling with Robotics concepts'],
-      performanceHistory: [
-        { month: 'Sep', score: 70 },
-        { month: 'Oct', score: 68 },
-        { month: 'Nov', score: 65 },
-        { month: 'Dec', score: 64 },
-        { month: 'Jan', score: 64 },
-      ],
-    },
-    parent: {
-      name: 'Daniel Chen',
-      relation: 'Father',
-      phone: '+91 88776 55443',
-      email: 'daniel.chen@example.com',
-    },
-    notes: [],
-  },
-  {
-    id: 'STU003',
-    name: 'Sofia Ramirez',
-    email: 'sofia.ramirez@example.com',
-    phone: '+91 76543 21098',
-    address: '789, Coastal Road, Mumbai - 400001',
-    avatar: '#d1fae5',
-    enrollment: {
-      class: 'class-9',
-      className: 'Class 9 - Curie',
-      grade: '9th Grade',
-      section: 'A',
-      rollNumber: '24123',
-      enrollmentDate: '2024-03-20',
-      status: 'active',
-      paymentStatus: 'paid',
-    },
-    subscription: {
-      plan: 'Annual All Access',
-      amount: 49999,
-      billingCycle: 'yearly',
-      startDate: '2024-03-20',
-      endDate: '2025-03-19',
-      autoRenew: true,
-      status: 'active',
-    },
-    certificates: [
-      {
-        id: 'CERT004',
-        name: 'English Proficiency - Advanced',
-        issueDate: '2024-12-01',
-        grade: 'A+',
-        url: '#',
-      },
-    ],
-    bills: [
-      {
-        id: 'BILL004',
-        invoiceNumber: 'INV-2024-012',
-        amount: 49999,
-        date: '2024-03-20',
-        dueDate: '2024-04-20',
-        status: 'paid',
-        items: [{ description: 'Annual All Access Subscription', amount: 49999 }],
-      },
-    ],
-    progress: {
-      overall: 91,
-      subjects: [
-        { name: 'Mathematics', percentage: 95 },
-        { name: 'Science', percentage: 88 },
-        { name: 'English', percentage: 98 },
-        { name: 'Literature', percentage: 92 },
-      ],
-      attendance: 96,
-      assignmentsCompleted: 32,
-      totalAssignments: 34,
-      averageQuizScore: 92,
-      teacherRemarks: ['Outstanding performance'],
-      performanceHistory: [
-        { month: 'Sep', score: 85 },
-        { month: 'Oct', score: 88 },
-        { month: 'Nov', score: 90 },
-        { month: 'Dec', score: 91 },
-        { month: 'Jan', score: 92 },
-      ],
-    },
-    parent: {
-      name: 'Elena Ramirez',
-      relation: 'Mother',
-      phone: '+91 99876 54321',
-      email: 'elena.ramirez@example.com',
-    },
-    notes: [],
-  },
-  {
-    id: 'STU004',
-    name: 'Yusuf Ali',
-    email: 'yusuf.ali@example.com',
-    phone: '+91 65432 10987',
-    address: '321, Heritage City, Hyderabad - 500001',
-    avatar: '#fef3c7',
-    enrollment: {
-      class: 'class-6',
-      className: 'Class 6 - Raman',
-      grade: '6th Grade',
-      section: 'C',
-      rollNumber: '24189',
-      enrollmentDate: '2025-01-02',
-      status: 'active',
-      paymentStatus: 'pending',
-    },
-    subscription: {
-      plan: 'Monthly Math Mastery',
-      amount: 1999,
-      billingCycle: 'monthly',
-      startDate: '2025-01-02',
-      endDate: '2025-02-01',
-      autoRenew: true,
-      status: 'active',
-    },
-    certificates: [],
-    bills: [
-      {
-        id: 'BILL005',
-        invoiceNumber: 'INV-2025-001',
-        amount: 1999,
-        date: '2025-01-02',
-        dueDate: '2025-02-02',
-        status: 'pending',
-        items: [{ description: 'Monthly Math Mastery Subscription', amount: 1999 }],
-      },
-    ],
-    progress: {
-      overall: 28,
-      subjects: [
-        { name: 'Mathematics', percentage: 28 },
-        { name: 'Science', percentage: 35 },
-      ],
-      attendance: 58,
-      assignmentsCompleted: 4,
-      totalAssignments: 14,
-      averageQuizScore: 31,
-      teacherRemarks: ['New admission - needs additional support'],
-      performanceHistory: [
-        { month: 'Jan', score: 28 },
-      ],
-    },
-    parent: {
-      name: 'Fatima Ali',
-      relation: 'Mother',
-      phone: '+91 98765 12345',
-      email: 'fatima.ali@example.com',
-    },
-    notes: [],
-  },
-]
-
 // ── Main Component ─────────────────────────────────────────────
 export default function StudentManagement() {
-  const [students] = useState(sampleStudents)
+  const [students, setStudents] = useState([])
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('overview')
@@ -409,8 +129,73 @@ export default function StudentManagement() {
     class: 'all',
   })
   const [showFilters, setShowFilters] = useState(false)
+  const tenantId = localStorage.getItem('lms_tenant_id')
 
-  const filteredStudents = students.filter(student => {
+  const loadStudents = () =>
+    api('/lms/users?role=student')
+      .then((res) => {
+        const rows = res.items || res || []
+        if (!Array.isArray(rows) || rows.length === 0) {
+          setStudents([])
+          return
+        }
+        const mapped = rows.map((u, idx) => ({
+          id: u._id || `STU${String(idx + 1).padStart(3, '0')}`,
+          name: u.full_name || 'Student',
+          email: u.email || '',
+          phone: u.phone || '-',
+          address: u.address || '-',
+          avatar: ['#c7d2fe', '#fce7f3', '#d1fae5', '#fef3c7'][idx % 4],
+          enrollment: {
+            class: u.class || 'class-general',
+            className: u.class_name || 'General Class',
+            grade: u.grade || 'General',
+            section: u.section || 'A',
+            rollNumber: u.roll_number || String(idx + 1),
+            enrollmentDate: u.created_at || new Date().toISOString(),
+            status: u.is_active ? 'active' : 'inactive',
+            paymentStatus: 'pending',
+          },
+          subscription: {
+            plan: 'Standard',
+            amount: 0,
+            billingCycle: 'monthly',
+            startDate: u.created_at || new Date().toISOString(),
+            endDate: new Date().toISOString(),
+            autoRenew: false,
+            status: 'active',
+          },
+          certificates: [],
+          bills: [],
+          progress: {
+            overall: 0,
+            subjects: [],
+            attendance: 0,
+            assignmentsCompleted: 0,
+            totalAssignments: 0,
+            averageQuizScore: 0,
+            teacherRemarks: [],
+            performanceHistory: [{ month: 'Now', score: 0 }],
+          },
+          parent: {
+            name: '-',
+            relation: '-',
+            phone: '-',
+            email: '-',
+          },
+          notes: [],
+        }))
+        setStudents(mapped)
+      })
+      .catch(() => {})
+
+  useEffect(() => {
+    loadStudents()
+  }, [])
+
+  useRealtime(tenantId ? `tenant:${tenantId}` : '', () => loadStudents())
+
+  const filteredStudents = useMemo(() => students.filter(student => {
     if (searchTerm && !student.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
         !student.id.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false
@@ -419,7 +204,7 @@ export default function StudentManagement() {
     if (filters.paymentStatus !== 'all' && student.enrollment.paymentStatus !== filters.paymentStatus) return false
     if (filters.class !== 'all' && student.enrollment.class !== filters.class) return false
     return true
-  })
+  }), [students, searchTerm, filters.enrollmentStatus, filters.paymentStatus, filters.class])
 
   const getFilterCount = () => {
     let count = 0

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   BookOpen,
@@ -12,6 +12,7 @@ import {
   Calendar,
   Library,
   BadgePercent,
+  LogOut,
 } from 'lucide-react'
 import HeaderPanel from '../../components/HeaderPanel'
 
@@ -30,8 +31,15 @@ const nav = [
 
 export default function AdminLayout() {
   const location = useLocation()
+  const navigate = useNavigate()
   const showProfileNav = location.pathname === '/admin/profile'
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  const handleLogout = () => {
+    localStorage.removeItem('lms_token')
+    localStorage.removeItem('lms_user')
+    navigate('/login')
+  }
 
   return (
     <div className="flex h-screen w-full min-w-0 overflow-hidden bg-[#f6f8fa] text-[#0f172a]">
@@ -106,6 +114,13 @@ export default function AdminLayout() {
             </div>
             <p className="mt-2 text-[12px] text-[#94a3b8]">76% of monthly goal achieved</p>
           </div>
+          <button
+            onClick={handleLogout}
+            className="mt-3 w-full h-10 flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 text-[13px] font-medium text-red-600 hover:bg-red-100 transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
         </div>
       </aside>
 

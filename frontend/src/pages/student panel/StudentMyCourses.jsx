@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { BookOpen, Clock, Star, User, PlayCircle, CheckCircle2, X } from 'lucide-react'
+import { api } from '../../lib/api'
 
 const ENROLLED_COURSES_KEY = 'student-enrolled-courses'
 const COURSE_PROGRESS_KEY = 'student-course-progress'
@@ -170,7 +171,18 @@ export default function StudentMyCourses() {
 	const [courseCertificates, setCourseCertificates] = useState({})
 
 	useEffect(() => {
-		setCourses(readEnrolledCourses())
+		Promise.all([
+			api('/lms/enrollments?limit=200').catch(() => ({ items: [] })),
+			api('/lms/courses?limit=500').catch(() => ({ items: [] })),
+		]).then(([enr, crs]) => {
+			const enrolledIds = new Set((enr.items || []).map((x) => x.course_id))
+			const mapped = (crs.items || []).filter((c) => enrolledIds.has(c._id))
+			if (mapped.length > 0) {
+				setCourses(mapped)
+			} else {
+				setCourses(readEnrolledCourses())
+			}
+		})
 
 		if (typeof window !== 'undefined') {
 			try {

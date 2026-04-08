@@ -154,17 +154,10 @@
 
 
 
-import React from 'react'
-import { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Search, Plus, MoreVertical, Building2, Users, BookOpen, Calendar, Upload, Download } from 'lucide-react'
 import { Modal } from '../../components/superadmin/Ui'
-
-const tenants = [
-  { id: 1, name: 'Bright Minds Academy', plan: 'Pro Plan', users: 4230, courses: 142, revenue: '₹3.2L', status: 'active' },
-  { id: 2, name: 'FuturePrep Center', plan: 'Enterprise', users: 8380, courses: 436, revenue: '₹6.8L', status: 'active' },
-  { id: 3, name: 'LearnNest Studio', plan: 'Basic Plan', users: 880, courses: 54, revenue: '₹45K', status: 'review' },
-  { id: 4, name: 'SkillSpring Kids', plan: 'Pro Plan', users: 2340, courses: 128, revenue: '₹1.8L', status: 'inactive' },
-]
+import { api } from '../../lib/api'
 
 function StatCard({ title, value, meta, icon }) {
   return (
@@ -207,7 +200,46 @@ function Pill({ children, variant }) {
 export default function SuperAdminTenantManagement() {
   const [query, setQuery] = useState('')
   const [showAdd, setShowAdd] = useState(false)
-  const rows = tenants.filter((tenant) => tenant.name.toLowerCase().includes(query.toLowerCase()))
+  const [tenants, setTenants] = useState([])
+  const [page, setPage] = useState(0)
+  const limit = 20
+  const [total, setTotal] = useState(0)
+  const [form, setForm] = useState({ name: '', admin_email: '', subscription_plan: 'starter' })
+
+  const loadTenants = () =>
+    api(`/lms/tenants?skip=${page * limit}&limit=${limit}&q=${encodeURIComponent(query)}`)
+      .then((res) => {
+        setTenants(res.items || [])
+        setTotal(res.total || 0)
+      })
+      .catch(() => {})
+
+  useEffect(() => {
+    loadTenants()
+  }, [page])
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setPage(0)
+      loadTenants()
+    }, 250)
+    return () => clearTimeout(id)
+  }, [query])
+
+  const rows = useMemo(
+    () => tenants.filter((tenant) => (tenant.name || '').toLowerCase().includes(query.toLowerCase())),
+    [tenants, query],
+  )
+
+  const activeCount = rows.filter((t) => t.active).length
+  const reviewCount = rows.filter((t) => !t.active).length
+
+  async function createTenant() {
+    await api('/lms/tenants', { method: 'POST', body: JSON.stringify(form) }).catch(() => {})
+    setShowAdd(false)
+    setForm({ name: '', admin_email: '', subscription_plan: 'starter' })
+    loadTenants()
+  }
 
   return (
     <div className="min-h-full bg-[#F7FAFD]">
@@ -295,26 +327,26 @@ export default function SuperAdminTenantManagement() {
         <div className="gap-x-[16px] gap-y-[16px] grid grid-cols-[repeat(4,minmax(0,1fr))]">
           <StatCard 
             title="Total Tenants" 
-            value="128" 
-            meta="+12 this month" 
+            value={String(rows.length)} 
+            meta="Live count" 
             icon={<Building2 className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="Active Tenants" 
-            value="112" 
-            meta="87.5% of total" 
+            value={String(activeCount)} 
+            meta="Active subscriptions" 
             icon={<Building2 className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="Under Review" 
-            value="8" 
-            meta="Pending approval" 
+            value={String(reviewCount)} 
+            meta="Needs activation" 
             icon={<Building2 className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="Inactive" 
-            value="8" 
-            meta="6.25% of total" 
+            value="0" 
+            meta="Track via plans" 
             icon={<Building2 className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
         </div>
@@ -362,7 +394,7 @@ export default function SuperAdminTenantManagement() {
               </thead>
               <tbody>
                 {rows.map((tenant, idx) => (
-                  <tr key={tenant.id} className={`border-b border-black/[0.08] ${idx === rows.length - 1 ? 'border-b-0' : ''}`}>
+                  <tr key={tenant._id || idx} className={`border-b border-black/[0.08] ${idx === rows.length - 1 ? 'border-b-0' : ''}`}>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-[12px]">
                         <div className="bg-[#e8f5ff] flex items-center justify-center rounded-[6px] shrink-0 size-[40px]">
@@ -371,26 +403,28 @@ export default function SuperAdminTenantManagement() {
                         <span className="font-semibold text-[14px] text-[#0f172a]">{tenant.name}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-[14px] text-[#0f172a]">{tenant.plan}</td>
+                    <td className="px-4 py-4 text-[14px] text-[#0f172a]">{tenant.subscription_plan || 'starter'}</td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-[8px]">
                         <Users className="h-[16px] w-[16px] text-[#94a3b8]" />
-                        <span className="text-[14px] text-[#0f172a]">{tenant.users.toLocaleString()}</span>
+                        <span className="text-[14px] text-[#0f172a]">-</span>
                       </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-[8px]">
                         <BookOpen className="h-[16px] w-[16px] text-[#94a3b8]" />
-                        <span className="text-[14px] text-[#0f172a]">{tenant.courses}</span>
+                        <span className="text-[14px] text-[#0f172a]">-</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 font-semibold text-[14px] text-[#0f172a]">{tenant.revenue}</td>
+                    <td className="px-4 py-4 font-semibold text-[14px] text-[#0f172a]">-</td>
                     <td className="px-4 py-4">
-                      <Pill variant={tenant.status}>
-                        {tenant.status === 'active' ? 'Active' : tenant.status === 'review' ? 'Review' : 'Inactive'}
+                      <Pill variant={tenant.active ? 'active' : 'review'}>
+                        {tenant.active ? 'Active' : 'Review'}
                       </Pill>
                     </td>
-                    <td className="px-4 py-4 text-[14px] text-[#94a3b8]">2025</td>
+                    <td className="px-4 py-4 text-[14px] text-[#94a3b8]">
+                      {tenant.created_at ? new Date(tenant.created_at).getFullYear() : '-'}
+                    </td>
                     <td className="px-4 py-4">
                       <button className="border border-black/[0.08] flex h-[36px] w-[36px] items-center justify-center rounded-[6px] hover:bg-[#f1f5f9]">
                         <MoreVertical className="h-[16px] w-[16px] text-[#94a3b8]" />
@@ -401,27 +435,41 @@ export default function SuperAdminTenantManagement() {
               </tbody>
             </table>
           </div>
+          <div className="w-full flex items-center justify-between pt-2">
+            <span className="text-xs text-[#94a3b8]">{Math.min(total, page * limit + 1)}-{Math.min(total, (page + 1) * limit)} of {total}</span>
+            <div className="flex gap-2">
+              <button onClick={() => setPage((p) => Math.max(0, p - 1))} className="border border-black/[0.08] rounded-[6px] px-3 py-1 text-xs">Prev</button>
+              <button onClick={() => setPage((p) => ((p + 1) * limit < total ? p + 1 : p))} className="border border-black/[0.08] rounded-[6px] px-3 py-1 text-xs">Next</button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Add Tenant Modal */}
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add New Tenant" description="Create a new tenant organization">
         <div className="space-y-[12px]">
-          <input 
+          <input
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             className="w-full border border-black/[0.08] rounded-[6px] px-[15px] py-[10px] text-[14px] focus:outline-none focus:border-[#5b3df6]" 
             placeholder="Tenant name" 
           />
-          <input 
+          <input
+            value={form.admin_email}
+            onChange={(e) => setForm((f) => ({ ...f, admin_email: e.target.value }))}
             className="w-full border border-black/[0.08] rounded-[6px] px-[15px] py-[10px] text-[14px] focus:outline-none focus:border-[#5b3df6]" 
             placeholder="Contact email" 
           />
-          <select className="w-full border border-black/[0.08] rounded-[6px] px-[15px] py-[10px] text-[14px] focus:outline-none focus:border-[#5b3df6]">
-            <option>Select Plan</option>
-            <option>Basic Plan</option>
-            <option>Pro Plan</option>
-            <option>Enterprise</option>
+          <select
+            value={form.subscription_plan}
+            onChange={(e) => setForm((f) => ({ ...f, subscription_plan: e.target.value }))}
+            className="w-full border border-black/[0.08] rounded-[6px] px-[15px] py-[10px] text-[14px] focus:outline-none focus:border-[#5b3df6]"
+          >
+            <option value="starter">Starter</option>
+            <option value="pro">Pro</option>
+            <option value="enterprise">Enterprise</option>
           </select>
-          <button className="bg-[#5b3df6] rounded-[6px] px-[16px] py-[10px] text-[14px] font-medium text-white w-full">
+          <button onClick={createTenant} className="bg-[#5b3df6] rounded-[6px] px-[16px] py-[10px] text-[14px] font-medium text-white w-full">
             Create Tenant
           </button>
         </div>

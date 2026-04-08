@@ -1,50 +1,9 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Search, Bell, CheckCheck, Filter, BookOpen, Calendar, Award, CreditCard } from 'lucide-react'
+import { api } from '../../lib/api'
+import useRealtime from '../../hooks/useRealtime'
 
 const AVATAR = 'https://www.figma.com/api/mcp/asset/5b24609b-97ad-4bea-af20-b4f4df404b75'
-
-const items = [
-  {
-    id: 1,
-    title: 'Live class reminder',
-    message: 'Your UI/UX Masterclass session starts in 20 minutes.',
-    time: 'Today • 5:40 PM',
-    type: 'class',
-    unread: true,
-  },
-  {
-    id: 2,
-    title: 'Assignment reviewed',
-    message: 'Marcus Chen added feedback to your Module 3 submission.',
-    time: 'Today • 3:15 PM',
-    type: 'course',
-    unread: true,
-  },
-  {
-    id: 3,
-    title: 'Certificate unlocked',
-    message: 'You earned the Accessibility Specialist badge.',
-    time: 'Today • 11:10 AM',
-    type: 'achievement',
-    unread: false,
-  },
-  {
-    id: 4,
-    title: 'Payment successful',
-    message: 'Your enrollment payment for Frontend for Designers was confirmed.',
-    time: 'Yesterday • 8:20 PM',
-    type: 'billing',
-    unread: false,
-  },
-  {
-    id: 5,
-    title: 'Schedule updated',
-    message: 'Portfolio Review Circle has been moved to Friday 6:00 PM.',
-    time: 'Yesterday • 4:00 PM',
-    type: 'class',
-    unread: false,
-  },
-]
 
 function iconFor(type) {
   if (type === 'class') return Calendar
@@ -55,6 +14,30 @@ function iconFor(type) {
 
 export default function Notification() {
   const [tab, setTab] = useState('all')
+  const [items, setItems] = useState([])
+  const tenantId = localStorage.getItem('lms_tenant_id')
+
+  const load = () =>
+    api('/lms/notifications')
+      .then((res) => {
+        const data = res.items || res || []
+        const normalized = data.map((n) => ({
+          id: n._id,
+          title: n.title,
+          message: n.message,
+          time: new Date(n.created_at || Date.now()).toLocaleString(),
+          type: 'course',
+          unread: !n.read,
+        }))
+        setItems(normalized)
+      })
+      .catch(() => {})
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  useRealtime(tenantId ? `tenant:${tenantId}` : '', () => load())
 
   const filtered = useMemo(() => {
     if (tab === 'unread') return items.filter((x) => x.unread)
@@ -92,7 +75,10 @@ export default function Notification() {
                 Unread
               </button>
             </div>
-            <button className="inline-flex items-center gap-1 rounded-[8px] border border-black/[0.08] px-3 py-1.5 text-[12px] font-semibold">
+            <button
+              onClick={() => api('/lms/notifications/read-all', { method: 'PATCH' }).then(load).catch(() => {})}
+              className="inline-flex items-center gap-1 rounded-[8px] border border-black/[0.08] px-3 py-1.5 text-[12px] font-semibold"
+            >
               <CheckCheck className="h-4 w-4" />
               Mark all as read
             </button>

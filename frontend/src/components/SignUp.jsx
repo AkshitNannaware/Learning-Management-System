@@ -1,18 +1,52 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { api, getDashboardPathByRole, setAuthSession } from '../lib/api'
 
 const DECORATIVE_IMG = 'https://www.figma.com/api/mcp/asset/a41cf675-38f9-4801-90f3-b9a095bc404c'
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const PHONE_REGEX = /^\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}$/
 
 export default function SignUp() {
+  const navigate = useNavigate()
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [institutionCode, setInstitutionCode] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const isEmailValid = EMAIL_REGEX.test(email)
   const isPhoneValid = PHONE_REGEX.test(phone)
-  const canSubmit = isEmailValid && isPhoneValid
+  const canSubmit = isEmailValid && isPhoneValid && fullName.trim() && institutionCode.trim() && password && password === confirmPassword
+
+  async function onSubmit(event) {
+    event.preventDefault()
+    setSubmitted(true)
+    setError('')
+    if (!canSubmit) return
+    try {
+      setLoading(true)
+      const data = await api('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          full_name: fullName,
+          email,
+          password,
+          role: 'student',
+          tenant_id: institutionCode.trim(),
+        }),
+      })
+      setAuthSession(data.access_token, data.role, data.tenant_id)
+      navigate(getDashboardPathByRole(data.role))
+    } catch (err) {
+      setError(err.message || 'Signup failed')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden overflow-y-auto bg-gradient-to-br from-[#1c113b] via-[#3a2286] to-[#5d3df0] p-4 font-[Inter,_'Segoe_UI',_Roboto,_sans-serif] sm:p-6 lg:p-8">
@@ -70,10 +104,12 @@ export default function SignUp() {
             </p>
 
             <div className="mt-6 flex-1 overflow-y-auto pr-1">
-            <form className="flex flex-col gap-4" onSubmit={(event) => { event.preventDefault(); setSubmitted(true) }}>
+            <form className="flex flex-col gap-4" onSubmit={onSubmit}>
               <label className="flex flex-col gap-2">
                 <span className="text-[#0b1020] text-sm font-semibold">Full Name</span>
-                <input 
+                <input
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
                   className="border border-black/10 rounded-md p-3.5 text-sm text-[#0b1020] outline-none focus:border-[#5a3bd6] focus:ring-3 focus:ring-[#5a3bd6]/20" 
                   type="text" 
                   placeholder="Ava Thompson" 
@@ -105,8 +141,23 @@ export default function SignUp() {
               </label>
 
               <label className="flex flex-col gap-2">
-                <span className="text-[#0b1020] text-sm font-semibold">Password</span>
+                <span className="text-[#0b1020] text-sm font-semibold">Institution Code <span className="text-[#dc2626]">*</span></span>
                 <input 
+                  value={institutionCode}
+                  onChange={(event) => setInstitutionCode(event.target.value)}
+                  className="border border-black/10 rounded-md p-3.5 text-sm text-[#0b1020] outline-none focus:border-[#5a3bd6] focus:ring-3 focus:ring-[#5a3bd6]/20" 
+                  type="text" 
+                  placeholder="e.g., nannaware-901630" 
+                />
+                <p className="text-xs text-[#6b7480]">Ask your institution for the code to enroll in courses</p>
+                {submitted && !institutionCode.trim() ? <span className="text-xs font-medium text-[#dc2626]">Institution code is required.</span> : null}
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-[#0b1020] text-sm font-semibold">Password</span>
+                <input
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   className="border border-black/10 rounded-md p-3.5 text-sm text-[#0b1020] outline-none focus:border-[#5a3bd6] focus:ring-3 focus:ring-[#5a3bd6]/20" 
                   type="password" 
                   placeholder="••••••••••" 
@@ -115,12 +166,16 @@ export default function SignUp() {
 
               <label className="flex flex-col gap-2">
                 <span className="text-[#0b1020] text-sm font-semibold">Confirm Password</span>
-                <input 
+                <input
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
                   className="border border-black/10 rounded-md p-3.5 text-sm text-[#0b1020] outline-none focus:border-[#5a3bd6] focus:ring-3 focus:ring-[#5a3bd6]/20" 
                   type="password" 
                   placeholder="••••••••••" 
                 />
-                <span className="mt-1.5 text-[#1fb27a] text-xs">Passwords match and your account is ready to create.</span>
+                {password && confirmPassword && password === confirmPassword ? (
+                  <span className="mt-1.5 text-[#1fb27a] text-xs">Passwords match and your account is ready to create.</span>
+                ) : null}
               </label>
 
               <label className="flex items-center gap-2.5 text-[#6b7480] text-sm">
@@ -128,9 +183,10 @@ export default function SignUp() {
                 I agree to the Terms &amp; Privacy Policy
               </label>
 
-              <button type="submit" disabled={!canSubmit} className="border-0 rounded-md bg-[#ff8a33] text-white text-base font-bold p-3.5 cursor-pointer mt-1 disabled:cursor-not-allowed disabled:opacity-60">
-                Create account
+              <button type="submit" disabled={!canSubmit || loading} className="border-0 rounded-md bg-[#ff8a33] text-white text-base font-bold p-3.5 cursor-pointer mt-1 disabled:cursor-not-allowed disabled:opacity-60">
+                {loading ? 'Creating account...' : 'Create account'}
               </button>
+              {error ? <p className="text-xs font-medium text-[#dc2626]">{error}</p> : null}
             </form>
             </div>
 

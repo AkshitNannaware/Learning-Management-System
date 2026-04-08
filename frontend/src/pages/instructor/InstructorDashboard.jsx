@@ -1,37 +1,7 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Users, DollarSign, BookOpen, Video, Calendar, FileText, Plus, BarChart3, Wallet, GraduationCap, Check } from 'lucide-react'
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
-const stats = [
-    {
-        id: "sessions",
-        title: "Live Sessions This Week",
-        value: "18",
-        icon: <Video className="h-[18px] w-[18px] text-[#5b3df6]" />,
-        pill: { label: "12 scheduled", type: "success" },
-    },
-    {
-        id: "labs",
-        title: "Practical Lab Modules",
-        value: "9",
-        icon: <GraduationCap className="h-[18px] w-[18px] text-[#5b3df6]" />,
-        pill: { label: "Virtual, live, recorded", type: "secondary" },
-    },
-    {
-        id: "tests",
-        title: "Weekly MCQ Tests",
-        value: "6",
-        icon: <FileText className="h-[18px] w-[18px] text-[#5b3df6]" />,
-        pill: { label: "Results by evening", type: "warning" },
-    },
-    {
-        id: "events",
-        title: "Active School Events",
-        value: "5",
-        icon: <Calendar className="h-[18px] w-[18px] text-[#5b3df6]" />,
-        pill: { label: "Registrations open", type: "success" },
-    },
-];
+import { api } from '../../lib/api'
+import useRealtime from '../../hooks/useRealtime'
 
 const onlineClassItems = [
     {
@@ -319,6 +289,53 @@ function SchoolEventsCard() {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function InstructorDashboard() {
+    const [statsData, setStatsData] = useState({
+        live_sessions_week: 0,
+        lab_modules: 0,
+        weekly_tests: 0,
+        events: 0,
+    })
+    const tenantId = localStorage.getItem('lms_tenant_id')
+
+    useEffect(() => {
+        api('/lms/dashboard/instructor').then(setStatsData).catch(() => {})
+    }, [])
+
+    useRealtime(tenantId ? `tenant:${tenantId}` : '', () => {
+        api('/lms/dashboard/instructor').then(setStatsData).catch(() => {})
+    })
+
+    const stats = useMemo(() => ([
+        {
+            id: "sessions",
+            title: "Live Sessions This Week",
+            value: String(statsData.live_sessions_week ?? 0),
+            icon: <Video className="h-[18px] w-[18px] text-[#5b3df6]" />,
+            pill: { label: "Auto synced", type: "success" },
+        },
+        {
+            id: "labs",
+            title: "Practical Lab Modules",
+            value: String(statsData.lab_modules ?? 0),
+            icon: <GraduationCap className="h-[18px] w-[18px] text-[#5b3df6]" />,
+            pill: { label: "Auto synced", type: "secondary" },
+        },
+        {
+            id: "tests",
+            title: "Weekly MCQ Tests",
+            value: String(statsData.weekly_tests ?? 0),
+            icon: <FileText className="h-[18px] w-[18px] text-[#5b3df6]" />,
+            pill: { label: "Auto synced", type: "warning" },
+        },
+        {
+            id: "events",
+            title: "Active School Events",
+            value: String(statsData.events ?? 0),
+            icon: <Calendar className="h-[18px] w-[18px] text-[#5b3df6]" />,
+            pill: { label: "Auto synced", type: "success" },
+        },
+    ]), [statsData])
+
     return (
         <div className="min-h-full bg-[#F7FAFD]">
             <div className="bg-gradient-to-b flex h-full flex-col gap-[24px] from-[#f6f8fa] p-4 to-[#f7fcff] sm:p-6 lg:p-7">

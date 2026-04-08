@@ -1,16 +1,40 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { api, getDashboardPathByRole, setAuthSession } from '../lib/api'
 
 const DECORATIVE_IMG = 'https://www.figma.com/api/mcp/asset/ce009895-65be-4c55-8e2c-8114666b793d'
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 
 export default function Login() {
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const isEmailValid = EMAIL_REGEX.test(email)
   const canSubmit = isEmailValid && password.trim()
+
+  async function onSubmit(event) {
+    event.preventDefault()
+    setSubmitted(true)
+    setError('')
+    if (!canSubmit) return
+    try {
+      setLoading(true)
+      const data = await api('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      })
+      setAuthSession(data.access_token, data.role, data.tenant_id)
+      navigate(getDashboardPathByRole(data.role))
+    } catch (err) {
+      setError(err.message || 'Login failed')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden overflow-y-auto bg-gradient-to-br from-[#1c113b] via-[#3a2286] to-[#5d3df0] p-4 font-[Inter,_'Segoe_UI',_Roboto,_sans-serif] sm:p-6 lg:p-8">
@@ -66,7 +90,7 @@ export default function Login() {
             <p className="mt-2 text-[#6b7480] text-sm">Enter your details to access your account.</p>
 
             <div className="mt-6 flex-1 overflow-y-auto pr-1">
-            <form className="flex flex-col gap-4" onSubmit={(event) => { event.preventDefault(); setSubmitted(true) }}>
+            <form className="flex flex-col gap-4" onSubmit={onSubmit}>
               <label className="flex flex-col gap-2">
                 <span className="text-[#0b1020] text-sm font-semibold">Email Address</span>
                 <input 
@@ -99,9 +123,10 @@ export default function Login() {
                 </Link>
               </div>
 
-              <button type="submit" disabled={!canSubmit} className="border-0 rounded-md bg-[#ff8a33] text-white text-base font-bold p-3.5 cursor-pointer mt-1 disabled:cursor-not-allowed disabled:opacity-60">
-                Login to your account
+              <button type="submit" disabled={!canSubmit || loading} className="border-0 rounded-md bg-[#ff8a33] text-white text-base font-bold p-3.5 cursor-pointer mt-1 disabled:cursor-not-allowed disabled:opacity-60">
+                {loading ? 'Logging in...' : 'Login to your account'}
               </button>
+              {error ? <p className="text-xs font-medium text-[#dc2626]">{error}</p> : null}
             </form>
             </div>
 

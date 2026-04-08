@@ -1,46 +1,38 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Upload, PlusCircle, FileText, BookOpen, X } from 'lucide-react'
-
-const initialResources = [
-	{
-		id: 1,
-		title: 'Science Chapter 4 Notes',
-		grade: 'Class 9',
-		format: 'PDF',
-		uploadedBy: 'Rahul Mehta',
-		uploadedOn: 'Today',
-	},
-	{
-		id: 2,
-		title: 'Math Practice Worksheet Set 2',
-		grade: 'Class 10',
-		format: 'DOCX',
-		uploadedBy: 'Rahul Mehta',
-		uploadedOn: 'Yesterday',
-	},
-]
+import { api } from '../../lib/api'
+import useRealtime from '../../hooks/useRealtime'
 
 export default function AdminELibrary() {
-	const [resources, setResources] = useState(initialResources)
+	const [resources, setResources] = useState([])
 	const [showUploadModal, setShowUploadModal] = useState(false)
 	const [title, setTitle] = useState('')
 	const [grade, setGrade] = useState('Class 9')
 	const [format, setFormat] = useState('PDF')
+	const tenantId = localStorage.getItem('lms_tenant_id')
+	const knownGrades = Array.from(new Set(resources.map((r) => r.grade).filter(Boolean)))
+	const knownFormats = Array.from(new Set(resources.map((r) => r.format).filter(Boolean)))
 
-	const handleUpload = () => {
+	const loadResources = () =>
+		api('/lms/library-resources')
+			.then((res) => setResources(res.items || []))
+			.catch(() => {})
+
+	useEffect(() => {
+		loadResources()
+	}, [])
+
+	useRealtime(tenantId ? `tenant:${tenantId}` : '', (payload) => {
+		if (payload?.type === 'library_resource.created') loadResources()
+	})
+
+	const handleUpload = async () => {
 		if (!title.trim()) return
-
-		setResources([
-			{
-				id: Date.now(),
-				title: title.trim(),
-				grade,
-				format,
-				uploadedBy: 'Rahul Mehta',
-				uploadedOn: 'Just now',
-			},
-			...resources,
-		])
+		await api('/lms/library-resources', {
+			method: 'POST',
+			body: JSON.stringify({ title: title.trim(), grade, format }),
+		}).catch(() => {})
+		loadResources()
 
 		setTitle('')
 		setGrade('Class 9')
@@ -77,8 +69,8 @@ export default function AdminELibrary() {
 				<p className="mt-1 text-[13px] text-[#94a3b8]">Latest files available for students in E-Library.</p>
 
 				<div className="mt-4 space-y-3">
-					{resources.map((item) => (
-						<div key={item.id} className="flex flex-col gap-3 rounded-[6px] border border-black/[0.08] p-4 sm:flex-row sm:items-center sm:justify-between">
+					{resources.map((item, idx) => (
+						<div key={item._id || idx} className="flex flex-col gap-3 rounded-[6px] border border-black/[0.08] p-4 sm:flex-row sm:items-center sm:justify-between">
 							<div className="flex items-start gap-3">
 								<div className="inline-flex h-10 w-10 items-center justify-center rounded-[6px] bg-[#f1f5f9]">
 									<FileText className="h-5 w-5 text-[#5b3df6]" />
@@ -86,7 +78,7 @@ export default function AdminELibrary() {
 								<div>
 									<p className="text-[14px] font-semibold text-[#0f172a]">{item.title}</p>
 									<p className="mt-1 text-[12px] text-[#94a3b8]">
-										{item.grade} • {item.format} • Uploaded by {item.uploadedBy} • {item.uploadedOn}
+										{item.grade} • {item.format} • Uploaded {item.created_at ? new Date(item.created_at).toLocaleString() : ''}
 									</p>
 								</div>
 							</div>
@@ -127,10 +119,9 @@ export default function AdminELibrary() {
 										onChange={(e) => setGrade(e.target.value)}
 										className="h-10 w-full rounded-[6px] border border-black/[0.08] px-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]"
 									>
-										<option>Class 9</option>
-										<option>Class 10</option>
-										<option>Class 11</option>
-										<option>Class 12</option>
+										{(knownGrades.length ? knownGrades : ['Class 9', 'Class 10', 'Class 11', 'Class 12']).map((g) => (
+											<option key={g}>{g}</option>
+										))}
 									</select>
 								</div>
 								<div>
@@ -140,17 +131,16 @@ export default function AdminELibrary() {
 										onChange={(e) => setFormat(e.target.value)}
 										className="h-10 w-full rounded-[6px] border border-black/[0.08] px-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]"
 									>
-										<option>PDF</option>
-										<option>DOCX</option>
-										<option>PPT</option>
-										<option>MP4</option>
+										{(knownFormats.length ? knownFormats : ['PDF', 'DOCX', 'PPT', 'MP4']).map((f) => (
+											<option key={f}>{f}</option>
+										))}
 									</select>
 								</div>
 							</div>
 
-							<label className="flex cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-dashed border-[#94a3b8] bg-[#f8fafc] p-4 text-[13px] font-medium text-[#64748b]">
+							<label className="flex items-center justify-center gap-2 rounded-[6px] border border-[#e2e8f0] bg-[#f8fafc] p-4 text-[13px] font-medium text-[#64748b]">
 								<Upload className="h-4 w-4" />
-								Choose file (demo UI)
+								Resource metadata publish
 							</label>
 						</div>
 

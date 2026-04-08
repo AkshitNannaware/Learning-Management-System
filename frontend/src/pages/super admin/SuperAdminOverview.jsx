@@ -1,38 +1,8 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Search, Download, Calendar, Users, DollarSign, BookOpen, FileText, Plus, Upload, BarChart3, Wallet, GraduationCap, Video, Check } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
 import { Modal } from '../../components/superadmin/Ui'
-
-const revenueData = [
-  { month: 'Jan', value: 280000 },
-  { month: 'Feb', value: 350000 },
-  { month: 'Mar', value: 420000 },
-  { month: 'Apr', value: 480000 },
-  { month: 'May', value: 550000 },
-  { month: 'Jun', value: 620000 },
-  { month: 'Jul', value: 700000 },
-]
-
-const paymentLogs = [
-  { id: 1, name: 'Bright Minds Academy', provider: 'Razorpay', time: '08:47 AM', amount: 24000, status: 'success' },
-  { id: 2, name: 'LearnNest Studio', provider: 'Stripe', time: '10:14 AM', amount: 8200, status: 'success' },
-  { id: 3, name: 'SkillSpring Kids', provider: 'Razorpay', time: '11:28 AM', amount: 0, status: 'pending' },
-  { id: 4, name: 'FuturePrep Center', provider: 'Stripe', time: '12:42 PM', amount: 1240, status: 'success' },
-]
-
-const tenants = [
-  { id: 1, name: 'Bright Minds Academy', plan: 'Pro Plan', users: 4230, courses: 142, status: 'active' },
-  { id: 2, name: 'FuturePrep Center', plan: 'Enterprise', users: 8380, courses: 436, status: 'active' },
-  { id: 3, name: 'LearnNest Studio', plan: 'Basic Plan', users: 880, courses: 54, status: 'review' },
-  { id: 4, name: 'SkillSpring Kids', plan: 'Pro Plan', users: 2340, courses: 128, status: 'inactive' },
-]
-
-const usersList = [
-  { id: 1, name: 'Daniel Ross', tenant: 'Bright Minds Academy', role: 'Instructor', avatar: 'DR', status: 'block' },
-  { id: 2, name: 'Nisha Patel', tenant: 'LearnNest Studio', role: 'Student', avatar: 'NP', status: 'active' },
-  { id: 3, name: 'Carlos Dega', tenant: 'FuturePrep Center', role: 'Admin', avatar: 'CD', status: 'unblock' },
-  { id: 4, name: 'Amara Brown', tenant: 'SkillSpring Kids', role: 'Student', avatar: 'AB', status: 'blocked' },
-]
+import { api } from '../../lib/api'
 
 function Stat({ title, value, meta, icon }) {
   return (
@@ -86,6 +56,29 @@ function Pill({ children, variant }) {
 export default function SuperAdminOverview() {
   const [showAddClient, setShowAddClient] = useState(false)
   const [showPaymentLogs, setShowPaymentLogs] = useState(false)
+  const [dashboard, setDashboard] = useState({})
+  const [payments, setPayments] = useState([])
+  const [tenants, setTenants] = useState([])
+  const [usersList, setUsersList] = useState([])
+
+  useEffect(() => {
+    Promise.all([
+      api('/lms/dashboard/super-admin').catch(() => ({})),
+      api('/lms/payments?limit=7').catch(() => ({ items: [] })),
+      api('/lms/tenants?limit=4').catch(() => ({ items: [] })),
+      api('/lms/users?limit=4').catch(() => ({ items: [] })),
+    ]).then(([d, p, t, u]) => {
+      setDashboard(d || {})
+      setPayments(p.items || [])
+      setTenants(t.items || [])
+      setUsersList(u.items || [])
+    })
+  }, [])
+
+  const revenueData = useMemo(
+    () => (dashboard.revenue_by_month || []).map((x) => ({ month: x.month, value: x.amount })),
+    [dashboard],
+  )
 
   return (
     <div className="min-h-full bg-[#F7FAFD]">
@@ -163,25 +156,25 @@ export default function SuperAdminOverview() {
         <div className="gap-x-[16px] gap-y-[16px] grid grid-cols-[repeat(4,minmax(0,1fr))]">
           <Stat 
             title="Total Tenants" 
-            value="128" 
+            value={String(dashboard.total_tenants || 0)} 
             meta="+12 this month" 
             icon={<Users className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <Stat 
             title="Total Users" 
-            value="54.8K" 
+            value={String(dashboard.total_users || 0)} 
             meta="+5.4% growth" 
             icon={<Users className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <Stat 
             title="Total Revenue" 
-            value="₹18.4L" 
+            value={`₹${dashboard.total_revenue || 0}`} 
             meta="+2.7L monthly" 
             icon={<DollarSign className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <Stat 
             title="Active Courses" 
-            value="2,946" 
+            value={String(dashboard.total_courses || 0)} 
             meta="Across all tenants" 
             icon={<BookOpen className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
@@ -219,17 +212,17 @@ export default function SuperAdminOverview() {
               <div className="text-[13px] text-[#94a3b8]">Latest platform transactions</div>
             </div>
             <div className="flex flex-col w-full gap-[16px]">
-              {paymentLogs.map((log) => (
-                <div key={log.id} className="flex items-center justify-between pb-[14px] pt-[15px] border-t border-black/[0.08] first:border-t-0 first:pt-0">
+              {payments.map((log, idx) => (
+                <div key={log._id || idx} className="flex items-center justify-between pb-[14px] pt-[15px] border-t border-black/[0.08] first:border-t-0 first:pt-0">
                   <div>
-                    <div className="font-semibold text-[14px] text-[#0f172a]">{log.name}</div>
+                    <div className="font-semibold text-[14px] text-[#0f172a]">{log.user_id || 'Payment'}</div>
                     <div className="text-[13px] text-[#94a3b8] mt-[4px]">
-                      {log.provider} - {log.time}
+                      Razorpay - {log.created_at ? new Date(log.created_at).toLocaleTimeString() : '-'}
                     </div>
                   </div>
-                  {log.status === 'success' ? (
+                  {log.status === 'captured' ? (
                     <div className="bg-[#2dd4bf] h-[28px] rounded-[12px] flex items-center px-[10px]">
-                      <div className="text-[12px] font-medium text-[#023b33]">₹{log.amount.toLocaleString()}</div>
+                      <div className="text-[12px] font-medium text-[#023b33]">₹{Number(log.amount || 0).toLocaleString()}</div>
                     </div>
                   ) : (
                     <div className="bg-[#ffd966] h-[28px] rounded-[12px] flex items-center px-[10px]">
@@ -262,24 +255,21 @@ export default function SuperAdminOverview() {
 
             <div className="flex flex-col w-full">
               {tenants.map((tenant, idx) => (
-                <div key={tenant.id} className={`${idx === 0 ? '' : 'border-t border-black/[0.08]'} pb-[14px] pt-[15px]`}>
+                <div key={tenant._id || idx} className={`${idx === 0 ? '' : 'border-t border-black/[0.08]'} pb-[14px] pt-[15px]`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-[14px] text-[#0f172a]">{tenant.name}</div>
                       <div className="text-[13px] text-[#94a3b8] mt-[4px]">
-                        {tenant.plan} - {tenant.users.toLocaleString()} users - {tenant.courses} courses
+                        {tenant.name} tenant
                       </div>
                     </div>
                     <div className="flex items-center gap-[12px]">
-                      <Pill variant={
-                        tenant.status === 'active' ? 'active' : 
-                        tenant.status === 'review' ? 'review' : 'inactive'
-                      }>
-                        {tenant.status === 'active' ? 'Active' : tenant.status === 'review' ? 'Review' : 'Inactive'}
+                      <Pill variant={tenant.is_active ? 'active' : 'inactive'}>
+                        {tenant.is_active ? 'Active' : 'Inactive'}
                       </Pill>
                       <div className="border border-black/[0.08] flex h-[40px] items-center justify-center rounded-[6px] px-[17px]">
                         <div className="text-[14px] font-medium text-[#0f172a] text-center">
-                          {tenant.status === 'active' ? 'Edit' : tenant.status === 'review' ? 'Assign Plan' : 'Activate'}
+                          {tenant.is_active ? 'Edit' : 'Activate'}
                         </div>
                       </div>
                     </div>
@@ -302,29 +292,28 @@ export default function SuperAdminOverview() {
 
             <div className="flex flex-col w-full">
               {usersList.map((user, idx) => (
-                <div key={user.id} className={`${idx === 0 ? '' : 'border-t border-black/[0.08]'} pb-[14px] pt-[15px]`}>
+                <div key={user._id || idx} className={`${idx === 0 ? '' : 'border-t border-black/[0.08]'} pb-[14px] pt-[15px]`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-[12px]">
                       <div className="bg-[#e8f5ff] flex h-[42px] w-[42px] items-center justify-center rounded-[6px] text-[14px] font-semibold text-[#5b3df6]">
-                        {user.avatar}
+                        {(user.full_name || user.email || 'U').slice(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <div className="font-semibold text-[14px] text-[#0f172a]">{user.name}</div>
+                        <div className="font-semibold text-[14px] text-[#0f172a]">{user.full_name || user.email}</div>
                         <div className="text-[13px] text-[#94a3b8] mt-[4px]">
-                          {user.tenant} - {user.role}
+                          {user.role}
                         </div>
                       </div>
                     </div>
                     <button
                       className={`border border-black/[0.08] flex h-[40px] items-center justify-center rounded-[6px] px-[17px] ${
-                        user.status === 'active' ? 'bg-[#2dd4bf] border-none' : 
-                        user.status === 'blocked' ? 'bg-[#f1f5f9]' : 'bg-white'
+                        user.is_active ? 'bg-[#2dd4bf] border-none' : 'bg-[#f1f5f9]'
                       }`}
                     >
                       <div className={`text-[14px] font-medium ${
-                        user.status === 'active' ? 'text-[#023b33]' : 'text-[#0f172a]'
+                        user.is_active ? 'text-[#023b33]' : 'text-[#0f172a]'
                       }`}>
-                        {user.status === 'active' ? 'Active' : user.status === 'blocked' ? 'Blocked' : user.status === 'block' ? 'Block' : 'Unblock'}
+                        {user.is_active ? 'Active' : 'Blocked'}
                       </div>
                     </button>
                   </div>
@@ -432,14 +421,14 @@ export default function SuperAdminOverview() {
         maxWidth="max-w-2xl"
       >
         <div className="space-y-[12px]">
-          {paymentLogs.map((log) => (
-            <div key={log.id} className="flex items-center justify-between rounded-[6px] border border-black/[0.08] p-[16px]">
+          {payments.map((log, idx) => (
+            <div key={log._id || idx} className="flex items-center justify-between rounded-[6px] border border-black/[0.08] p-[16px]">
               <div>
-                <div className="font-semibold text-[14px] text-[#0f172a]">{log.name}</div>
-                <div className="text-[13px] text-[#94a3b8] mt-[4px]">{log.provider}</div>
+                <div className="font-semibold text-[14px] text-[#0f172a]">{log.user_id || 'Payment'}</div>
+                <div className="text-[13px] text-[#94a3b8] mt-[4px]">Razorpay</div>
               </div>
               <div className="font-medium text-[14px] text-[#0f172a]">
-                {log.status === 'success' ? `₹${log.amount}` : 'Pending'}
+                {log.status === 'captured' ? `₹${log.amount}` : 'Pending'}
               </div>
             </div>
           ))}

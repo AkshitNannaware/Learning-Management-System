@@ -185,7 +185,7 @@
 
 
 
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { DollarSign, TrendingUp, Download, Calendar, Upload, BarChart3, Wallet, Users, BookOpen } from 'lucide-react'
 import {
   BarChart,
@@ -199,6 +199,7 @@ import {
   Tooltip,
   Legend,
 } from 'recharts'
+import { api } from '../../lib/api'
 
 const monthlyRevenue = [
   { month: 'Jan', revenue: 280000, expenses: 120000, profit: 160000 },
@@ -273,6 +274,26 @@ function Pill({ children, variant }) {
 }
 
 export default function SuperAdminRevenue() {
+  const [dashboard, setDashboard] = useState({ revenue: 0, total_users: 0, active_courses: 0, active_subscriptions: 0 })
+  const [payments, setPayments] = useState([])
+
+  useEffect(() => {
+    Promise.all([api('/lms/dashboard/super-admin').catch(() => ({})), api('/lms/payments').catch(() => ({ items: [] }))]).then(([d, p]) => {
+      setDashboard(d || {})
+      setPayments(p.items || p || [])
+    })
+  }, [])
+
+  const thisMonthRevenue = useMemo(() => {
+    const now = new Date()
+    return payments
+      .filter((p) => {
+        const dt = new Date(p.created_at || 0)
+        return p.status === 'captured' && dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear()
+      })
+      .reduce((acc, cur) => acc + Number(cur.amount || 0), 0)
+  }, [payments])
+
   return (
     <div className="min-h-full bg-[#F7FAFD]">
       {/* Header */}
@@ -342,28 +363,28 @@ export default function SuperAdminRevenue() {
         <div className="gap-x-[16px] gap-y-[16px] grid grid-cols-[repeat(4,minmax(0,1fr))]">
           <StatCard 
             title="Total Revenue" 
-            value="₹18.4L" 
+            value={`₹${Number(dashboard.revenue || 0).toLocaleString('en-IN')}`} 
             trend={true}
             trendValue="↑ 12.8% vs last month"
             icon={<DollarSign className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="This Month" 
-            value="₹7.0L" 
+            value={`₹${thisMonthRevenue.toLocaleString('en-IN')}`} 
             trend={true}
             trendValue="↑ 8.2% vs last month"
             icon={<TrendingUp className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="Monthly Average" 
-            value="₹2.6L" 
+            value={`₹${Math.round(Number(dashboard.revenue || 0) / 12).toLocaleString('en-IN')}`} 
             meta="Average revenue per month"
             icon={<Wallet className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="Success Rate" 
-            value="98.7%" 
-            meta="Healthy payment success rate"
+            value={`${payments.length ? Math.round((payments.filter((p) => p.status === 'captured').length / payments.length) * 100) : 0}%`} 
+            meta="Payment success rate"
             icon={<Users className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
         </div>

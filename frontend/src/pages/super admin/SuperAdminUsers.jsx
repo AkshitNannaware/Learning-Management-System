@@ -151,16 +151,10 @@
 
 
 import React from 'react'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Search, Shield, ShieldOff, Users, Download, Calendar, Plus, Upload, Eye, MoreVertical } from 'lucide-react'
 import { Modal } from '../../components/superadmin/Ui'
-
-const userList = [
-  { id: 1, name: 'Daniel Ross', tenant: 'Bright Minds Academy', role: 'Instructor', status: 'active', email: 'daniel@example.com', lastActive: '2 hours ago' },
-  { id: 2, name: 'Nisha Patel', tenant: 'LearnNest Studio', role: 'Student', status: 'active', email: 'nisha@example.com', lastActive: '5 min ago' },
-  { id: 3, name: 'Carlos Dega', tenant: 'FuturePrep Center', role: 'Admin', status: 'active', email: 'carlos@example.com', lastActive: '1 day ago' },
-  { id: 4, name: 'Amara Brown', tenant: 'SkillSpring Kids', role: 'Student', status: 'blocked', email: 'amara@example.com', lastActive: '2 weeks ago' },
-]
+import { api } from '../../lib/api'
 
 function StatCard({ title, value, meta, icon }) {
   return (
@@ -201,12 +195,39 @@ function Pill({ children, variant }) {
 export default function SuperAdminUsers() {
   const [query, setQuery] = useState('')
   const [selectedUser, setSelectedUser] = useState(null)
-  const [users, setUsers] = useState(userList)
-  const rows = users.filter((user) => 
+  const [users, setUsers] = useState([])
+  const [tenantMap, setTenantMap] = useState({})
+  const [page, setPage] = useState(0)
+  const limit = 20
+  const [total, setTotal] = useState(0)
+
+  useEffect(() => {
+    Promise.all([
+      api(`/lms/users?skip=${page * limit}&limit=${limit}&q=${encodeURIComponent(query)}`).catch(() => ({ items: [], total: 0 })),
+      api('/lms/tenants').catch(() => ({ items: [] })),
+    ]).then(([userRes, tenantRes]) => {
+      const userRows = userRes.items || []
+      setTotal(userRes.total || 0)
+      setUsers(userRows.map((u) => ({
+        id: u._id,
+        name: u.full_name || 'User',
+        tenant: u.tenant_id || '-',
+        role: (u.role || '').replace('_', ' '),
+        status: u.is_active ? 'active' : 'blocked',
+        email: u.email || '-',
+        lastActive: u.created_at ? new Date(u.created_at).toLocaleDateString() : '-',
+      })))
+      const map = {}
+      ;((tenantRes.items || tenantRes) || []).forEach((t) => { map[t._id] = t.name })
+      setTenantMap(map)
+    })
+  }, [page, query])
+
+  const rows = useMemo(() => users.filter((user) =>
     user.name.toLowerCase().includes(query.toLowerCase()) ||
     user.email.toLowerCase().includes(query.toLowerCase()) ||
     user.tenant.toLowerCase().includes(query.toLowerCase())
-  )
+  ), [users, query])
 
   const toggleStatus = (id) => {
     setUsers((prev) =>
@@ -299,26 +320,26 @@ export default function SuperAdminUsers() {
         <div className="gap-x-[16px] gap-y-[16px] grid grid-cols-[repeat(4,minmax(0,1fr))]">
           <StatCard 
             title="Total Users" 
-            value="54,832" 
-            meta="+5.4% growth" 
+            value={String(users.length)} 
+            meta="Live total" 
             icon={<Users className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="Active Users" 
-            value="52,156" 
-            meta="95.1% of total" 
+            value={String(users.filter((u) => u.status === 'active').length)} 
+            meta="Currently active" 
             icon={<Users className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="Blocked Users" 
-            value="2,676" 
-            meta="4.9% of total" 
+            value={String(users.filter((u) => u.status !== 'active').length)} 
+            meta="Blocked/inactive" 
             icon={<ShieldOff className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
             title="New This Month" 
-            value="3,482" 
-            meta="Above target" 
+            value={String(users.length)} 
+            meta="Synced users" 
             icon={<Users className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
         </div>
@@ -376,7 +397,7 @@ export default function SuperAdminUsers() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-[14px] text-[#0f172a]">{user.tenant}</td>
+                    <td className="px-4 py-4 text-[14px] text-[#0f172a]">{tenantMap[user.tenant] || user.tenant}</td>
                     <td className="px-4 py-4">
                       <span className="text-[14px] text-[#0f172a]">{user.role}</span>
                     </td>
@@ -418,6 +439,13 @@ export default function SuperAdminUsers() {
               <div className="text-[14px] text-[#94a3b8]">No users found matching your search.</div>
             </div>
           )}
+          <div className="w-full flex items-center justify-between pt-2">
+            <span className="text-xs text-[#94a3b8]">{Math.min(total, page * limit + 1)}-{Math.min(total, (page + 1) * limit)} of {total}</span>
+            <div className="flex gap-2">
+              <button onClick={() => setPage((p) => Math.max(0, p - 1))} className="border border-black/[0.08] rounded-[6px] px-3 py-1 text-xs">Prev</button>
+              <button onClick={() => setPage((p) => ((p + 1) * limit < total ? p + 1 : p))} className="border border-black/[0.08] rounded-[6px] px-3 py-1 text-xs">Next</button>
+            </div>
+          </div>
         </div>
 
         {/* User Activity Summary */}
@@ -511,7 +539,7 @@ export default function SuperAdminUsers() {
             <div className="grid grid-cols-2 gap-[12px]">
               <div>
                 <div className="text-[12px] text-[#94a3b8] mb-[4px]">Tenant</div>
-                <div className="text-[14px] font-medium text-[#0f172a]">{selectedUser.tenant}</div>
+                <div className="text-[14px] font-medium text-[#0f172a]">{tenantMap[selectedUser.tenant] || selectedUser.tenant}</div>
               </div>
               <div>
                 <div className="text-[12px] text-[#94a3b8] mb-[4px]">Role</div>

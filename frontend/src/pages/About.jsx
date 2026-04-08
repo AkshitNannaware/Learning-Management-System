@@ -5,7 +5,7 @@ export default (props) => {
   return (
     <div className="flex flex-col bg-white">
       <div className="self-stretch bg-[#F5F7FA] pb-[13px]">
-        <div className="flex flex-col items-start self-stretch pb-[73px] mb-[3px]"
+        <div className="flex flex-col items-start self-stretch pb-[73px] mb-[3px] pt-[20px]"
 
           style={{
 
@@ -105,7 +105,7 @@ export default (props) => {
               </div>
             </div>
           </div>
-        </div>remove 
+        </div>
         <div className="flex items-center self-stretch bg-white py-[88px] px-[152px] mb-[1px] gap-9">
           <div className="flex-1 bg-white pt-10 px-10 rounded-lg"
 

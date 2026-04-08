@@ -230,8 +230,10 @@
 
 
 
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { PlayCircle, BookOpen, Video, Trophy, Users, BookOpen as BookIcon, GraduationCap, Wallet, BarChart3, Upload, Plus } from 'lucide-react'
+import { api } from '../../lib/api'
+import useRealtime from '../../hooks/useRealtime'
 
 function Pill({ children, variant }) {
   const style =
@@ -247,13 +249,30 @@ function Pill({ children, variant }) {
 }
 
 export default function StudentDashboard() {
-  const stats = [
-    ['Courses in progress', '7', '3 due soon'],
-    ['Live classes this week', '4', '2 reminders now'],
-    ['Quiz attempts', '18', '5 pending review'],
-    ['Certificates earned', '5', '2 new this month'],
-    ['Learning streak', '12', 'days active'],
-  ]
+  const [statsData, setStatsData] = useState({
+    courses_in_progress: 0,
+    live_classes_week: 0,
+    quiz_attempts: 0,
+    certificates_earned: 0,
+    unread_notifications: 0,
+  })
+  const tenantId = localStorage.getItem('lms_tenant_id')
+
+  useEffect(() => {
+    api('/lms/dashboard/student').then(setStatsData).catch(() => {})
+  }, [])
+
+  useRealtime(tenantId ? `tenant:${tenantId}` : '', () => {
+    api('/lms/dashboard/student').then(setStatsData).catch(() => {})
+  })
+
+  const stats = useMemo(() => ([
+    ['Courses in progress', String(statsData.courses_in_progress ?? 0), 'From enrollments'],
+    ['Live classes this week', String(statsData.live_classes_week ?? 0), 'Upcoming'],
+    ['Quiz attempts', String(statsData.quiz_attempts ?? 0), 'Synced'],
+    ['Certificates earned', String(statsData.certificates_earned ?? 0), 'Achievements'],
+    ['Unread alerts', String(statsData.unread_notifications ?? 0), 'Notifications'],
+  ]), [statsData])
 
   return (
     <div className="min-h-full bg-[#F7FAFD]">

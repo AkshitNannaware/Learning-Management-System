@@ -1,16 +1,43 @@
 import React, { useState } from "react";
 
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const PHONE_REGEX = /^\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}$/;
+
 export default (props) => {
 
   const [input1, onChangeInput1] = useState('');
-
   const [input2, onChangeInput2] = useState('');
-
   const [input3, onChangeInput3] = useState('');
-
   const [input4, onChangeInput4] = useState('');
-
   const [input5, onChangeInput5] = useState('');
+  const [message, setMessage] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  // Validation checks
+  const isFirstNameValid = input1.trim().length > 0;
+  const isLastNameValid = input2.trim().length > 0;
+  const isEmailValid = EMAIL_REGEX.test(input3);
+  const isPhoneValid = PHONE_REGEX.test(input4);
+  const isCompanyValid = input5.trim().length > 0;
+  const isMessageValid = message.trim().length > 0;
+
+  const isFormValid = isFirstNameValid && isLastNameValid && isEmailValid && isPhoneValid && isCompanyValid && isMessageValid;
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+    if (isFormValid) {
+      console.log('Contact form submitted:', {
+        firstName: input1,
+        lastName: input2,
+        email: input3,
+        phone: input4,
+        company: input5,
+        message
+      });
+      alert('Form submitted successfully!');
+    }
+  };
 
   return (
     <div className="flex flex-col bg-white">
