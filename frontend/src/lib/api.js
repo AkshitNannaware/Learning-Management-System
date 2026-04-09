@@ -1,5 +1,6 @@
 const DEFAULT_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
-const FALLBACK_API_BASES = ['http://localhost:8000/api/v1', 'http://localhost:8001/api/v1']
+// const FALLBACK_API_BASES = ['http://localhost:8000/api/v1', 'http://localhost:8001/api/v1']
+const FALLBACK_API_BASES = []
 let runtimeApiBase = localStorage.getItem('lms_api_base') || DEFAULT_API_BASE
 
 function deriveWsBaseFromApi(apiBase) {
@@ -18,7 +19,12 @@ function getWsBase() {
 }
 
 export function getToken() {
-  return localStorage.getItem('lms_token') || ''
+  return (
+    localStorage.getItem('lms_token') ||
+    localStorage.getItem('token') ||
+    localStorage.getItem('access_token') ||
+    ''
+  )
 }
 
 export function setAuthSession(token, role, tenantId) {
@@ -53,6 +59,12 @@ export async function api(path, options = {}) {
       runtimeApiBase = base
       localStorage.setItem('lms_api_base', base)
       if (!response.ok) {
+        if (response.status === 401) {
+          // Keep all auth keys in sync when session expires/invalidates.
+          localStorage.removeItem('lms_token')
+          localStorage.removeItem('token')
+          localStorage.removeItem('access_token')
+        }
         throw new Error(data.detail || 'Request failed')
       }
       return data
