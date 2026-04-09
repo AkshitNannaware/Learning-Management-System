@@ -99,6 +99,7 @@ class LibraryResourceIn(BaseModel):
     grade: str
     format: str
     file_url: str = ""
+    image_url: str = ""
 
 
 class ReportGenerateIn(BaseModel):

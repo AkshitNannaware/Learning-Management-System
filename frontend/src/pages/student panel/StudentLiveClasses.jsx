@@ -126,7 +126,7 @@ function EnrollmentModal({ session, plans, me, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-5" onClick={onClose}>
-      <div className="w-full max-w-[500px] overflow-hidden rounded-[16px] bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+      <div className="flex max-h-[92vh] w-full max-w-[560px] flex-col overflow-hidden rounded-[16px] bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
 
         {step === 'success' ? (
           <div className="flex flex-col items-center p-8 text-center">
@@ -166,7 +166,7 @@ function EnrollmentModal({ session, plans, me, onClose, onSuccess }) {
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="flex-1 space-y-4 overflow-y-auto p-5">
               {/* Session Info */}
               <div className="rounded-[10px] bg-[#f8fafc] border border-black/[0.07] p-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -247,9 +247,11 @@ function EnrollmentModal({ session, plans, me, onClose, onSuccess }) {
                   <CreditCard className="h-4 w-4" /> Razorpay secure checkout
                 </div>
               </div>
+            </div>
 
-              {/* Price + Pay Button */}
-              <div className="flex items-center justify-between rounded-[10px] bg-[#f7f4ff] border border-[#5b3df6]/20 px-4 py-3">
+            {/* Price + Pay Button */}
+            <div className="border-t border-black/[0.08] bg-white p-4 sm:p-5">
+              <div className="flex flex-col gap-3 rounded-[10px] border border-[#5b3df6]/20 bg-[#f7f4ff] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-[11px] text-[#64748b]">Total amount</p>
                   <p className="text-[20px] font-bold text-[#5b3df6]">{payableLabel}</p>
@@ -257,7 +259,7 @@ function EnrollmentModal({ session, plans, me, onClose, onSuccess }) {
                 <button
                   onClick={handlePay}
                   disabled={loading || (plans.length > 0 && !selectedPlan)}
-                  className="h-11 rounded-[10px] bg-[#5b3df6] px-6 text-[13px] font-semibold text-white hover:bg-[#4a2ed8] transition-colors disabled:opacity-70 flex items-center gap-2"
+                  className="h-11 rounded-[10px] bg-[#5b3df6] px-6 text-[13px] font-semibold text-white hover:bg-[#4a2ed8] transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <><span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" /> Processing...</>
@@ -356,7 +358,14 @@ function ClassDetailModal({ session, onClose }) {
                 <div className="flex items-center gap-2 rounded-[10px] border border-[#e2e8f0] bg-[#f8fafc] p-3">
                   <Link2 className="h-4 w-4 text-[#5b3df6] shrink-0" />
                   <span className="text-[12px] text-[#5b3df6] truncate flex-1">{session.link}</span>
-                  <button className="ml-auto shrink-0 rounded-[6px] bg-[#5b3df6] px-3 py-1 text-[11px] font-semibold text-white">Open</button>
+                  <button
+                    onClick={() => {
+                      window.location.href = session.link
+                    }}
+                    className="ml-auto shrink-0 rounded-[6px] bg-[#5b3df6] px-3 py-1 text-[11px] font-semibold text-white"
+                  >
+                    Open class
+                  </button>
                 </div>
               )}
               {/* Join Button */}

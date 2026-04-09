@@ -60,7 +60,7 @@ export default function SuperAdminLayout() {
           </div>
           <div>
             <div className="text-xl font-bold leading-[22px]">LMS</div>
-            <div className="text-[13px] text-[#94a3b8]">Super Admin</div>
+            <div className="text-[13px] text-[#94a3b8]">Developer Control</div>
           </div>
         </div>
 

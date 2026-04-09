@@ -355,11 +355,89 @@ function EditCourseModal({ course, onClose, onSave }) {
   )
 }
 
+function ViewCourseModal({ course, onClose }) {
+  const createdAt = course?.created_at || course?.createdAt
+  const createdLabel = createdAt ? new Date(createdAt).toLocaleDateString() : 'Invalid Date'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-[calc(100%-1.5rem)] sm:w-[640px] max-h-[90vh] overflow-y-auto bg-white rounded-[16px] shadow-xl">
+        <div className="flex items-center justify-between p-5 border-b border-black/[0.08]">
+          <h2 className="text-[18px] font-bold text-[#0f172a]">Course Details</h2>
+          <button onClick={onClose} className="text-[#94a3b8] hover:text-[#0f172a]"><X className="h-5 w-5" /></button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="h-52 overflow-hidden rounded-[10px] bg-gradient-to-br from-[#5b3df6]/20 to-[#ede9ff]">
+            {course?.youtube_url ? (
+              <img
+                src={getYoutubeVideoId(course.youtube_url) ? `https://img.youtube.com/vi/${getYoutubeVideoId(course.youtube_url)}/mqdefault.jpg` : ''}
+                alt={course?.title || 'Course'}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center">
+                <Video className="h-12 w-12 text-[#5b3df6] opacity-50" />
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <h3 className="text-[20px] font-bold text-[#0f172a]">{course?.title || 'Untitled course'}</h3>
+            <Pill variant={course?.course_type === 'paid' ? 'published' : course?.course_type === 'free' ? 'draft' : 'review'}>
+              {course?.course_type || 'draft'}
+            </Pill>
+          </div>
+
+          <p className="text-[13px] text-[#64748b]">{course?.description || 'No description available.'}</p>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-[8px] border border-black/[0.08] p-3">
+              <p className="text-[11px] text-[#94a3b8]">Price</p>
+              <p className="text-[14px] font-semibold text-[#0f172a]">₹{Number(course?.price || 0)}</p>
+            </div>
+            <div className="rounded-[8px] border border-black/[0.08] p-3">
+              <p className="text-[11px] text-[#94a3b8]">Students</p>
+              <p className="text-[14px] font-semibold text-[#0f172a]">{course?.students_count || 0}</p>
+            </div>
+            <div className="rounded-[8px] border border-black/[0.08] p-3">
+              <p className="text-[11px] text-[#94a3b8]">Created On</p>
+              <p className="text-[14px] font-semibold text-[#0f172a]">{createdLabel}</p>
+            </div>
+            <div className="rounded-[8px] border border-black/[0.08] p-3">
+              <p className="text-[11px] text-[#94a3b8]">YouTube Link</p>
+              {course?.youtube_url ? (
+                <a
+                  href={course.youtube_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[13px] font-medium text-[#5b3df6] hover:underline"
+                >
+                  Open video
+                </a>
+              ) : (
+                <p className="text-[13px] font-semibold text-[#0f172a]">Not provided</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 border-t border-black/[0.08]">
+          <button onClick={onClose} className="h-10 rounded-[8px] bg-[#5b3df6] px-4 text-[13px] font-medium text-white hover:bg-[#4a2ed8]">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function InstructorMycourses() {
   const [allCourses, setAllCourses] = useState([])
   const [myCourses, setMyCourses] = useState([])
   const [showCreatePage, setShowCreatePage] = useState(false)
   const [editCourse, setEditCourse] = useState(null)
+  const [viewCourse, setViewCourse] = useState(null)
   const [deleteId, setDeleteId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -593,7 +671,7 @@ export default function InstructorMycourses() {
                   <div className="flex gap-1.5">
                     <button onClick={() => setEditCourse(course)} className="p-1.5 text-[#64748b] hover:text-[#5b3df6] hover:bg-[#ede7ff] rounded-md transition-colors" title="Edit"><Edit className="h-4 w-4" /></button>
                     <button onClick={() => setDeleteId(course._id)} className="p-1.5 text-[#64748b] hover:text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Delete"><Trash2 className="h-4 w-4" /></button>
-                    <button className="p-1.5 text-[#64748b] hover:text-[#5b3df6] hover:bg-[#ede7ff] rounded-md transition-colors" title="View"><Eye className="h-4 w-4" /></button>
+                    <button onClick={() => setViewCourse(course)} className="p-1.5 text-[#64748b] hover:text-[#5b3df6] hover:bg-[#ede7ff] rounded-md transition-colors" title="View"><Eye className="h-4 w-4" /></button>
                   </div>
                 </div>
               </div>
@@ -618,6 +696,8 @@ export default function InstructorMycourses() {
       </div>
 
       {editCourse && <EditCourseModal course={editCourse} onClose={() => setEditCourse(null)} onSave={handleSaveEdit} />}
+
+      {viewCourse && <ViewCourseModal course={viewCourse} onClose={() => setViewCourse(null)} />}
 
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">

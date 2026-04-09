@@ -214,9 +214,13 @@ export default function StudentELibrary() {
               <div className="grid grid-cols-1 gap-[24px] sm:grid-cols-2 xl:grid-cols-3">
                 {filtered.map((resource) => (
                   <article key={resource._id} className="bg-white border border-black/[0.08] border-solid rounded-[8px] overflow-hidden flex flex-col">
-                    <div className="h-[120px] w-full bg-gradient-to-r from-[#ede9ff] to-[#dbeafe] flex items-center justify-center">
-                      <FileText className="h-10 w-10 text-[#5b3df6]" />
-                    </div>
+                    {resource.image_url ? (
+                      <img src={resource.image_url} alt={resource.title || 'Resource'} className="h-[120px] w-full object-cover" />
+                    ) : (
+                      <div className="h-[120px] w-full bg-gradient-to-r from-[#ede9ff] to-[#dbeafe] flex items-center justify-center">
+                        <FileText className="h-10 w-10 text-[#5b3df6]" />
+                      </div>
+                    )}
 
                     <div className="flex flex-col gap-[12px] p-[20px]">
                       <div className="flex gap-[8px] flex-wrap">

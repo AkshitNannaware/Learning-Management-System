@@ -155,7 +155,7 @@
 
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { Search, Plus, MoreVertical, Building2, Users, BookOpen, Calendar, Upload, Download } from 'lucide-react'
+import { Search, Plus, Building2, Users, BookOpen, Calendar, Upload, Download } from 'lucide-react'
 import { Modal } from '../../components/superadmin/Ui'
 import { api } from '../../lib/api'
 
@@ -204,15 +204,26 @@ export default function SuperAdminTenantManagement() {
   const [page, setPage] = useState(0)
   const limit = 20
   const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [actionBusyId, setActionBusyId] = useState('')
+  const [error, setError] = useState('')
   const [form, setForm] = useState({ name: '', admin_email: '', subscription_plan: 'starter' })
 
-  const loadTenants = () =>
-    api(`/lms/tenants?skip=${page * limit}&limit=${limit}&q=${encodeURIComponent(query)}`)
-      .then((res) => {
+  const loadTenants = async () => {
+    try {
+      setLoading(true)
+      setError('')
+      const res = await api(`/lms/tenants?skip=${page * limit}&limit=${limit}&q=${encodeURIComponent(query)}`)
         setTenants(res.items || [])
         setTotal(res.total || 0)
-      })
-      .catch(() => {})
+    } catch (err) {
+      setError(err?.message || 'Unable to load tenants')
+      setTenants([])
+      setTotal(0)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     loadTenants()
@@ -226,19 +237,40 @@ export default function SuperAdminTenantManagement() {
     return () => clearTimeout(id)
   }, [query])
 
-  const rows = useMemo(
-    () => tenants.filter((tenant) => (tenant.name || '').toLowerCase().includes(query.toLowerCase())),
-    [tenants, query],
-  )
+  const rows = useMemo(() => tenants, [tenants])
 
   const activeCount = rows.filter((t) => t.active).length
   const reviewCount = rows.filter((t) => !t.active).length
+  const inactiveCount = rows.filter((t) => t.active === false).length
 
   async function createTenant() {
-    await api('/lms/tenants', { method: 'POST', body: JSON.stringify(form) }).catch(() => {})
-    setShowAdd(false)
-    setForm({ name: '', admin_email: '', subscription_plan: 'starter' })
-    loadTenants()
+    try {
+      setError('')
+      await api('/lms/tenants', { method: 'POST', body: JSON.stringify(form) })
+      setShowAdd(false)
+      setForm({ name: '', admin_email: '', subscription_plan: 'starter' })
+      loadTenants()
+    } catch (err) {
+      setError(err?.message || 'Unable to create tenant')
+    }
+  }
+
+  async function toggleTenantStatus(tenant) {
+    const tenantId = tenant?._id
+    if (!tenantId) return
+    try {
+      setActionBusyId(tenantId)
+      setError('')
+      await api(`/lms/tenants/${tenantId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ active: !tenant.active }),
+      })
+      await loadTenants()
+    } catch (err) {
+      setError(err?.message || 'Unable to update tenant status')
+    } finally {
+      setActionBusyId('')
+    }
   }
 
   return (
@@ -262,7 +294,12 @@ export default function SuperAdminTenantManagement() {
               </div>
             </div>
             <div className="flex flex-col font-normal h-[17px] justify-center leading-[0] text-[#94a3b8] text-[14px]">
-              Search tenants by name...
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search tenants by name..."
+                className="w-full bg-transparent text-[14px] text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none"
+              />
             </div>
           </div>
 
@@ -345,11 +382,13 @@ export default function SuperAdminTenantManagement() {
           />
           <StatCard 
             title="Inactive" 
-            value="0" 
+            value={String(inactiveCount)} 
             meta="Track via plans" 
             icon={<Building2 className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
         </div>
+
+        {error ? <p className="text-[13px] text-red-600">{error}</p> : null}
 
         {/* Tenants Table */}
         <div className="bg-white border border-black/[0.08] border-solid flex flex-col gap-[18px] items-start p-[21px] rounded-[8px]">
@@ -393,6 +432,11 @@ export default function SuperAdminTenantManagement() {
                 </tr>
               </thead>
               <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-6 text-center text-[13px] text-[#94a3b8]">Loading tenants...</td>
+                  </tr>
+                ) : null}
                 {rows.map((tenant, idx) => (
                   <tr key={tenant._id || idx} className={`border-b border-black/[0.08] ${idx === rows.length - 1 ? 'border-b-0' : ''}`}>
                     <td className="px-4 py-4">
@@ -426,12 +470,21 @@ export default function SuperAdminTenantManagement() {
                       {tenant.created_at ? new Date(tenant.created_at).getFullYear() : '-'}
                     </td>
                     <td className="px-4 py-4">
-                      <button className="border border-black/[0.08] flex h-[36px] w-[36px] items-center justify-center rounded-[6px] hover:bg-[#f1f5f9]">
-                        <MoreVertical className="h-[16px] w-[16px] text-[#94a3b8]" />
+                      <button
+                        onClick={() => toggleTenantStatus(tenant)}
+                        disabled={actionBusyId === tenant._id}
+                        className="border border-black/[0.08] flex h-[36px] items-center justify-center rounded-[6px] px-3 text-[12px] font-medium hover:bg-[#f1f5f9] disabled:opacity-60"
+                      >
+                        {actionBusyId === tenant._id ? 'Saving...' : tenant.active ? 'Deactivate' : 'Activate'}
                       </button>
                     </td>
                   </tr>
                 ))}
+                {!loading && rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-6 text-center text-[13px] text-[#94a3b8]">No tenants found.</td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>

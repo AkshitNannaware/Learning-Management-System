@@ -152,7 +152,7 @@
 
 import React from 'react'
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Shield, ShieldOff, Users, Download, Calendar, Plus, Upload, Eye, MoreVertical } from 'lucide-react'
+import { Search, Shield, ShieldOff, Users, Download, Calendar, Plus, Upload, Eye } from 'lucide-react'
 import { Modal } from '../../components/superadmin/Ui'
 import { api } from '../../lib/api'
 
@@ -200,8 +200,13 @@ export default function SuperAdminUsers() {
   const [page, setPage] = useState(0)
   const limit = 20
   const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [busyUserId, setBusyUserId] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
+    setLoading(true)
+    setError('')
     Promise.all([
       api(`/lms/users?skip=${page * limit}&limit=${limit}&q=${encodeURIComponent(query)}`).catch(() => ({ items: [], total: 0 })),
       api('/lms/tenants').catch(() => ({ items: [] })),
@@ -213,6 +218,7 @@ export default function SuperAdminUsers() {
         name: u.full_name || 'User',
         tenant: u.tenant_id || '-',
         role: (u.role || '').replace('_', ' '),
+        role_key: String(u.role || '').toLowerCase(),
         status: u.is_active ? 'active' : 'blocked',
         email: u.email || '-',
         lastActive: u.created_at ? new Date(u.created_at).toLocaleDateString() : '-',
@@ -220,19 +226,41 @@ export default function SuperAdminUsers() {
       const map = {}
       ;((tenantRes.items || tenantRes) || []).forEach((t) => { map[t._id] = t.name })
       setTenantMap(map)
-    })
+    }).catch((err) => {
+      setError(err?.message || 'Unable to load users')
+      setUsers([])
+      setTotal(0)
+    }).finally(() => setLoading(false))
   }, [page, query])
 
-  const rows = useMemo(() => users.filter((user) =>
-    user.name.toLowerCase().includes(query.toLowerCase()) ||
-    user.email.toLowerCase().includes(query.toLowerCase()) ||
-    user.tenant.toLowerCase().includes(query.toLowerCase())
-  ), [users, query])
+  const rows = useMemo(() => users, [users])
 
-  const toggleStatus = (id) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, status: u.status === 'active' ? 'blocked' : 'active' } : u))
-    )
+  const toggleStatus = async (user) => {
+    if (!user?.id) return
+    if (user.role_key === 'super_admin') {
+      setError('Super admin users cannot be blocked from this panel')
+      return
+    }
+    const nextActive = user.status !== 'active'
+    try {
+      setBusyUserId(user.id)
+      setError('')
+      await api(`/lms/users/${user.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: nextActive }),
+      })
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, status: nextActive ? 'active' : 'blocked' } : u))
+      )
+      setSelectedUser((prev) => {
+        if (!prev || prev.id !== user.id) return prev
+        return { ...prev, status: nextActive ? 'active' : 'blocked' }
+      })
+    } catch (err) {
+      setError(err?.message || 'Unable to update user status')
+    } finally {
+      setBusyUserId('')
+    }
   }
 
   // Get avatar initials
@@ -261,7 +289,12 @@ export default function SuperAdminUsers() {
               </div>
             </div>
             <div className="flex flex-col font-normal h-[17px] justify-center leading-[0] text-[#94a3b8] text-[14px]">
-              Search users by name, email, or tenant...
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search users by name, email, or tenant..."
+                className="w-full bg-transparent text-[14px] text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none"
+              />
             </div>
           </div>
 
@@ -320,7 +353,7 @@ export default function SuperAdminUsers() {
         <div className="gap-x-[16px] gap-y-[16px] grid grid-cols-[repeat(4,minmax(0,1fr))]">
           <StatCard 
             title="Total Users" 
-            value={String(users.length)} 
+            value={String(total || users.length)} 
             meta="Live total" 
             icon={<Users className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
@@ -343,6 +376,8 @@ export default function SuperAdminUsers() {
             icon={<Users className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
         </div>
+
+        {error ? <p className="text-[13px] text-red-600">{error}</p> : null}
 
         {/* Users Table */}
         <div className="bg-white border border-black/[0.08] border-solid flex flex-col gap-[18px] items-start p-[21px] rounded-[8px]">
@@ -384,6 +419,11 @@ export default function SuperAdminUsers() {
                 </tr>
               </thead>
               <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center text-[13px] text-[#94a3b8]">Loading users...</td>
+                  </tr>
+                ) : null}
                 {rows.map((user, idx) => (
                   <tr key={user.id} className={`border-b border-black/[0.08] ${idx === rows.length - 1 ? 'border-b-0' : ''}`}>
                     <td className="px-4 py-4">
@@ -410,11 +450,18 @@ export default function SuperAdminUsers() {
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-[8px]">
                         <button
-                          onClick={() => toggleStatus(user.id)}
+                          onClick={() => toggleStatus(user)}
+                          disabled={busyUserId === user.id || user.role_key === 'super_admin'}
                           className={`border border-black/[0.08] flex h-[36px] w-[36px] items-center justify-center rounded-[6px] hover:bg-[#f1f5f9] transition-colors ${
                             user.status === 'active' ? 'text-[#ffd966]' : 'text-[#2dd4bf]'
-                          }`}
-                          title={user.status === 'active' ? 'Block User' : 'Unblock User'}
+                          } disabled:opacity-50`}
+                          title={
+                            user.role_key === 'super_admin'
+                              ? 'Super admin cannot be blocked'
+                              : user.status === 'active'
+                                ? 'Block User'
+                                : 'Unblock User'
+                          }
                         >
                           {user.status === 'active' ? <ShieldOff className="h-[16px] w-[16px]" /> : <Shield className="h-[16px] w-[16px]" />}
                         </button>
@@ -429,6 +476,11 @@ export default function SuperAdminUsers() {
                     </td>
                   </tr>
                 ))}
+                {!loading && rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center text-[13px] text-[#94a3b8]">No users found.</td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>

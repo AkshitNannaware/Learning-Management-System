@@ -120,17 +120,6 @@ function toDisplayCourse(course) {
   }
 }
 
-function toDisplayPlan(plan) {
-  return {
-    _id: plan?._id,
-    title: plan?.name || 'Untitled plan',
-    period: plan?.billing_period || 'Custom period',
-    price: Number(plan?.price || 0),
-    priceLabel: formatCurrency(plan?.price || 0),
-    active: Boolean(plan?.active ?? true),
-  }
-}
-
 function CourseDetailModal({ course, onClose, onEnroll, enrolled }) {
   if (!course) return null
 
@@ -252,85 +241,10 @@ function CourseDetailModal({ course, onClose, onEnroll, enrolled }) {
   )
 }
 
-function SubscriptionModal({ course, plans, selectedPlanId, onSelectPlan, onClose, onContinue }) {
+function CheckoutModal({ course, onClose, onPay, submitting }) {
   if (!course) return null
 
-  const selectedPlan = plans.find((plan) => plan._id === selectedPlanId) || null
-
-  return (
-    <div className="fixed inset-0 z-[55] flex items-center justify-center bg-slate-950/70 p-3 sm:p-4 backdrop-blur-[2px]" onClick={onClose}>
-      <div
-        className="relative flex w-full max-w-[760px] flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_30px_90px_rgba(15,23,42,0.32)]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-black/[0.08] px-5 py-4 sm:px-6">
-          <div className="min-w-0">
-            <span className="inline-flex items-center rounded-[10px] bg-[#f0f4f8] px-3 py-1 text-[11px] font-medium text-[#64748b]">
-              Paid course
-            </span>
-            <h2 className="mt-2 text-[22px] font-bold text-[#0f172a] sm:text-[26px]">Confirm subscription</h2>
-            <p className="mt-1 text-[13px] text-[#94a3b8]">Choose from plans uploaded by admin for your tenant.</p>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-full p-2 hover:bg-gray-100">
-            <X className="h-5 w-5 text-[#94a3b8]" />
-          </button>
-        </div>
-
-        <div className="space-y-4 p-5 sm:p-6">
-          <section className="rounded-[18px] border border-black/[0.08] bg-white p-5">
-            <p className="text-[12px] text-[#94a3b8]">Course</p>
-            <p className="mt-1 text-[18px] font-bold text-[#0f172a]">{course.title}</p>
-            <div className="mt-4 space-y-2">
-              {plans.length > 0 ? (
-                plans.map((plan) => (
-                  <button
-                    key={plan._id}
-                    type="button"
-                    onClick={() => onSelectPlan?.(plan._id)}
-                    className={`w-full rounded-[12px] border p-3 text-left ${
-                      selectedPlanId === plan._id ? 'border-[#5b3df6] bg-[#faf9ff]' : 'border-black/[0.08] bg-[#f8fafc]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-[13px] font-semibold text-[#0f172a]">{plan.title}</p>
-                        <p className="mt-1 text-[11px] text-[#94a3b8]">{plan.period}</p>
-                      </div>
-                      <p className="text-[15px] font-bold text-[#0f172a]">{plan.priceLabel}</p>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="rounded-[12px] border border-dashed border-black/[0.14] bg-[#f8fafc] p-3 text-[12px] text-[#64748b]">
-                  No active subscription plans found. Ask admin to add plans first.
-                </div>
-              )}
-            </div>
-            <div className="mt-4 rounded-[12px] bg-[#f8fafc] p-3">
-              <p className="text-[11px] text-[#94a3b8]">Amount due</p>
-              <p className="mt-1 text-[22px] font-bold text-[#0f172a]">{selectedPlan?.priceLabel || course.priceLabel}</p>
-            </div>
-          </section>
-
-          <button
-            type="button"
-            disabled={plans.length > 0 && !selectedPlan}
-            onClick={() => onContinue?.(course)}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-[#5b3df6] px-4 text-[13px] font-semibold text-white hover:bg-[#4a2ed8] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Continue to checkout
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function CheckoutModal({ course, selectedPlan, onClose, onPay, submitting }) {
-  if (!course) return null
-
-  const payableAmount = selectedPlan?.priceLabel || course.priceLabel
+  const payableAmount = course.priceLabel
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 p-3 sm:p-4 backdrop-blur-[2px]" onClick={onClose}>
@@ -450,12 +364,9 @@ function CheckoutSuccessModal({ course, onGoToCourse, onClose }) {
 export default function StudentBrowseCourse() {
   const navigate = useNavigate()
   const [selectedCourse, setSelectedCourse] = useState(null)
-  const [subscriptionCourse, setSubscriptionCourse] = useState(null)
   const [checkoutCourse, setCheckoutCourse] = useState(null)
   const [successCourse, setSuccessCourse] = useState(null)
   const [courses, setCourses] = useState([])
-  const [subscriptionPlans, setSubscriptionPlans] = useState([])
-  const [selectedPlanId, setSelectedPlanId] = useState('')
   const [enrolledIds, setEnrolledIds] = useState(new Set())
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -470,16 +381,12 @@ export default function StudentBrowseCourse() {
     Promise.all([
       api('/lms/courses?limit=500'),
       api('/lms/enrollments?limit=500').catch(() => ({ items: [] })),
-      api('/lms/plans?limit=300&active_only=true').catch(() => ({ items: [] })),
     ])
-      .then(([courseData, enrollmentData, planData]) => {
+      .then(([courseData, enrollmentData]) => {
         const fetchedCourses = (courseData?.items || []).map(toDisplayCourse)
         const enrolledSet = new Set((enrollmentData?.items || []).map((item) => item.course_id))
-        const fetchedPlans = (planData?.items || []).map(toDisplayPlan).filter((plan) => plan.active)
         setCourses(fetchedCourses)
         setEnrolledIds(enrolledSet)
-        setSubscriptionPlans(fetchedPlans)
-        setSelectedPlanId(fetchedPlans[0]?._id || '')
       })
       .catch((err) => {
         setCourses([])
@@ -508,19 +415,7 @@ export default function StudentBrowseCourse() {
   const openEnrollFlow = (course) => {
     if (!course || enrolledIds.has(course._id)) return
 
-    const isPaid = course?.course_type === 'paid' && Number(course?.price || 0) > 0
-    if (isPaid) {
-      if (subscriptionPlans.length > 0 && !selectedPlanId) {
-        setSelectedPlanId(subscriptionPlans[0]._id)
-      }
-      setSubscriptionCourse(course)
-      setCheckoutCourse(null)
-      setSelectedCourse(null)
-      return
-    }
-
     setCheckoutCourse(course)
-    setSubscriptionCourse(null)
     setSelectedCourse(null)
   }
 
@@ -533,7 +428,6 @@ export default function StudentBrowseCourse() {
       return
     }
 
-    const selectedPlan = subscriptionPlans.find((plan) => plan._id === selectedPlanId) || null
     const isPaidCourse = course.course_type === 'paid' && Number(course.price || 0) > 0
 
     try {
@@ -541,7 +435,7 @@ export default function StudentBrowseCourse() {
       setError('')
 
       if (isPaidCourse) {
-        const chargeAmount = selectedPlan ? selectedPlan.price : Number(course.price || 0)
+        const chargeAmount = Number(course.price || 0)
         const order = await api('/lms/payments/order', {
           method: 'POST',
           body: JSON.stringify({
@@ -606,7 +500,6 @@ export default function StudentBrowseCourse() {
       setEnrolledIds((prev) => new Set([...prev, course._id]))
       setSuccessCourse(course)
       setCheckoutCourse(null)
-      setSubscriptionCourse(null)
       setSelectedCourse(null)
     } catch (err) {
       setError(err?.message || 'Unable to complete enrollment.')
@@ -795,23 +688,9 @@ export default function StudentBrowseCourse() {
           enrolled={enrolledIds.has(selectedCourse._id)}
         />
       )}
-      {subscriptionCourse && (
-        <SubscriptionModal
-          course={subscriptionCourse}
-          plans={subscriptionPlans}
-          selectedPlanId={selectedPlanId}
-          onSelectPlan={setSelectedPlanId}
-          onClose={() => setSubscriptionCourse(null)}
-          onContinue={(course) => {
-            setCheckoutCourse(course)
-            setSubscriptionCourse(null)
-          }}
-        />
-      )}
       {checkoutCourse && (
         <CheckoutModal
           course={checkoutCourse}
-          selectedPlan={subscriptionPlans.find((plan) => plan._id === selectedPlanId) || null}
           onClose={() => setCheckoutCourse(null)}
           onPay={createEnrollment}
           submitting={submitting}

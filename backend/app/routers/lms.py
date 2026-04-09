@@ -350,6 +350,18 @@ async def list_courses(
     return await paged(db.courses, query, "created_at", -1, skip, limit)
 
 
+@router.get("/public/courses")
+async def list_public_courses(
+    skip: int = 0,
+    limit: int = 100,
+    q: str | None = None,
+):
+    query: dict = {}
+    if q:
+        query["title"] = {"$regex": q, "$options": "i"}
+    return await paged(db.courses, query, "created_at", -1, skip, limit)
+
+
 @router.patch("/courses/{course_id}")
 async def update_course(
     course_id: str,
@@ -842,9 +854,19 @@ async def list_payments(
     skip: int = 0,
     limit: int = 100,
     status: str | None = None,
-    _=Depends(require_roles(Role.SUPER_ADMIN, Role.ADMIN)),
+    _=Depends(require_roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SUB_ADMIN)),
 ):
-    query = {"tenant_id": tenant_id} if tenant_id else {}
+    if tenant_id:
+        # Include legacy/global payment rows where tenant_id was not persisted.
+        query = {
+            "$or": [
+                {"tenant_id": tenant_id},
+                {"tenant_id": None},
+                {"tenant_id": {"$exists": False}},
+            ]
+        }
+    else:
+        query = {}
     if status:
         query["status"] = status
     return await paged(db.payments, query, "created_at", -1, skip, limit)
@@ -957,6 +979,18 @@ async def list_plans(
     if active_only:
         query["active"] = True
 
+    return await paged(db.plans, query, "created_at", -1, skip, limit)
+
+
+@router.get("/public/plans")
+async def list_public_plans(
+    skip: int = 0,
+    limit: int = 100,
+    active_only: bool = True,
+):
+    query: dict = {}
+    if active_only:
+        query["active"] = True
     return await paged(db.plans, query, "created_at", -1, skip, limit)
 
 

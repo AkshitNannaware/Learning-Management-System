@@ -13,7 +13,9 @@ export default function AdminELibrary() {
   const [grade, setGrade] = useState('Class 9')
   const [format, setFormat] = useState('PDF')
   const [fileUrl, setFileUrl] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [selectedFileName, setSelectedFileName] = useState('')
+  const [selectedImageName, setSelectedImageName] = useState('')
 
   const fileToDataUrl = (file) =>
     new Promise((resolve, reject) => {
@@ -46,6 +48,7 @@ export default function AdminELibrary() {
         title: item.title || '-',
         grade: item.grade || '-',
         format: item.format || '-',
+        imageUrl: item.image_url || '',
         uploadedBy: item.uploaded_by || '-',
         uploadedOn: item.created_at ? new Date(item.created_at).toLocaleString() : '-',
       })),
@@ -74,13 +77,16 @@ export default function AdminELibrary() {
           grade,
           format,
           file_url: fileUrl.trim(),
+          image_url: imageUrl.trim(),
         }),
       })
       setTitle('')
       setGrade('Class 9')
       setFormat('PDF')
       setFileUrl('')
+      setImageUrl('')
       setSelectedFileName('')
+      setSelectedImageName('')
       setShowUploadModal(false)
       await fetchResources()
     } catch (err) {
@@ -112,6 +118,32 @@ export default function AdminELibrary() {
       if (ext) setFormat(ext)
     } catch (err) {
       setFormError(err.message || 'Failed to read file')
+    }
+  }
+
+  const handleImageSelect = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setFormError('Please select a valid image file')
+      e.target.value = ''
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setFormError('Image size should be 5MB or less')
+      e.target.value = ''
+      return
+    }
+
+    try {
+      setFormError('')
+      setSelectedImageName(file.name)
+      const dataUrl = await fileToDataUrl(file)
+      setImageUrl(dataUrl)
+    } catch (err) {
+      setFormError(err.message || 'Failed to read image')
     }
   }
 
@@ -158,9 +190,13 @@ export default function AdminELibrary() {
           {normalizedResources.map((item) => (
             <div key={item.id} className="flex flex-col gap-3 rounded-[6px] border border-black/[0.08] p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
-                <div className="inline-flex h-10 w-10 items-center justify-center rounded-[6px] bg-[#f1f5f9]">
-                  <FileText className="h-5 w-5 text-[#5b3df6]" />
-                </div>
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt={item.title} className="h-10 w-10 rounded-[6px] object-cover border border-black/[0.08]" />
+                ) : (
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-[6px] bg-[#f1f5f9]">
+                    <FileText className="h-5 w-5 text-[#5b3df6]" />
+                  </div>
+                )}
                 <div>
                   <p className="text-[14px] font-semibold text-[#0f172a]">{item.title}</p>
                   <p className="mt-1 text-[12px] text-[#94a3b8]">
@@ -246,6 +282,21 @@ export default function AdminELibrary() {
                 />
               </div>
 
+              <div>
+                <label className="mb-1 block text-[13px] font-semibold text-[#0f172a]">Image URL (optional)</label>
+                <input
+                  disabled={submitting}
+                  value={imageUrl}
+                  onChange={(e) => {
+                    setFormError('')
+                    setImageUrl(e.target.value)
+                    if (e.target.value.trim()) setSelectedImageName('')
+                  }}
+                  placeholder="https://..."
+                  className="h-10 w-full rounded-[6px] border border-black/[0.08] px-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]"
+                />
+              </div>
+
               <label className="flex cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-dashed border-[#94a3b8] bg-[#f8fafc] p-4 text-[13px] font-medium text-[#64748b]">
                 <Upload className="h-4 w-4" />
                 {selectedFileName ? `Selected: ${selectedFileName}` : 'Choose file (max 5MB)'}
@@ -256,6 +307,22 @@ export default function AdminELibrary() {
                   disabled={submitting}
                 />
               </label>
+
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-dashed border-[#94a3b8] bg-[#f8fafc] p-4 text-[13px] font-medium text-[#64748b]">
+                <Upload className="h-4 w-4" />
+                {selectedImageName ? `Selected image: ${selectedImageName}` : 'Choose image (max 5MB)'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageSelect}
+                  disabled={submitting}
+                />
+              </label>
+
+              {imageUrl ? (
+                <img src={imageUrl} alt="Preview" className="h-32 w-full rounded-[6px] border border-black/[0.08] object-cover" />
+              ) : null}
             </div>
 
             <div className="flex flex-col gap-3 border-t border-black/[0.08] p-5 sm:flex-row">

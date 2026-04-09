@@ -1,58 +1,103 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { BadgeCheck, ChevronLeft, ChevronRight, ClipboardCheck, Search, Star } from "lucide-react";
+import { api } from "../lib/api";
 
 export default (props) => {
-    const featuredCourses = [
-        {
-            title: "Digital Marketing (10 month) Crash Course",
-            rating: "4.7",
-            reviews: "(450 Review)",
-            price: "$20.000",
-            oldPrice: "$200.000",
-            image: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/zdfkwoq9_expires_30_days.png",
-        },
-        {
-            title: "English Language Popular Course (10 month)",
-            rating: "4.7",
-            reviews: "(450 Review)",
-            price: "$20.000",
-            oldPrice: "$200.000",
-            image: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/y2ugpgwn_expires_30_days.png",
-        },
-        {
-            title: "3D Animation Designer(10 month) Adobe After effect",
-            rating: "4.7",
-            reviews: "(450 Review)",
-            price: "$20.000",
-            oldPrice: "$200.000",
-            image: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/pb4ocxvm_expires_30_days.png",
-        },
-        {
-            title: "The complete business plan course includes 10+ templates",
-            rating: "4.8",
-            reviews: "(380 Review)",
-            price: "$18.000",
-            oldPrice: "$150.000",
-            image: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/344cmw5b_expires_30_days.png",
-        },
-        {
-            title: "Education Software and PHP and JS System Script",
-            rating: "4.6",
-            reviews: "(420 Review)",
-            price: "$24.000",
-            oldPrice: "$240.000",
-            image: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/atih781j_expires_30_days.png",
-        },
-        {
-            title: "Full Web Designing Course With 30 Web Template",
-            rating: "4.5",
-            reviews: "(300 Review)",
-            price: "$15.000",
-            oldPrice: "$99.000",
-            image: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/xz2lhbfq_expires_30_days.png",
-        },
-    ];
+    const [uploadedCourses, setUploadedCourses] = useState([]);
+    const [coursesLoading, setCoursesLoading] = useState(true);
+    const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+    const [plansLoading, setPlansLoading] = useState(true);
+
+    const getYoutubeVideoId = (url) => {
+        if (!url) return "";
+        try {
+            const parsed = new URL(url);
+            const host = parsed.hostname.replace(/^www\./, "");
+
+            if (host === "youtu.be") {
+                return parsed.pathname.split("/").filter(Boolean)[0] || "";
+            }
+
+            if (host === "youtube.com" || host === "m.youtube.com") {
+                const fromQuery = parsed.searchParams.get("v");
+                if (fromQuery) return fromQuery;
+                const parts = parsed.pathname.split("/").filter(Boolean);
+                if (parts[0] === "embed" || parts[0] === "shorts") {
+                    return parts[1] || "";
+                }
+            }
+        } catch {
+            return "";
+        }
+        return "";
+    };
+
+    useEffect(() => {
+        let mounted = true;
+        const loadCourses = async () => {
+            try {
+                setCoursesLoading(true);
+                const res = await api("/lms/public/courses?limit=300");
+                if (!mounted) return;
+                setUploadedCourses(Array.isArray(res?.items) ? res.items : []);
+            } catch {
+                if (!mounted) return;
+                setUploadedCourses([]);
+            } finally {
+                if (mounted) setCoursesLoading(false);
+            }
+        };
+
+        loadCourses();
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        let mounted = true;
+        const loadPlans = async () => {
+            try {
+                setPlansLoading(true);
+                const res = await api("/lms/public/plans?limit=100&active_only=true");
+                if (!mounted) return;
+                const rows = Array.isArray(res?.items) ? res.items : [];
+                setSubscriptionPlans(rows);
+            } catch {
+                if (!mounted) return;
+                setSubscriptionPlans([]);
+            } finally {
+                if (mounted) setPlansLoading(false);
+            }
+        };
+
+        loadPlans();
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const featuredCourses = useMemo(() => {
+        return uploadedCourses.slice(0, 6).map((course) => {
+            const priceValue = Number(course?.price || 0);
+            const videoId = getYoutubeVideoId(course?.youtube_url || "");
+            const image = videoId
+                ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+                : "https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=900&q=80";
+
+            return {
+                id: course?._id,
+                title: course?.title || "Untitled Course",
+                rating: "4.8",
+                reviews: `(${course?.students_count || 0} Learners)`,
+                price: `₹${priceValue.toLocaleString("en-IN")}`,
+                oldPrice: priceValue > 0 ? `₹${Math.round(priceValue * 1.25).toLocaleString("en-IN")}` : "",
+                image,
+                youtube_url: course?.youtube_url || "",
+            };
+        });
+    }, [uploadedCourses]);
 
     const howItWorksSteps = [
         {
@@ -298,7 +343,15 @@ export default (props) => {
                         </div>
 
                         <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6" variants={stagger}>
-                            {featuredCourses.slice(0, 6).map((course) => (
+                            {coursesLoading ? (
+                                <motion.div className="col-span-full rounded-2xl bg-white p-6 text-center text-slate-500" variants={fadeUp}>
+                                    Loading uploaded courses...
+                                </motion.div>
+                            ) : featuredCourses.length === 0 ? (
+                                <motion.div className="col-span-full rounded-2xl bg-white p-6 text-center text-slate-500" variants={fadeUp}>
+                                    No uploaded courses found.
+                                </motion.div>
+                            ) : featuredCourses.map((course) => (
                                 <motion.div key={course.title} className="rounded-2xl bg-white p-4 shadow-sm hover:shadow-md transition-shadow" variants={fadeUp} whileHover={{ y: -5 }}>
                                     <img src={course.image} alt={course.title} className="h-[200px] sm:h-[220px] w-full rounded-xl object-cover" />
                                     <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
@@ -316,14 +369,22 @@ export default (props) => {
                                     <div className="flex items-center justify-between gap-3 mt-3">
                                         <div className="flex items-center gap-2">
                                             <span className="text-xl sm:text-[20px] font-bold leading-none text-[#111111]">{course.price}</span>
-                                            <span className="text-xs sm:text-sm text-slate-400 line-through">{course.oldPrice}</span>
+                                            {course.oldPrice ? <span className="text-xs sm:text-sm text-slate-400 line-through">{course.oldPrice}</span> : null}
                                         </div>
-                                        <button
-                                            className="rounded-xl bg-[#0b8276] px-4 sm:px-6 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-[#096b61] transition-colors"
-                                            onClick={() => alert("Pressed!")}
-                                        >
-                                            View Course
-                                        </button>
+                                        {course.youtube_url ? (
+                                            <a
+                                                className="rounded-xl bg-[#0b8276] px-4 sm:px-6 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-[#096b61] transition-colors"
+                                                href={course.youtube_url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                            >
+                                                View Course
+                                            </a>
+                                        ) : (
+                                            <button className="rounded-xl bg-[#0b8276] px-4 sm:px-6 py-2 text-xs sm:text-sm font-semibold text-white opacity-70 cursor-not-allowed" disabled>
+                                                View Course
+                                            </button>
+                                        )}
                                     </div>
                                 </motion.div>
                             ))}
@@ -422,95 +483,63 @@ export default (props) => {
                             <p className="mt-2 text-base text-slate-500">Choose the perfect plan for your learning community.</p>
                         </div>
                         <div className="mt-8 sm:mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {/* Starter Plan */}
-                            <div className="flex flex-col items-center gap-4 rounded-xl border border-[#00000012] bg-white px-6 py-8 sm:py-10 shadow-sm hover:shadow-md transition-shadow">
-                                <h3 className="text-slate-900 text-2xl font-bold">Starter Plan</h3>
-                                <div className="flex items-baseline justify-center">
-                                    <span className="text-slate-900 text-5xl sm:text-[56px] font-bold">$29</span>
-                                    <span className="text-slate-400 text-lg ml-1">/mo</span>
-                                </div>
-                                <div className="flex flex-col w-full gap-3 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/pvfwdbgh_expires_30_days.png" className="w-5 h-5 object-contain" alt="check" />
-                                        <span className="text-slate-900 text-sm sm:text-base">Up to 100 students</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/l2j0obqq_expires_30_days.png" className="w-5 h-5 object-contain" alt="check" />
-                                        <span className="text-slate-900 text-sm sm:text-base">5 Courses</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/6ofzl4vd_expires_30_days.png" className="w-5 h-5 object-contain" alt="check" />
-                                        <span className="text-slate-900 text-sm sm:text-base">Standard Support</span>
-                                    </div>
-                                </div>
-                                <button className="w-full bg-transparent py-3 rounded-lg border-2 border-[#00000012] font-bold text-slate-900 hover:bg-slate-50 transition-colors"
-                                    onClick={() => alert("Pressed!")}>
-                                    Choose Starter
-                                </button>
-                            </div>
+                            {plansLoading ? (
+                                <div className="col-span-full rounded-xl bg-white p-6 text-center text-slate-500">Loading subscription plans...</div>
+                            ) : subscriptionPlans.length === 0 ? (
+                                <div className="col-span-full rounded-xl bg-white p-6 text-center text-slate-500">No uploaded subscriptions found.</div>
+                            ) : (
+                                subscriptionPlans.slice(0, 3).map((plan, idx) => {
+                                    const isHighlighted = idx === 1;
+                                    const planName = plan?.name || "Subscription";
+                                    const billing = plan?.billing_period || "monthly";
+                                    const price = Number(plan?.price || 0);
+                                    const priceLabel = `₹${price.toLocaleString("en-IN")}`;
 
-                            {/* Pro Plan - Fixed relative positioning */}
-                            <div className="relative flex flex-col items-center rounded-xl shadow-xl overflow-hidden">
-                                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-                                    <button className="bg-[#FF8A33] text-white text-sm font-bold py-2 px-6 rounded-xl hover:bg-[#e07a2e] transition-colors"
-                                        onClick={() => alert("Pressed!")}>
-                                        Most Popular
-                                    </button>
-                                </div>
-                                <div className="flex flex-col items-center bg-slate-900 py-8 sm:py-10 px-6 w-full h-full">
-                                    <h3 className="text-[#F7FCFF] text-2xl font-bold">Pro Plan</h3>
-                                    <div className="flex items-baseline justify-center mt-2">
-                                        <span className="text-[#F7FCFF] text-5xl sm:text-[56px] font-bold">$79</span>
-                                        <span className="text-white text-lg ml-1">/mo</span>
-                                    </div>
-                                    <div className="flex flex-col w-full gap-3 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/nhxhg5xw_expires_30_days.png" className="w-5 h-5 object-contain" alt="check" />
-                                            <span className="text-[#F7FCFF] text-sm sm:text-base">Unlimited students</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/hzzmuy09_expires_30_days.png" className="w-5 h-5 object-contain" alt="check" />
-                                            <span className="text-[#F7FCFF] text-sm sm:text-base">Unlimited Courses</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/jvllqhem_expires_30_days.png" className="w-5 h-5 object-contain" alt="check" />
-                                            <span className="text-[#F7FCFF] text-sm sm:text-base">Custom Domain</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/s5hbyste_expires_30_days.png" className="w-5 h-5 object-contain" alt="check" />
-                                            <span className="text-[#F7FCFF] text-sm sm:text-base">Priority Support</span>
-                                        </div>
-                                    </div>
-                                    <button className="w-full bg-[#FF8A33] text-white font-bold py-3 rounded-lg hover:bg-[#e07a2e] transition-colors"
-                                        onClick={() => alert("Pressed!")}>
-                                        Choose Pro
-                                    </button>
-                                </div>
-                            </div>
+                                    if (isHighlighted) {
+                                        return (
+                                            <div key={plan?._id || `${planName}-${idx}`} className="relative flex flex-col items-center rounded-xl shadow-xl overflow-hidden">
+                                                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+                                                    <span className="bg-[#FF8A33] text-white text-sm font-bold py-2 px-6 rounded-xl">Most Popular</span>
+                                                </div>
+                                                <div className="flex flex-col items-center bg-slate-900 py-8 sm:py-10 px-6 w-full h-full">
+                                                    <h3 className="text-[#F7FCFF] text-2xl font-bold">{planName}</h3>
+                                                    <div className="flex items-baseline justify-center mt-2">
+                                                        <span className="text-[#F7FCFF] text-5xl sm:text-[56px] font-bold">{priceLabel}</span>
+                                                        <span className="text-white text-lg ml-1">/{billing}</span>
+                                                    </div>
+                                                    <div className="flex flex-col w-full gap-3 py-4 text-[#F7FCFF] text-sm sm:text-base">
+                                                        <span>Flexible plan billing</span>
+                                                        <span>Access to platform courses</span>
+                                                        <span>Live class eligibility</span>
+                                                        <span>Student support included</span>
+                                                    </div>
+                                                    <button className="w-full bg-[#FF8A33] text-white font-bold py-3 rounded-lg hover:bg-[#e07a2e] transition-colors">
+                                                        Choose {planName}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
 
-                            {/* Enterprise Plan */}
-                            <div className="flex flex-col items-center gap-4 rounded-xl border border-[#00000012] bg-white px-6 py-8 sm:py-10 shadow-sm hover:shadow-md transition-shadow">
-                                <h3 className="text-slate-900 text-2xl font-bold">Enterprise Plan</h3>
-                                <div className="text-slate-900 text-4xl sm:text-5xl font-bold">Custom</div>
-                                <div className="flex flex-col w-full gap-3 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/rog5oi83_expires_30_days.png" className="w-5 h-5 object-contain" alt="check" />
-                                        <span className="text-slate-900 text-sm sm:text-base">Multi-Tenant setup</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/fepgjc9p_expires_30_days.png" className="w-5 h-5 object-contain" alt="check" />
-                                        <span className="text-slate-900 text-sm sm:text-base">Dedicated Manager</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/ibqboa75_expires_30_days.png" className="w-5 h-5 object-contain" alt="check" />
-                                        <span className="text-slate-900 text-sm sm:text-base">Advanced Integrations</span>
-                                    </div>
-                                </div>
-                                <button className="w-full bg-transparent py-3 rounded-lg border-2 border-[#00000012] font-bold text-slate-900 hover:bg-slate-50 transition-colors"
-                                    onClick={() => alert("Pressed!")}>
-                                    Contact Us
-                                </button>
-                            </div>
+                                    return (
+                                        <div key={plan?._id || `${planName}-${idx}`} className="flex flex-col items-center gap-4 rounded-xl border border-[#00000012] bg-white px-6 py-8 sm:py-10 shadow-sm hover:shadow-md transition-shadow">
+                                            <h3 className="text-slate-900 text-2xl font-bold">{planName}</h3>
+                                            <div className="flex items-baseline justify-center">
+                                                <span className="text-slate-900 text-5xl sm:text-[56px] font-bold">{priceLabel}</span>
+                                                <span className="text-slate-400 text-lg ml-1">/{billing}</span>
+                                            </div>
+                                            <div className="flex flex-col w-full gap-3 py-4 text-slate-900 text-sm sm:text-base">
+                                                <span>Self-paced learning access</span>
+                                                <span>Course progress tracking</span>
+                                                <span>Certification support</span>
+                                            </div>
+                                            <button className="w-full bg-transparent py-3 rounded-lg border-2 border-[#00000012] font-bold text-slate-900 hover:bg-slate-50 transition-colors">
+                                                Choose {planName}
+                                            </button>
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
                 </div>
