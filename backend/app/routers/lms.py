@@ -198,11 +198,57 @@ async def list_users(
     tenant_id: str = Depends(get_tenant_id),
     _=Depends(require_roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SUB_ADMIN)),
 ):
-    query = {"tenant_id": tenant_id} if tenant_id else {}
+    filters = []
+    role_value = (role or "").strip().lower()
+    instructor_roles = {"instructor", "teacher", "faculty"}
+
+    if tenant_id:
+        if role_value in instructor_roles:
+            # Instructor dropdowns should include globally created instructors too.
+            filters.append({"$or": [{"tenant_id": tenant_id}, {"tenant_id": None}, {"tenant_id": {"$exists": False}}]})
+        else:
+            filters.append({"tenant_id": tenant_id})
+
     if role:
-        query["role"] = role
+        filters.append({"role": role})
+
     if q:
-        query["$or"] = [{"full_name": {"$regex": q, "$options": "i"}}, {"email": {"$regex": q, "$options": "i"}}]
+        filters.append({"$or": [{"full_name": {"$regex": q, "$options": "i"}}, {"email": {"$regex": q, "$options": "i"}}]})
+
+    if not filters:
+        query = {}
+    elif len(filters) == 1:
+        query = filters[0]
+    else:
+        query = {"$and": filters}
+
+    total = await db.users.count_documents(query)
+    users = []
+    async for user in db.users.find(query).sort("created_at", -1).skip(skip).limit(limit):
+        user["_id"] = str(user["_id"])
+        user.pop("password_hash", None)
+        users.append(user)
+    return {"items": users, "total": total, "skip": skip, "limit": limit}
+
+
+@router.get("/instructors")
+async def list_instructors(
+    skip: int = 0,
+    limit: int = 300,
+    q: str | None = None,
+    tenant_id: str = Depends(get_tenant_id),
+    _=Depends(require_roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SUB_ADMIN, Role.INSTRUCTOR)),
+):
+    role_filter = {"$in": ["instructor", "INSTRUCTOR", "Instructor", "teacher", "faculty"]}
+    filters = [{"role": role_filter}]
+
+    if tenant_id:
+        filters.append({"$or": [{"tenant_id": tenant_id}, {"tenant_id": None}, {"tenant_id": {"$exists": False}}]})
+
+    if q:
+        filters.append({"$or": [{"full_name": {"$regex": q, "$options": "i"}}, {"email": {"$regex": q, "$options": "i"}}]})
+
+    query = {"$and": filters} if len(filters) > 1 else filters[0]
     total = await db.users.count_documents(query)
     users = []
     async for user in db.users.find(query).sort("created_at", -1).skip(skip).limit(limit):

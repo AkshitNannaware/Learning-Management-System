@@ -1,134 +1,465 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { AlertCircle, CalendarDays, Clock3, Link2, Plus, Video, X } from 'lucide-react'
+import {
+  Search,
+  Plus,
+  Video,
+  ChevronDown,
+  ArrowLeft,
+  X,
+  CalendarDays,
+  Clock3,
+  Link2,
+  Users,
+  BookOpen,
+  Trash2,
+  AlertCircle,
+  UserCheck,
+} from 'lucide-react'
 import { api } from '../../lib/api'
 import useRealtime from '../../hooks/useRealtime'
 
+const FILTERS = ['All Classes', 'Live', 'Upcoming', 'Recent', 'Cancelled']
+
+const STATUS_CONFIG = {
+  live: { label: 'Live', bg: 'bg-[#fee2e2]', text: 'text-[#991b1b]', dot: 'bg-[#ef4444]' },
+  upcoming: { label: 'Upcoming', bg: 'bg-[#fef9c3]', text: 'text-[#854d0e]', dot: 'bg-[#eab308]' },
+  recent: { label: 'Completed', bg: 'bg-[#dcfce7]', text: 'text-[#14532d]', dot: 'bg-[#22c55e]' },
+  cancelled: { label: 'Cancelled', bg: 'bg-[#f1f5f9]', text: 'text-[#475569]', dot: 'bg-[#94a3b8]' },
+}
+
+function StatusBadge({ status }) {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.upcoming
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${cfg.bg} ${cfg.text}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot} ${status === 'live' ? 'animate-pulse' : ''}`} />
+      {cfg.label}
+    </span>
+  )
+}
+
+function ClassDetailModal({ session, attendeeUsers, onClose, onCancel, onRegenerate, regeneratingId }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-5" onClick={onClose}>
+      <div
+        className="w-full max-w-[780px] max-h-[90vh] overflow-y-auto rounded-[16px] border border-black/[0.08] bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className={`relative rounded-t-[16px] p-5 sm:p-6 ${session.status === 'live' ? 'bg-[#0f172a]' : 'bg-[#f8fafc]'}`}>
+          <button onClick={onClose} className="absolute right-4 top-4 rounded-full p-1.5 hover:bg-white/10">
+            <X className={`h-5 w-5 ${session.status === 'live' ? 'text-white/70' : 'text-[#94a3b8]'}`} />
+          </button>
+
+          <div className="flex items-start gap-3">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] ${session.status === 'live' ? 'bg-[#ef4444]' : 'bg-[#5b3df6]'}`}>
+              <Video className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <StatusBadge status={session.status} />
+                <span className={`text-[12px] ${session.status === 'live' ? 'text-white/60' : 'text-[#94a3b8]'}`}>
+                  {session.platform}
+                </span>
+              </div>
+              <h2 className={`mt-1 text-[22px] font-bold ${session.status === 'live' ? 'text-white' : 'text-[#0f172a]'}`}>
+                {session.title}
+              </h2>
+              <p className={`text-[13px] ${session.status === 'live' ? 'text-white/60' : 'text-[#64748b]'}`}>
+                {session.topic}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 sm:p-6 space-y-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {[
+              { label: 'Course', value: session.course, icon: BookOpen },
+              { label: 'Instructor', value: session.instructor, icon: UserCheck },
+              { label: 'Date & Time', value: `${session.date} • ${session.time}`, icon: CalendarDays },
+              { label: 'Duration', value: session.duration, icon: Clock3 },
+              { label: 'Students Enrolled', value: String(session.studentsEnrolled), icon: Users },
+              { label: 'Amount', value: `INR ${session.amountText}`, icon: Link2 },
+            ].map(({ label, value, icon: Icon }) => (
+              <div key={label} className="flex items-center gap-3 rounded-[10px] border border-black/[0.06] p-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#f7f4ff]">
+                  <Icon className="h-4 w-4 text-[#5b3df6]" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-[#94a3b8]">{label}</p>
+                  <p className="text-[13px] font-semibold text-[#0f172a]">{value || '-'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {session.image ? (
+            <img src={session.image} alt={session.title} className="h-44 w-full rounded-[10px] border border-black/[0.08] object-cover" />
+          ) : null}
+
+          <div>
+            <p className="mb-2 text-[13px] font-semibold text-[#0f172a]">Assigned students ({attendeeUsers.length})</p>
+            {attendeeUsers.length > 0 ? (
+              <div className="space-y-2">
+                {attendeeUsers.map((student) => (
+                  <div key={student._id} className="flex items-center gap-3 rounded-[10px] border border-black/[0.06] p-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f1f5f9] text-[11px] font-semibold text-[#475569]">
+                      {(student.full_name || student.email || 'S').slice(0, 1).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-semibold text-[#0f172a]">{student.full_name || 'Student'}</p>
+                      <p className="text-[11px] text-[#94a3b8]">{student.email || '-'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-[10px] border border-dashed border-black/[0.12] bg-[#fafcff] p-3 text-[12px] text-[#64748b]">
+                No students assigned to this class.
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-2">
+            {session.joinLink ? (
+              <a
+                className="inline-flex h-10 items-center gap-2 rounded-[8px] bg-[#5b3df6] px-4 text-[13px] font-semibold text-white"
+                href={session.joinLink}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Link2 className="h-4 w-4" /> Open Join Link
+              </a>
+            ) : (
+              <button
+                onClick={() => onRegenerate(session.id)}
+                disabled={regeneratingId === session.id}
+                className="inline-flex h-10 items-center gap-2 rounded-[8px] border border-[#c7d2fe] bg-[#eef2ff] px-4 text-[13px] font-semibold text-[#4338ca] disabled:opacity-60"
+              >
+                {regeneratingId === session.id ? 'Generating...' : 'Generate Zoom Link'}
+              </button>
+            )}
+            <button
+              onClick={() => onCancel(session.id)}
+              className="inline-flex h-10 items-center gap-2 rounded-[8px] border border-black/[0.08] px-4 text-[13px] font-semibold text-[#b91c1c] hover:bg-[#fff1f2]"
+            >
+              <Trash2 className="h-4 w-4" /> Cancel Class
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ReassignInstructorModal({
+  session,
+  instructors,
+  selectedInstructorId,
+  onSelectInstructor,
+  onClose,
+  onSubmit,
+  isSubmitting,
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4" onClick={onClose}>
+      <div className="w-full max-w-[500px] rounded-[12px] border border-black/[0.08] bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3 border-b border-black/[0.08] px-4 py-4 sm:px-5">
+          <div>
+            <h3 className="text-[20px] font-bold text-[#0f172a]">Reassign Instructor</h3>
+            <p className="mt-1 text-[12px] text-[#64748b]">{session?.title || 'Live Class'}</p>
+          </div>
+          <button onClick={onClose} className="text-[#94a3b8] hover:text-[#64748b]">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-3 px-4 py-4 sm:px-5">
+          <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Select instructor</label>
+          <div className="relative">
+            <select
+              value={selectedInstructorId}
+              onChange={(e) => onSelectInstructor(e.target.value)}
+              className="h-10 w-full appearance-none rounded-[8px] border border-black/[0.08] px-4 text-[13px]"
+            >
+              <option value="">Choose instructor</option>
+              {instructors.map((i) => (
+                <option key={i._id} value={i._id}>{i.full_name || i.name || i.username || i.email || i._id}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+          </div>
+          {instructors.length === 0 ? (
+            <p className="text-[12px] text-[#b91c1c]">No instructors found. Please refresh or add instructors first.</p>
+          ) : null}
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-black/[0.08] px-4 py-4 sm:px-5">
+          <button onClick={onClose} className="h-10 rounded-[8px] border border-black/[0.08] bg-white px-4 text-[13px] font-semibold text-[#4b5563]">
+            Cancel
+          </button>
+          <button
+            onClick={onSubmit}
+            disabled={isSubmitting}
+            className="h-10 rounded-[8px] bg-[#5b3df6] px-4 text-[13px] font-semibold text-white disabled:opacity-60"
+          >
+            {isSubmitting ? 'Updating...' : 'Update Instructor'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SessionCard({ session, onClick, onDelete, onRegenerate, onReassign, regeneratingId }) {
+  const isLive = session.status === 'live'
+  return (
+    <div
+      onClick={onClick}
+      className={`group relative cursor-pointer overflow-hidden rounded-[14px] border transition-all duration-200 hover:shadow-md ${isLive ? 'border-[#ef4444]/30 bg-[#fff5f5]' : 'border-black/[0.08] bg-white hover:border-[#5b3df6]/30'}`}
+    >
+      {isLive ? <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ef4444] to-[#f97316]" /> : null}
+
+      <div className="p-4">
+        {session.image ? (
+          <img src={session.image} alt={session.title} className="mb-3 h-36 w-full rounded-[10px] border border-black/[0.08] object-cover" />
+        ) : (
+          <div className="mb-3 flex h-36 w-full items-center justify-center rounded-[10px] border border-dashed border-black/[0.12] bg-[#f8fafc] text-[11px] font-medium text-[#94a3b8]">
+            No class image
+          </div>
+        )}
+
+        <div className="flex items-start justify-between gap-2">
+          <StatusBadge status={session.status} />
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(session.id)
+            }}
+            className="opacity-0 group-hover:opacity-100 rounded-[6px] p-1 hover:bg-[#fee2e2] transition-all"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-[#ef4444]" />
+          </button>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2">
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] ${isLive ? 'bg-[#ef4444]' : 'bg-[#f7f4ff]'}`}>
+            <Video className={`h-4 w-4 ${isLive ? 'text-white' : 'text-[#5b3df6]'}`} />
+          </div>
+          <div>
+            <p className="text-[14px] font-bold text-[#0f172a] leading-tight">{session.title}</p>
+            <p className="text-[11px] text-[#64748b]">{session.course}</p>
+          </div>
+        </div>
+
+        <div className="mt-3 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
+            <UserCheck className="h-3.5 w-3.5 text-[#94a3b8]" />
+            <span>{session.instructor}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
+            <CalendarDays className="h-3.5 w-3.5 text-[#94a3b8]" />
+            <span>{session.date} • {session.time} • {session.duration}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
+            <Users className="h-3.5 w-3.5 text-[#94a3b8]" />
+            <span>{session.studentsEnrolled} students assigned</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
+            <span className="font-medium text-[#4338ca]">Amount:</span>
+            <span>INR {session.amountText}</span>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            {session.joinLink ? (
+              <a
+                onClick={(e) => e.stopPropagation()}
+                href={session.joinLink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 rounded-[8px] border border-[#c7d2fe] bg-[#eef2ff] px-2.5 py-1 text-[11px] font-semibold text-[#4338ca]"
+              >
+                <Link2 className="h-3 w-3" /> Join Link
+              </a>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRegenerate(session.id)
+                }}
+                disabled={regeneratingId === session.id}
+                className="inline-flex items-center gap-1 rounded-[8px] border border-[#c7d2fe] bg-[#eef2ff] px-2.5 py-1 text-[11px] font-semibold text-[#4338ca] disabled:opacity-60"
+              >
+                {regeneratingId === session.id ? 'Generating...' : 'Generate Link'}
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onReassign(session)
+              }}
+              className="inline-flex items-center gap-1 rounded-[8px] border border-[#dbeafe] bg-[#eff6ff] px-2.5 py-1 text-[11px] font-semibold text-[#1d4ed8]"
+            >
+              <UserCheck className="h-3 w-3" /> Reassign
+            </button>
+          </div>
+          <span className="text-[11px] font-medium text-[#5b3df6] group-hover:underline">View details</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminLiveClasses() {
-  const tenantId = localStorage.getItem('lms_tenant_id')
-  const [currentUser, setCurrentUser] = useState(null)
+  const [activeView, setActiveView] = useState('list')
+  const [isAddSessionOpen, setIsAddSessionOpen] = useState(false)
   const [classes, setClasses] = useState([])
+  const [courses, setCourses] = useState([])
   const [instructors, setInstructors] = useState([])
   const [students, setStudents] = useState([])
-  const [showCreate, setShowCreate] = useState(false)
-  const [hostMode, setHostMode] = useState('self')
-  const [loadingData, setLoadingData] = useState(false)
-  const [creating, setCreating] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [activeFilter, setActiveFilter] = useState('All Classes')
+  const [selectedSession, setSelectedSession] = useState(null)
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(false)
   const [createError, setCreateError] = useState('')
-  const [regeneratingId, setRegeneratingId] = useState('')
   const [actionError, setActionError] = useState('')
+  const [regeneratingId, setRegeneratingId] = useState('')
+  const [reassignTarget, setReassignTarget] = useState(null)
+  const [reassignInstructorId, setReassignInstructorId] = useState('')
+  const [reassigningId, setReassigningId] = useState('')
+  const [hostMode, setHostMode] = useState('self')
+
+  const tenantId = localStorage.getItem('lms_tenant_id')
+
   const [form, setForm] = useState({
     title: '',
     course_id: '',
     instructor_id: '',
-    attendee_ids: [],
     start_at: '',
     duration_minutes: 60,
     amount: '',
     image_url: '',
+    attendee_ids: [],
   })
 
-  const loadClasses = async () => {
-    try {
-      const res = await api('/lms/live-classes?limit=200')
-      setClasses(res.items || [])
-    } catch {
-      setClasses([])
-    }
-  }
+  const handleFormChange = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
-  const loadLookups = async () => {
-    setLoadingData(true)
+  const loadData = async () => {
+    setLoading(true)
     try {
-      const [me, instructorsRes, studentsRes] = await Promise.all([
-        api('/auth/me'),
-        api('/lms/users?role=instructor&limit=200'),
-        api('/lms/users?role=student&limit=500'),
+      const [classesRes, coursesRes, instructorsRes, studentsRes, allUsersRes, me] = await Promise.all([
+        api('/lms/live-classes?limit=300').catch(() => ({ items: [] })),
+        api('/lms/courses?limit=500').catch(() => ({ items: [] })),
+        api('/lms/instructors?limit=1000').catch(() => ({ items: [] })),
+        api('/lms/users?role=student&limit=500').catch(() => ({ items: [] })),
+        api('/lms/users?limit=1000').catch(() => ({ items: [] })),
+        api('/auth/me').catch(() => null),
       ])
-      setCurrentUser(me)
-      setInstructors(instructorsRes.items || [])
+
+      const roleValue = (value) => String(value || '').trim().toLowerCase()
+      const roleMatchedInstructors = instructorsRes.items || []
+      const inferredInstructors = (allUsersRes.items || []).filter((u) => {
+        const r = roleValue(u?.role)
+        return r.includes('instructor') || r.includes('teacher') || r.includes('faculty')
+      })
+      const mergedInstructors = [...roleMatchedInstructors, ...inferredInstructors]
+      const seen = new Set()
+      const finalInstructors = mergedInstructors.filter((u) => {
+        const id = String(u?._id || '')
+        if (!id || seen.has(id)) return false
+        seen.add(id)
+        return true
+      })
+
+      setClasses(classesRes.items || [])
+      setCourses(coursesRes.items || [])
+      setInstructors(finalInstructors)
       setStudents(studentsRes.items || [])
-    } catch {
-      setCurrentUser(null)
-      setInstructors([])
-      setStudents([])
+      setCurrentUser(me)
+
+      if (!form.course_id && (coursesRes.items || []).length > 0) {
+        setForm((prev) => ({ ...prev, course_id: coursesRes.items[0]._id }))
+      }
     } finally {
-      setLoadingData(false)
+      setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadClasses()
-    loadLookups()
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useRealtime(tenantId ? `tenant:${tenantId}` : '', (payload) => {
-    if (payload?.type?.startsWith('live_class.')) loadClasses()
+    if (payload?.type?.startsWith('live_class.')) {
+      loadData()
+    }
   })
 
+  const courseMap = useMemo(() => new Map(courses.map((c) => [c._id, c])), [courses])
+  const userMap = useMemo(() => {
+    const map = new Map()
+    instructors.forEach((u) => map.set(u._id, u))
+    students.forEach((u) => map.set(u._id, u))
+    return map
+  }, [instructors, students])
+
+  const sessions = useMemo(() => {
+    return classes.map((c) => {
+      const start = c.start_at ? new Date(c.start_at) : null
+      const course = courseMap.get(c.course_id)
+      const instructor = userMap.get(c.instructor_id)
+
+      return {
+        id: c._id,
+        title: c.title || 'Live Class',
+        course: course?.title || c.course_id || 'Course',
+        instructorId: c.instructor_id || '',
+        instructor: instructor?.full_name || instructor?.email || c.instructor_id || 'Instructor',
+        date: start ? start.toLocaleDateString() : '-',
+        time: start ? start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
+        duration: `${c.duration_minutes || 60} mins`,
+        platform: (c.meeting_provider || 'Zoom').toString().toUpperCase(),
+        status: c.status || 'upcoming',
+        joinLink: c.join_url || '',
+        topic: c.title || 'Session',
+        studentsEnrolled: (c.attendee_ids || []).length,
+        attendeeIds: c.attendee_ids || [],
+        amountText: Number(c.amount || 0).toFixed(2),
+        image: c.image_url || '',
+      }
+    })
+  }, [classes, courseMap, userMap])
+
+  const filtered = useMemo(() => {
+    return sessions.filter((s) => {
+      const matchFilter =
+        activeFilter === 'All Classes' ||
+        (activeFilter === 'Live' && s.status === 'live') ||
+        (activeFilter === 'Upcoming' && s.status === 'upcoming') ||
+        (activeFilter === 'Recent' && s.status === 'recent') ||
+        (activeFilter === 'Cancelled' && s.status === 'cancelled')
+
+      const q = search.trim().toLowerCase()
+      const matchSearch =
+        !q ||
+        s.title.toLowerCase().includes(q) ||
+        s.instructor.toLowerCase().includes(q) ||
+        s.course.toLowerCase().includes(q)
+
+      return matchFilter && matchSearch
+    })
+  }, [sessions, activeFilter, search])
+
   const stats = useMemo(() => {
-    const total = classes.length
-    const upcoming = classes.filter((c) => c.status === 'upcoming').length
-    const cancelled = classes.filter((c) => c.status === 'cancelled').length
-    const today = classes.filter((c) => {
-      if (!c.start_at) return false
-      const d = new Date(c.start_at)
-      const n = new Date()
-      return d.toDateString() === n.toDateString()
-    }).length
-    return { total, upcoming, cancelled, today }
-  }, [classes])
-
-  const createClass = async () => {
-    setCreateError('')
-    const title = form.title.trim()
-    const courseId = form.course_id.trim()
-    const imageUrl = form.image_url.trim()
-    const assignedInstructor = form.instructor_id.trim()
-    const instructorId = hostMode === 'self' ? currentUser?._id || '' : assignedInstructor
-
-    if (!title || !courseId || !form.start_at) {
-      setCreateError('Please fill title, course ID and start date/time.')
-      return
-    }
-    if (!instructorId) {
-      setCreateError('Please choose who will host this class.')
-      return
-    }
-
-    try {
-      setCreating(true)
-      await api('/lms/live-classes', {
-        method: 'POST',
-        body: JSON.stringify({
-          title,
-          course_id: courseId,
-          instructor_id: instructorId,
-          attendee_ids: form.attendee_ids,
-          start_at: new Date(form.start_at).toISOString(),
-          duration_minutes: Number(form.duration_minutes) || 60,
-          amount: Number(form.amount || 0),
-          image_url: imageUrl,
-          repeat_daily: false,
-        }),
-      })
-      setShowCreate(false)
-      setForm({
-        title: '',
-        course_id: '',
-        instructor_id: '',
-        attendee_ids: [],
-        start_at: '',
-        duration_minutes: 60,
-        amount: '',
-        image_url: '',
-      })
-      await loadClasses()
-    } catch (error) {
-      setCreateError(error?.message || 'Unable to create live class. Check Zoom credentials and try again.')
-    } finally {
-      setCreating(false)
-    }
-  }
+    const total = sessions.length
+    const live = sessions.filter((s) => s.status === 'live').length
+    const upcoming = sessions.filter((s) => s.status === 'upcoming').length
+    const cancelled = sessions.filter((s) => s.status === 'cancelled').length
+    return { total, live, upcoming, cancelled }
+  }, [sessions])
 
   const handleImageSelect = (event) => {
     const file = event.target.files?.[0]
@@ -142,10 +473,64 @@ export default function AdminLiveClasses() {
     reader.readAsDataURL(file)
   }
 
-  const cancelClass = async (id) => {
-    setActionError('')
-    await api(`/lms/live-classes/${id}`, { method: 'DELETE' }).catch(() => {})
-    loadClasses()
+  const createClass = async () => {
+    setCreateError('')
+    const title = form.title.trim()
+    const courseId = form.course_id.trim()
+    const instructorId = hostMode === 'self' ? currentUser?._id || '' : form.instructor_id.trim()
+
+    if (!title || !courseId || !form.start_at) {
+      setCreateError('Please fill class title, course, and start date/time.')
+      return
+    }
+
+    if (!instructorId) {
+      setCreateError('Please select class host.')
+      return
+    }
+
+    try {
+      await api('/lms/live-classes', {
+        method: 'POST',
+        body: JSON.stringify({
+          title,
+          course_id: courseId,
+          instructor_id: instructorId,
+          attendee_ids: form.attendee_ids,
+          start_at: new Date(form.start_at).toISOString(),
+          duration_minutes: Number(form.duration_minutes || 60),
+          amount: Number(form.amount || 0),
+          image_url: form.image_url.trim(),
+          repeat_daily: false,
+        }),
+      })
+
+      setForm({
+        title: '',
+        course_id: courses[0]?._id || '',
+        instructor_id: '',
+        start_at: '',
+        duration_minutes: 60,
+        amount: '',
+        image_url: '',
+        attendee_ids: [],
+      })
+      setIsAddSessionOpen(false)
+      await loadData()
+    } catch (error) {
+      setCreateError(error?.message || 'Unable to create class.')
+    }
+  }
+
+  const handleDelete = async (id) => {
+    try {
+      setActionError('')
+      await api(`/lms/live-classes/${id}`, { method: 'DELETE' })
+      await loadData()
+      if (selectedSession?.id === id) setSelectedSession(null)
+    } catch (error) {
+      setActionError(error?.message || 'Unable to cancel class.')
+    }
   }
 
   const regenerateZoom = async (id) => {
@@ -153,7 +538,7 @@ export default function AdminLiveClasses() {
       setActionError('')
       setRegeneratingId(id)
       await api(`/lms/live-classes/${id}/regenerate-zoom`, { method: 'POST' })
-      await loadClasses()
+      await loadData()
     } catch (error) {
       setActionError(error?.message || 'Unable to regenerate Zoom link.')
     } finally {
@@ -161,289 +546,513 @@ export default function AdminLiveClasses() {
     }
   }
 
-  return (
-    <div className="min-h-full bg-[radial-gradient(1200px_400px_at_100%_-20%,#d9ccff_0%,#f7fafd_50%,#f7fafd_100%)] p-4 sm:p-6">
-      <section className="rounded-[16px] border border-black/[0.06] bg-white p-5 shadow-[0_14px_40px_-28px_rgba(31,41,55,0.45)]">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-[28px] font-black tracking-[-0.02em] text-[#0f172a]">Live Classes Studio</h1>
-            <p className="text-[13px] text-[#64748b]">Create classes, auto-generate Zoom links, and assign sessions instantly.</p>
-          </div>
-          <button onClick={() => { setCreateError(''); setShowCreate(true) }} className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-[#4f46e5] px-4 text-[13px] font-semibold text-white shadow-[0_10px_24px_-14px_rgba(79,70,229,0.9)] transition hover:bg-[#4338ca]">
-            <Plus className="h-4 w-4" />
-            Create Class
-          </button>
-        </div>
-      </section>
+  const openReassignModal = (session) => {
+    setReassignTarget(session)
+    setReassignInstructorId(session?.instructorId || '')
+  }
 
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Total" value={stats.total} />
-        <Stat label="Today" value={stats.today} />
-        <Stat label="Upcoming" value={stats.upcoming} />
-        <Stat label="Cancelled" value={stats.cancelled} />
-      </div>
+  const closeReassignModal = () => {
+    setReassignTarget(null)
+    setReassignInstructorId('')
+    setReassigningId('')
+  }
 
-      <section className="mt-4 rounded-[16px] border border-black/[0.06] bg-white p-4 shadow-[0_14px_40px_-28px_rgba(31,41,55,0.45)]">
-        <div className="mb-3 text-[14px] font-semibold text-[#0f172a]">Class List ({classes.length})</div>
-        {actionError ? (
-          <div className="mb-3 flex items-start gap-2 rounded-[10px] border border-[#fecaca] bg-[#fff1f2] p-3 text-[12px] text-[#991b1b]">
-            <AlertCircle className="mt-[1px] h-4 w-4 shrink-0" />
-            <p>{actionError}</p>
-          </div>
-        ) : null}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {classes.map((c) => (
-            <div key={c._id} className="flex h-full flex-col rounded-[12px] border border-black/[0.07] bg-white p-3 shadow-[0_10px_24px_-20px_rgba(2,6,23,0.6)]">
-              {c.image_url ? (
-                <img
-                  src={c.image_url}
-                  alt={c.title}
-                  className="h-32 w-full rounded-[10px] border border-black/[0.08] object-cover"
-                />
-              ) : (
-                <div className="flex h-32 w-full items-center justify-center rounded-[10px] border border-dashed border-black/[0.12] bg-[#f8fafc] text-[11px] font-medium text-[#94a3b8]">
-                  No class image
-                </div>
-              )}
+  const reassignInstructor = async () => {
+    if (!reassignTarget?.id) return
+    if (!reassignInstructorId) {
+      setActionError('Please select instructor to reassign.')
+      return
+    }
 
-              <div className="mt-3">
-                <div className="line-clamp-2 text-[15px] font-semibold text-[#0f172a]">{c.title}</div>
-                <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-[#475569]">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#f1f5f9] px-2 py-1"><CalendarDays className="h-3 w-3" />{c.start_at ? new Date(c.start_at).toLocaleString() : '-'}</span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#f1f5f9] px-2 py-1"><Video className="h-3 w-3" />{c.status || 'upcoming'}</span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#f1f5f9] px-2 py-1"><Clock3 className="h-3 w-3" />{c.duration_minutes || 60} mins</span>
-                  <span className="inline-flex items-center rounded-full bg-[#eef2ff] px-2 py-1 font-semibold text-[#4338ca]">Amount: {Number(c.amount || 0).toFixed(2)}</span>
-                </div>
-                {c.zoom_error ? (
-                  <p className="mt-2 text-[11px] text-[#b45309]">Zoom issue: {c.zoom_error}</p>
-                ) : null}
-              </div>
+    try {
+      setActionError('')
+      setReassigningId(reassignTarget.id)
+      await api(`/lms/live-classes/${reassignTarget.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ instructor_id: reassignInstructorId }),
+      })
+      await loadData()
+      if (selectedSession?.id === reassignTarget.id) {
+        setSelectedSession(null)
+      }
+      closeReassignModal()
+    } catch (error) {
+      setActionError(error?.message || 'Unable to reassign instructor.')
+    } finally {
+      setReassigningId('')
+    }
+  }
 
-              <div className="mt-4 flex items-center gap-2">
-                {c.join_url ? (
-                  <a className="inline-flex h-8 items-center gap-1 rounded-[8px] border border-[#c7d2fe] bg-[#eef2ff] px-3 text-[12px] font-medium text-[#4338ca]" href={c.join_url} target="_blank" rel="noreferrer">
-                    <Link2 className="h-3 w-3" />
-                    Join Link
-                  </a>
-                ) : (
-                  <span className="text-[11px] text-[#64748b]">No join link</span>
-                )}
-              </div>
+  const selectedAttendees = useMemo(() => {
+    if (!selectedSession) return []
+    return selectedSession.attendeeIds.map((id) => userMap.get(id)).filter(Boolean)
+  }, [selectedSession, userMap])
 
-              <div className="mt-2 flex items-center gap-2">
-                {!c.join_url ? (
-                  <button
-                    onClick={() => regenerateZoom(c._id)}
-                    disabled={regeneratingId === c._id}
-                    className="h-8 rounded-[8px] border border-[#c7d2fe] bg-[#eef2ff] px-3 text-[12px] font-medium text-[#4338ca] hover:bg-[#e0e7ff] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {regeneratingId === c._id ? 'Generating...' : 'Regenerate Zoom Link'}
-                  </button>
-                ) : null}
-                <button onClick={() => cancelClass(c._id)} className="h-8 rounded-[8px] border border-black/[0.08] px-3 text-[12px] font-medium text-[#b91c1c] hover:bg-[#fff1f2]">
-                  Cancel
-                </button>
-              </div>
+  if (activeView === 'create') {
+    return (
+      <div className="min-h-full bg-[#f6f8fa] p-4 sm:p-5">
+        <div className="mx-auto max-w-[1180px] rounded-[10px] border border-black/[0.08] bg-white p-5">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button onClick={() => setActiveView('list')} className="inline-flex items-center gap-2 text-[13px] font-medium text-[#5b3df6]">
+              <ArrowLeft className="h-4 w-4" /> Back to Live Classes
+            </button>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <button onClick={() => setActiveView('list')} className="h-9 rounded-[7px] border border-black/[0.08] bg-white px-3 text-[12px] font-semibold text-[#334155]">
+                Cancel
+              </button>
+              <button onClick={createClass} className="h-9 rounded-[7px] bg-[#5b3df6] px-3 text-[12px] font-semibold text-white">
+                Create Zoom Meeting
+              </button>
             </div>
-          ))}
-          {classes.length === 0 && <p className="text-[12px] text-[#64748b]">No live classes found.</p>}
-        </div>
-      </section>
+          </div>
 
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
-          <div className="w-full max-w-[760px] rounded-[18px] bg-white p-6 shadow-2xl">
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <h2 className="text-[22px] font-black tracking-[-0.02em] text-[#0f172a]">Create Live Class</h2>
-                <p className="text-[12px] text-[#64748b]">Zoom link is generated automatically on submit.</p>
-              </div>
-              <button onClick={() => setShowCreate(false)} className="rounded-full p-1 hover:bg-black/[0.06]"><X className="h-5 w-5 text-[#64748b]" /></button>
+          <p className="text-[12px] text-[#94a3b8]">Live Classes / Create Zoom Meeting</p>
+          <h2 className="mt-1 text-[26px] font-bold text-[#0f172a] sm:text-[32px]">Create Zoom Meeting</h2>
+
+          {createError ? (
+            <div className="mt-3 rounded-[8px] border border-[#fecaca] bg-[#fff1f2] p-3 text-[12px] text-[#991b1b]">
+              {createError}
             </div>
+          ) : null}
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="space-y-3">
-                <InputLabel label="Class Title">
+          <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[1.5fr_1fr]">
+            <section className="rounded-[8px] border border-black/[0.08] bg-white p-4">
+              <h3 className="text-[18px] font-bold text-[#111827]">Batch Configuration</h3>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Session title *</label>
                   <input
-                    placeholder="Advanced React Session"
-                    className="h-11 w-full rounded-[10px] border border-black/[0.08] px-3 text-[13px] outline-none focus:border-[#4f46e5]"
                     value={form.title}
-                    onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                    onChange={(e) => handleFormChange('title', e.target.value)}
+                    className="h-10 w-full rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
+                    placeholder="e.g. Math Mastery Live - Chapter 5"
                   />
-                </InputLabel>
-
-                <InputLabel label="Course ID">
-                  <input
-                    placeholder="course_123"
-                    className="h-11 w-full rounded-[10px] border border-black/[0.08] px-3 text-[13px] outline-none focus:border-[#4f46e5]"
-                    value={form.course_id}
-                    onChange={(e) => setForm((f) => ({ ...f, course_id: e.target.value }))}
-                  />
-                </InputLabel>
-
-                <InputLabel label="Amount">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                    className="h-11 w-full rounded-[10px] border border-black/[0.08] px-3 text-[13px] outline-none focus:border-[#4f46e5]"
-                    value={form.amount}
-                    onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-                  />
-                </InputLabel>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Course program *</label>
+                  <div className="relative">
+                    <select
+                      value={form.course_id}
+                      onChange={(e) => handleFormChange('course_id', e.target.value)}
+                      className="h-10 w-full appearance-none rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
+                    >
+                      {courses.map((c) => (
+                        <option key={c._id} value={c._id}>{c.title}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                  </div>
+                </div>
 
                 <div>
-                  <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#475569]">Who will host?</p>
-                  <div className="grid grid-cols-2 gap-2 rounded-[12px] bg-[#f1f5f9] p-1">
+                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Who will host?</label>
+                  <div className="grid grid-cols-2 gap-2 rounded-[8px] bg-[#f1f5f9] p-1">
                     <button
                       type="button"
                       onClick={() => setHostMode('self')}
-                      className={`h-10 rounded-[10px] text-[12px] font-semibold transition ${hostMode === 'self' ? 'bg-white text-[#0f172a] shadow' : 'text-[#64748b]'}`}
+                      className={`h-9 rounded-[7px] text-[12px] font-semibold ${hostMode === 'self' ? 'bg-white text-[#0f172a]' : 'text-[#64748b]'}`}
                     >
                       I will host
                     </button>
                     <button
                       type="button"
                       onClick={() => setHostMode('assign')}
-                      className={`h-10 rounded-[10px] text-[12px] font-semibold transition ${hostMode === 'assign' ? 'bg-white text-[#0f172a] shadow' : 'text-[#64748b]'}`}
+                      className={`h-9 rounded-[7px] text-[12px] font-semibold ${hostMode === 'assign' ? 'bg-white text-[#0f172a]' : 'text-[#64748b]'}`}
                     >
-                      Assign Instructor
+                      Assign
                     </button>
                   </div>
                 </div>
 
-                {hostMode === 'assign' ? (
-                  <InputLabel label="Select Instructor">
-                    <select
-                      className="h-11 w-full rounded-[10px] border border-black/[0.08] px-3 text-[13px] outline-none focus:border-[#4f46e5]"
-                      value={form.instructor_id}
-                      onChange={(e) => setForm((f) => ({ ...f, instructor_id: e.target.value }))}
-                    >
-                      <option value="">Choose instructor</option>
-                      {instructors.map((u) => (
-                        <option key={u._id} value={u._id}>{u.full_name || u.email}</option>
-                      ))}
-                    </select>
-                  </InputLabel>
-                ) : (
-                  <p className="rounded-[10px] border border-[#cbd5e1] bg-[#f8fafc] p-3 text-[12px] text-[#334155]">
-                    Class host: <span className="font-semibold">{currentUser?.full_name || currentUser?.email || 'Current admin'}</span>
-                  </p>
-                )}
-              </div>
+                <div>
+                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Instructor</label>
+                  {hostMode === 'self' ? (
+                    <div className="h-10 rounded-[7px] border border-black/[0.08] bg-[#f8fafc] px-3 text-[12px] text-[#334155] flex items-center">
+                      {currentUser?.full_name || currentUser?.email || 'Current admin'}
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <select
+                        value={form.instructor_id}
+                        onChange={(e) => handleFormChange('instructor_id', e.target.value)}
+                        className="h-10 w-full appearance-none rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
+                      >
+                        <option value="">Select instructor</option>
+                        {instructors.map((i) => (
+                          <option key={i._id} value={i._id}>{i.full_name || i.name || i.username || i.email || i._id}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                    </div>
+                  )}
+                </div>
 
-              <div className="space-y-3">
-                <InputLabel label="Class image">
-                  <div className="space-y-2">
-                    {form.image_url ? (
-                      <img
-                        src={form.image_url}
-                        alt="Class preview"
-                        className="h-24 w-36 rounded-[8px] border border-black/[0.08] object-cover"
-                      />
-                    ) : null}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageSelect}
-                      className="w-full rounded-[10px] border border-black/[0.08] px-3 py-2 text-[12px] file:mr-3 file:rounded file:border-0 file:bg-[#4f46e5] file:px-3 file:py-1 file:text-white"
-                    />
-                    <input
-                      type="url"
-                      placeholder="or paste image URL"
-                      className="h-11 w-full rounded-[10px] border border-black/[0.08] px-3 text-[13px] outline-none focus:border-[#4f46e5]"
-                      value={form.image_url}
-                      onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
-                    />
-                  </div>
-                </InputLabel>
-
-                <InputLabel label="Start Date & Time">
+                <div>
+                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Date & time *</label>
                   <input
                     type="datetime-local"
-                    className="h-11 w-full rounded-[10px] border border-black/[0.08] px-3 text-[13px] outline-none focus:border-[#4f46e5]"
                     value={form.start_at}
-                    onChange={(e) => setForm((f) => ({ ...f, start_at: e.target.value }))}
+                    onChange={(e) => handleFormChange('start_at', e.target.value)}
+                    className="h-10 w-full rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
                   />
-                </InputLabel>
+                </div>
 
-                <InputLabel label="Duration (minutes)">
+                <div>
+                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Duration (minutes)</label>
                   <input
                     type="number"
                     min="15"
-                    className="h-11 w-full rounded-[10px] border border-black/[0.08] px-3 text-[13px] outline-none focus:border-[#4f46e5]"
                     value={form.duration_minutes}
-                    onChange={(e) => setForm((f) => ({ ...f, duration_minutes: Number(e.target.value || 60) }))}
+                    onChange={(e) => handleFormChange('duration_minutes', Number(e.target.value || 60))}
+                    className="h-10 w-full rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
                   />
-                </InputLabel>
+                </div>
 
                 <div>
-                  <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#475569]">Invite Students</p>
-                  <div className="max-h-[190px] overflow-y-auto rounded-[10px] border border-black/[0.08] p-2">
-                    {loadingData ? (
-                      <p className="p-2 text-[12px] text-[#64748b]">Loading users...</p>
-                    ) : students.length === 0 ? (
-                      <p className="p-2 text-[12px] text-[#64748b]">No students found.</p>
-                    ) : (
-                      students.map((s) => (
-                        <label key={s._id} className="flex cursor-pointer items-center gap-2 rounded-[8px] p-2 hover:bg-[#f8fafc]">
-                          <input
-                            type="checkbox"
-                            checked={form.attendee_ids.includes(s._id)}
-                            onChange={(e) => {
-                              const checked = e.target.checked
-                              setForm((f) => ({
-                                ...f,
-                                attendee_ids: checked
-                                  ? [...f.attendee_ids, s._id]
-                                  : f.attendee_ids.filter((id) => id !== s._id),
-                              }))
-                            }}
-                          />
-                          <span className="text-[12px] text-[#334155]">{s.full_name || s.email}</span>
-                        </label>
-                      ))
-                    )}
+                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Amount</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.amount}
+                    onChange={(e) => handleFormChange('amount', e.target.value)}
+                    className="h-10 w-full rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Image URL</label>
+                  <input
+                    value={form.image_url}
+                    onChange={(e) => handleFormChange('image_url', e.target.value)}
+                    className="h-10 w-full rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
+                    placeholder="https://example.com/class.jpg"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <label className="mb-1 block text-[12px] font-medium text-[#334155]">Or upload class image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="w-full rounded-[7px] border border-black/[0.08] px-3 py-2 text-[12px] file:mr-3 file:rounded file:border-0 file:bg-[#5b3df6] file:px-3 file:py-1 file:text-white"
+                />
+              </div>
+
+              <div className="mt-3">
+                <label className="mb-1 block text-[12px] font-medium text-[#334155]">Invite students</label>
+                <div className="max-h-44 overflow-y-auto rounded-[8px] border border-black/[0.08] p-2">
+                  {students.length === 0 ? (
+                    <p className="text-[12px] text-[#94a3b8] p-2">No students found.</p>
+                  ) : (
+                    students.map((s) => (
+                      <label key={s._id} className="flex items-center gap-2 rounded-[7px] p-2 hover:bg-[#f8fafc] text-[12px] text-[#334155]">
+                        <input
+                          type="checkbox"
+                          checked={form.attendee_ids.includes(s._id)}
+                          onChange={(e) => {
+                            const checked = e.target.checked
+                            setForm((prev) => ({
+                              ...prev,
+                              attendee_ids: checked
+                                ? [...prev.attendee_ids, s._id]
+                                : prev.attendee_ids.filter((id) => id !== s._id),
+                            }))
+                          }}
+                        />
+                        {s.full_name || s.email}
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+            </section>
+
+            <aside className="space-y-3">
+              <section className="rounded-[8px] border border-black/[0.08] bg-white p-4">
+                <h3 className="text-[16px] font-bold text-[#111827]">Session Summary</h3>
+                <div className="mt-2 space-y-2 text-[12px] text-[#64748b]">
+                  <p>Title: {form.title || '-'}</p>
+                  <p>Course: {courseMap.get(form.course_id)?.title || '-'}</p>
+                  <p>Host: {hostMode === 'self' ? (currentUser?.full_name || currentUser?.email || '-') : (userMap.get(form.instructor_id)?.full_name || userMap.get(form.instructor_id)?.email || '-')}</p>
+                  <p>Duration: {form.duration_minutes || 60} mins</p>
+                  <p>Amount: INR {Number(form.amount || 0).toFixed(2)}</p>
+                </div>
+              </section>
+
+              {form.image_url ? (
+                <section className="rounded-[8px] border border-black/[0.08] bg-white p-4">
+                  <h3 className="text-[16px] font-bold text-[#111827] mb-2">Image Preview</h3>
+                  <img src={form.image_url} alt="Preview" className="h-36 w-full rounded-[8px] border border-black/[0.08] object-cover" />
+                </section>
+              ) : null}
+            </aside>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-full bg-[#f6f8fa]">
+      <div className="space-y-4 p-4 sm:p-5">
+        <section className="rounded-[8px] border border-black/[0.08] bg-[#eaf2fb] p-4">
+          <span className="inline-flex rounded-[12px] bg-[#ffd966] px-[10px] py-[5px] text-[11px] font-medium text-[#4b2e00]">Live teaching operations</span>
+          <h2 className="mt-3 max-w-[700px] text-[26px] font-bold leading-tight text-[#0f172a]">Schedule, track, and manage every live session from one class operations workspace.</h2>
+          <p className="mt-2 max-w-[700px] text-[14px] text-[#94a3b8]">All class cards below are loaded from real backend data.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button onClick={() => setActiveView('create')} className="inline-flex h-9 items-center gap-1 rounded-[7px] bg-[#5b3df6] px-3 text-[12px] font-semibold text-white">
+              <Plus className="h-4 w-4" /> Create Zoom meeting
+            </button>
+            <button className="h-9 rounded-[7px] border border-black/[0.08] bg-white px-3 text-[12px] font-semibold text-[#111827]" onClick={loadData}>
+              Refresh
+            </button>
+          </div>
+        </section>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: 'Total classes', value: stats.total },
+            { label: 'Live now', value: stats.live },
+            { label: 'Upcoming', value: stats.upcoming },
+            { label: 'Cancelled', value: stats.cancelled },
+          ].map(({ label, value }) => (
+            <div key={label} className="rounded-[8px] border border-black/[0.08] bg-white p-4">
+              <p className="text-[11px] text-[#94a3b8]">{label}</p>
+              <p className="mt-2 text-[32px] font-bold text-[#0f172a]">{value}</p>
+            </div>
+          ))}
+        </div>
+
+        <section className="rounded-[8px] border border-black/[0.08] bg-white p-4 sm:p-5">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-[20px] font-bold text-[#0f172a]">All Live Classes</h3>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search classes..."
+                  className="h-9 w-[200px] rounded-[7px] border border-black/[0.08] pl-9 pr-3 text-[12px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
+                />
+              </div>
+              <button onClick={() => setIsAddSessionOpen(true)} className="inline-flex h-9 items-center gap-1 rounded-[7px] bg-[#5b3df6] px-3 text-[12px] font-semibold text-white">
+                <Plus className="h-4 w-4" /> Add session
+              </button>
+            </div>
+          </div>
+
+          {actionError ? (
+            <div className="mb-3 rounded-[8px] border border-[#fecaca] bg-[#fff1f2] p-3 text-[12px] text-[#991b1b] inline-flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" /> {actionError}
+            </div>
+          ) : null}
+
+          <div className="mb-4 flex flex-wrap gap-2">
+            {FILTERS.map((f) => (
+              <button
+                key={f}
+                onClick={() => setActiveFilter(f)}
+                className={`h-8 rounded-[8px] px-3 text-[12px] font-medium transition-colors ${activeFilter === f ? 'bg-[#5b3df6] text-white' : 'border border-black/[0.08] bg-[#f8fafc] text-[#64748b] hover:bg-[#f1f5f9]'}`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+
+          {loading ? (
+            <div className="rounded-[12px] border border-dashed border-black/[0.12] bg-[#fafcff] py-12 text-center text-[13px] text-[#94a3b8]">
+              Loading classes...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-[12px] border border-dashed border-black/[0.12] bg-[#fafcff] py-12 text-center">
+              <Video className="mx-auto h-8 w-8 text-[#cbd5e1]" />
+              <p className="mt-3 text-[14px] font-medium text-[#94a3b8]">No classes found</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {filtered.map((session) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  onClick={() => setSelectedSession(session)}
+                  onDelete={handleDelete}
+                  onRegenerate={regenerateZoom}
+                  onReassign={openReassignModal}
+                  regeneratingId={regeneratingId}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {selectedSession ? (
+        <ClassDetailModal
+          session={selectedSession}
+          attendeeUsers={selectedAttendees}
+          onClose={() => setSelectedSession(null)}
+          onCancel={handleDelete}
+          onRegenerate={regenerateZoom}
+          regeneratingId={regeneratingId}
+        />
+      ) : null}
+
+      {reassignTarget ? (
+        <ReassignInstructorModal
+          session={reassignTarget}
+          instructors={instructors}
+          selectedInstructorId={reassignInstructorId}
+          onSelectInstructor={setReassignInstructorId}
+          onClose={closeReassignModal}
+          onSubmit={reassignInstructor}
+          isSubmitting={reassigningId === reassignTarget.id}
+        />
+      ) : null}
+
+      {isAddSessionOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
+          <div className="w-full max-w-[740px] rounded-[10px] border border-[#0ea5e9] bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-3 border-b border-[#7dd3fc] px-4 py-4 sm:px-6 sm:py-5">
+              <div>
+                <h3 className="text-[26px] font-bold leading-none text-[#111827]">Add session</h3>
+                <p className="mt-1 text-[14px] text-[#6b7280]">Schedule a new live class for an existing batch</p>
+              </div>
+              <button onClick={() => setIsAddSessionOpen(false)} className="text-[#94a3b8] hover:text-[#64748b]">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 px-4 py-4 sm:px-6 sm:py-5">
+              {createError ? (
+                <div className="rounded-[8px] border border-[#fecaca] bg-[#fff1f2] p-3 text-[12px] text-[#991b1b]">{createError}</div>
+              ) : null}
+
+              <div>
+                <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Session title *</label>
+                <input
+                  value={form.title}
+                  onChange={(e) => handleFormChange('title', e.target.value)}
+                  className="h-10 w-full rounded-[8px] border border-black/[0.08] px-4 text-[13px]"
+                  placeholder="e.g. Math Mastery Live - Chapter 4"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Course / Batch *</label>
+                  <div className="relative">
+                    <select
+                      value={form.course_id}
+                      onChange={(e) => handleFormChange('course_id', e.target.value)}
+                      className="h-10 w-full appearance-none rounded-[8px] border border-black/[0.08] px-4 text-[13px]"
+                    >
+                      {courses.map((c) => (
+                        <option key={c._id} value={c._id}>{c.title}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Host *</label>
+                  <div className="relative">
+                    <select
+                      value={hostMode === 'self' ? '__self__' : form.instructor_id}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        if (value === '__self__') {
+                          setHostMode('self')
+                          setForm((prev) => ({ ...prev, instructor_id: '' }))
+                        } else {
+                          setHostMode('assign')
+                          setForm((prev) => ({ ...prev, instructor_id: value }))
+                        }
+                      }}
+                      className="h-10 w-full appearance-none rounded-[8px] border border-black/[0.08] px-4 text-[13px]"
+                    >
+                      <option value="__self__">I will host ({currentUser?.full_name || currentUser?.email || 'Admin'})</option>
+                      {instructors.map((i) => (
+                        <option key={i._id} value={i._id}>{i.full_name || i.name || i.username || i.email || i._id}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
                   </div>
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Start Date & Time *</label>
+                  <input
+                    type="datetime-local"
+                    value={form.start_at}
+                    onChange={(e) => handleFormChange('start_at', e.target.value)}
+                    className="h-10 w-full rounded-[8px] border border-black/[0.08] px-4 text-[13px]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Duration *</label>
+                  <input
+                    type="number"
+                    min="15"
+                    value={form.duration_minutes}
+                    onChange={(e) => handleFormChange('duration_minutes', Number(e.target.value || 60))}
+                    className="h-10 w-full rounded-[8px] border border-black/[0.08] px-4 text-[13px]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Amount</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.amount}
+                    onChange={(e) => handleFormChange('amount', e.target.value)}
+                    className="h-10 w-full rounded-[8px] border border-black/[0.08] px-4 text-[13px]"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Image URL</label>
+                  <input
+                    value={form.image_url}
+                    onChange={(e) => handleFormChange('image_url', e.target.value)}
+                    className="h-10 w-full rounded-[8px] border border-black/[0.08] px-4 text-[13px]"
+                    placeholder="https://example.com/class.jpg"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Upload image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="w-full rounded-[8px] border border-black/[0.08] px-4 py-2 text-[12px] file:mr-3 file:rounded file:border-0 file:bg-[#5b3df6] file:px-3 file:py-1 file:text-white"
+                />
+              </div>
             </div>
 
-            {createError ? (
-              <div className="mt-3 flex items-start gap-2 rounded-[10px] border border-[#fecaca] bg-[#fff1f2] p-3 text-[12px] text-[#991b1b]">
-                <AlertCircle className="mt-[1px] h-4 w-4 shrink-0" />
-                <p>{createError}</p>
-              </div>
-            ) : null}
-
-            <div className="mt-4 flex gap-2">
-              <button onClick={() => setShowCreate(false)} className="h-10 flex-1 rounded-[10px] border border-black/[0.08] text-[12px] font-semibold text-[#334155]">Cancel</button>
-              <button onClick={createClass} disabled={creating} className="h-10 flex-1 rounded-[10px] bg-[#4f46e5] text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
-                {creating ? 'Creating...' : 'Create & Generate Zoom Link'}
+            <div className="flex justify-end gap-3 border-t border-[#7dd3fc] px-6 py-4">
+              <button onClick={() => setIsAddSessionOpen(false)} className="h-10 rounded-[8px] border border-black/[0.08] bg-white px-5 text-[13px] font-semibold text-[#4b5563]">
+                Cancel
+              </button>
+              <button onClick={createClass} className="h-10 rounded-[8px] bg-[#5b3df6] px-5 text-[13px] font-semibold text-white">
+                Schedule session
               </button>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
-  )
-}
-
-function Stat({ label, value }) {
-  return (
-    <div className="rounded-[14px] border border-black/[0.06] bg-white p-4 shadow-[0_14px_30px_-30px_rgba(2,6,23,0.7)]">
-      <div className="text-[12px] uppercase tracking-[0.06em] text-[#64748b]">{label}</div>
-      <div className="mt-1 text-[28px] font-black tracking-[-0.02em] text-[#0f172a]">{value}</div>
-    </div>
-  )
-}
-
-function InputLabel({ label, children }) {
-  return (
-    <label>
-      <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#475569]">{label}</p>
-      {children}
-    </label>
   )
 }
