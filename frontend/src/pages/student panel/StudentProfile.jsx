@@ -395,11 +395,11 @@ export default function StudentProfile() {
 
       {isEditing ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
-          <div className="w-full max-w-[560px] rounded-[16px] bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
+          <div className="w-full max-w-[720px] max-h-[92vh] overflow-hidden rounded-[16px] bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-black/[0.06] px-5 py-4 sm:px-6">
               <div>
-                <h3 className="text-[18px] font-bold text-[#0f172a]">Edit personal details</h3>
-                <p className="mt-1 text-[13px] text-[#64748b]">Update your profile info and image URL.</p>
+                <h3 className="text-[20px] font-bold text-[#0f172a]">Edit personal details</h3>
+                <p className="mt-1 text-[13px] text-[#64748b]">Update your profile information and avatar.</p>
               </div>
               <button
                 type="button"
@@ -410,86 +410,98 @@ export default function StudentProfile() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="mt-5 grid gap-4">
-              <label className="grid gap-2">
-                <span className="text-[12px] font-semibold text-[#0f172a]">Full name</span>
-                <input
-                  value={form.full_name}
-                  onChange={(event) => setForm((prev) => ({ ...prev, full_name: event.target.value }))}
-                  className="rounded-[8px] border border-black/[0.1] px-3 py-2.5 text-[13px] outline-none focus:border-[#5b3df6]"
-                  type="text"
-                  placeholder="Your full name"
-                />
-              </label>
+            <form onSubmit={handleSaveProfile} className="flex max-h-[calc(92vh-70px)] flex-col">
+              <div className="grid gap-5 overflow-y-auto px-5 py-5 sm:px-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label className="grid gap-2">
+                    <span className="text-[12px] font-semibold text-[#0f172a]">Full name</span>
+                    <input
+                      value={form.full_name}
+                      onChange={(event) => setForm((prev) => ({ ...prev, full_name: event.target.value }))}
+                      className="rounded-[10px] border border-black/[0.1] px-3 py-2.5 text-[13px] outline-none transition focus:border-[#5b3df6] focus:ring-2 focus:ring-[#5b3df6]/15"
+                      type="text"
+                      placeholder="Your full name"
+                    />
+                  </label>
 
-              <label className="grid gap-2">
-                <span className="text-[12px] font-semibold text-[#0f172a]">Email address</span>
-                <input
-                  value={form.email}
-                  onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-                  className="rounded-[8px] border border-black/[0.1] px-3 py-2.5 text-[13px] outline-none focus:border-[#5b3df6]"
-                  type="email"
-                  placeholder="you@example.com"
-                />
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-[12px] font-semibold text-[#0f172a]">Phone number</span>
-                <input
-                  value={form.phone}
-                  onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
-                  className="rounded-[8px] border border-black/[0.1] px-3 py-2.5 text-[13px] outline-none focus:border-[#5b3df6]"
-                  type="text"
-                  placeholder="Optional"
-                />
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-[12px] font-semibold text-[#0f172a]">Profile image</span>
-                <div className="space-y-3">
-                  {uploadedImageUrl || form.profile_image_url ? (
-                    <div className="rounded-[8px] border border-black/[0.1] p-3">
-                      <img
-                        src={uploadedImageUrl || form.profile_image_url}
-                        alt="Preview"
-                        className="h-[120px] w-[120px] rounded-[8px] object-cover"
-                      />
-                      <p className="mt-2 text-[11px] text-[#64748b]">
-                        {uploadedImageUrl ? 'New image selected (not saved yet)' : 'Current image'}
-                      </p>
-                    </div>
-                  ) : null}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageFileSelect}
-                    className="rounded-[8px] border border-black/[0.1] px-3 py-2.5 text-[13px] file:mr-3 file:rounded file:border-0 file:bg-[#5b3df6] file:px-3 file:py-1 file:text-[12px] file:font-semibold file:text-white hover:file:bg-[#4a2ed8]"
-                  />
-                  <p className="text-[11px] text-[#94a3b8]">Or paste image URL:</p>
-                  <input
-                    value={form.profile_image_url}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, profile_image_url: event.target.value }))
-                    }
-                    className="rounded-[8px] border border-black/[0.1] px-3 py-2.5 text-[13px] outline-none focus:border-[#5b3df6]"
-                    type="url"
-                    placeholder="https://example.com/image.jpg"
-                  />
+                  <label className="grid gap-2">
+                    <span className="text-[12px] font-semibold text-[#0f172a]">Email address</span>
+                    <input
+                      value={form.email}
+                      onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+                      className="rounded-[10px] border border-black/[0.1] px-3 py-2.5 text-[13px] outline-none transition focus:border-[#5b3df6] focus:ring-2 focus:ring-[#5b3df6]/15"
+                      type="email"
+                      placeholder="you@example.com"
+                    />
+                  </label>
                 </div>
-              </label>
 
-              <div className="mt-2 flex flex-wrap justify-end gap-3">
+                <label className="grid gap-2">
+                  <span className="text-[12px] font-semibold text-[#0f172a]">Phone number</span>
+                  <input
+                    value={form.phone}
+                    onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
+                    className="rounded-[10px] border border-black/[0.1] px-3 py-2.5 text-[13px] outline-none transition focus:border-[#5b3df6] focus:ring-2 focus:ring-[#5b3df6]/15"
+                    type="text"
+                    placeholder="Optional"
+                  />
+                </label>
+
+                <div className="grid gap-3">
+                  <span className="text-[12px] font-semibold text-[#0f172a]">Profile image</span>
+                  <div className="rounded-[10px] border border-black/[0.08] bg-[#f8fafc] p-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                      <div className="flex items-center justify-center">
+                        {uploadedImageUrl || form.profile_image_url ? (
+                          <img
+                            src={uploadedImageUrl || form.profile_image_url}
+                            alt="Preview"
+                            className="h-[110px] w-[110px] rounded-[10px] border border-black/[0.08] object-cover bg-white"
+                          />
+                        ) : (
+                          <div className="flex h-[110px] w-[110px] items-center justify-center rounded-[10px] border border-dashed border-black/[0.15] bg-white text-[11px] text-[#94a3b8]">
+                            No image
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1 space-y-3">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageFileSelect}
+                          className="w-full rounded-[10px] border border-black/[0.1] bg-white px-3 py-2.5 text-[13px] file:mr-3 file:rounded file:border-0 file:bg-[#5b3df6] file:px-3 file:py-1 file:text-[12px] file:font-semibold file:text-white hover:file:bg-[#4a2ed8]"
+                        />
+                        <p className="text-[11px] text-[#64748b]">
+                          {uploadedImageUrl ? 'New image selected. Click Save changes to apply.' : 'Upload an image or use a direct URL below.'}
+                        </p>
+                        <input
+                          value={form.profile_image_url}
+                          onChange={(event) =>
+                            setForm((prev) => ({ ...prev, profile_image_url: event.target.value }))
+                          }
+                          className="w-full rounded-[10px] border border-black/[0.1] bg-white px-3 py-2.5 text-[13px] outline-none transition focus:border-[#5b3df6] focus:ring-2 focus:ring-[#5b3df6]/15"
+                          type="url"
+                          placeholder="https://example.com/image.jpg"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-auto flex flex-wrap justify-end gap-3 border-t border-black/[0.06] bg-white px-5 py-4 sm:px-6">
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="rounded-[8px] border border-black/[0.1] bg-white px-4 py-2 text-[13px] font-semibold text-[#0f172a] hover:bg-[#f8fafc]"
+                  className="rounded-[10px] border border-black/[0.1] bg-white px-4 py-2 text-[13px] font-semibold text-[#0f172a] hover:bg-[#f8fafc]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-[8px] bg-[#5b3df6] px-4 py-2 text-[13px] font-semibold text-white shadow-sm hover:bg-[#4a2ed8] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="rounded-[10px] bg-[#5b3df6] px-4 py-2 text-[13px] font-semibold text-white shadow-sm hover:bg-[#4a2ed8] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {saving ? 'Saving...' : 'Save changes'}
                 </button>
