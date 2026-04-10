@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { BadgeCheck, ChevronLeft, ChevronRight, ClipboardCheck, Search, Star } from "lucide-react";
+import { BadgeCheck, ChevronLeft, ChevronRight, ClipboardCheck, Search, Star, Mail } from "lucide-react";
 import { api } from "../lib/api";
 
 export default (props) => {
@@ -9,6 +9,9 @@ export default (props) => {
     const [coursesLoading, setCoursesLoading] = useState(true);
     const [subscriptionPlans, setSubscriptionPlans] = useState([]);
     const [plansLoading, setPlansLoading] = useState(true);
+    const [newsletterEmail, setNewsletterEmail] = useState("");
+    const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
+    const [newsletterMessage, setNewsletterMessage] = useState("");
     const navigate = useNavigate();
 
     const getYoutubeVideoId = (url) => {
@@ -144,170 +147,187 @@ export default (props) => {
         },
     };
 
+    const handleNewsletterSubmit = (e) => {
+        e.preventDefault();
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(newsletterEmail)) {
+            setNewsletterMessage("Please enter a valid email address");
+            return;
+        }
+        setNewsletterSubmitted(true);
+        setNewsletterMessage("Thank you for subscribing! You'll receive updates soon.");
+        console.log("Newsletter subscribed:", newsletterEmail);
+        setNewsletterEmail("");
+        setTimeout(() => {
+            setNewsletterMessage("");
+            setNewsletterSubmitted(false);
+        }, 5000);
+    };
+
     return (
         <div className="relative flex flex-col overflow-hidden bg-white">
             <div className="self-stretch bg-[#F7FCFF]">
                 {/* Hero Section - Fixed overlapping issues */}
                 <div className="relative flex items-stretch self-stretch min-h-[635px]">
-					{/* Left panel — cream/beige */}
-					<div className="flex flex-1 flex-col justify-center bg-[#FEF6EE] pl-51 pr-40 py-16 gap-5 relative overflow-hidden">
-						{/* Squiggle top-right */}
-						<svg className="absolute top-10 right-55 opacity-60" width="70" height="60" viewBox="0 0 70 60" fill="none">
-							<path d="M8 50 Q18 8 38 28 Q55 48 62 12" stroke="#FF8A33" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-							<path d="M44 52 Q56 34 60 18" stroke="#FF8A33" strokeWidth="2" fill="none" strokeLinecap="round" />
-						</svg>
-						{/* Arrow squiggle bottom-right */}
-						<svg className="absolute bottom-55 right-70 opacity-50" width="55" height="55" viewBox="0 0 55 55" fill="none">
-							<path d="M5 45 Q16 5 32 22 Q48 38 50 12" stroke="#FF8A33" strokeWidth="2" fill="none" strokeLinecap="round" />
-							<line x1="42" y1="10" x2="52" y2="7" stroke="#FF8A33" strokeWidth="2" strokeLinecap="round" />
-							<line x1="52" y1="7" x2="50" y2="18" stroke="#FF8A33" strokeWidth="2" strokeLinecap="round" />
-						</svg>
+                    {/* Left panel — cream/beige */}
+                    <div className="flex flex-1 flex-col justify-center bg-[#FEF6EE] pl-51 pr-40 py-16 gap-5 relative overflow-hidden">
+                        {/* Squiggle top-right */}
+                        <svg className="absolute top-10 right-55 opacity-60" width="70" height="60" viewBox="0 0 70 60" fill="none">
+                            <path d="M8 50 Q18 8 38 28 Q55 48 62 12" stroke="#FF8A33" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                            <path d="M44 52 Q56 34 60 18" stroke="#FF8A33" strokeWidth="2" fill="none" strokeLinecap="round" />
+                        </svg>
+                        {/* Arrow squiggle bottom-right */}
+                        <svg className="absolute bottom-55 right-70 opacity-50" width="55" height="55" viewBox="0 0 55 55" fill="none">
+                            <path d="M5 45 Q16 5 32 22 Q48 38 50 12" stroke="#FF8A33" strokeWidth="2" fill="none" strokeLinecap="round" />
+                            <line x1="42" y1="10" x2="52" y2="7" stroke="#FF8A33" strokeWidth="2" strokeLinecap="round" />
+                            <line x1="52" y1="7" x2="50" y2="18" stroke="#FF8A33" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
 
-						{/* Badge */}
-						<div className="flex items-center gap-2">
-							<span style={{ color: "#FF8A33", fontSize: "17px", lineHeight: 1 }}>✳</span>
-							<span className="text-slate-500 text-sm">30 Days free trial</span>
-						</div>
+                        {/* Badge */}
+                        <div className="flex items-center gap-2">
+                            <span style={{ color: "#FF8A33", fontSize: "17px", lineHeight: 1 }}>✳</span>
+                            <span className="text-slate-500 text-sm">30 Days free trial</span>
+                        </div>
 
-						{/* Headline */}
-						<div>
-							<div className="text-[#1a5c3a] text-[50px] font-extrabold leading-[1.1]">Build Your Skills</div>
-							<div className="flex items-center gap-3 flex-wrap leading-[1.1] mt-1">
-								<span className="text-[#1a5c3a] text-[50px] font-extrabold">on the</span>
-								<span className="inline-block bg-[#FF8A33] text-white text-[50px] font-extrabold px-4 rounded-xl leading-tight">Best</span>
-							</div>
-							<div className="text-[#1a5c3a] text-[50px] font-extrabold leading-[1.1] mt-1">Platform</div>
-						</div>
+                        {/* Headline */}
+                        <div>
+                            <div className="text-[#1a5c3a] text-[50px] font-extrabold leading-[1.1]">Build Your Skills</div>
+                            <div className="flex items-center gap-3 flex-wrap leading-[1.1] mt-1">
+                                <span className="text-[#1a5c3a] text-[50px] font-extrabold">on the</span>
+                                <span className="inline-block bg-[#FF8A33] text-white text-[50px] font-extrabold px-4 rounded-xl leading-tight">Best</span>
+                            </div>
+                            <div className="text-[#1a5c3a] text-[50px] font-extrabold leading-[1.1] mt-1">Platform</div>
+                        </div>
 
-						{/* Subtitle */}
-						<p className="text-slate-400 text-[15px] max-w-[360px] leading-relaxed mt-1">
-							Find Unlimited Courses That Match Your Niche to Hasten the Process of Developing Your Skills
-						</p>
+                        {/* Subtitle */}
+                        <p className="text-slate-400 text-[15px] max-w-[360px] leading-relaxed mt-1">
+                            Find Unlimited Courses That Match Your Niche to Hasten the Process of Developing Your Skills
+                        </p>
 
-						{/* CTAs */}
-						<div className="flex items-center gap-5 mt-1">
-							<button
-								className="bg-[#1a5c3a] text-white text-sm font-bold py-3 px-8 rounded-lg border-0 cursor-pointer"
+                        {/* CTAs */}
+                        <div className="flex items-center gap-5 mt-1">
+                            <button
+                                className="bg-[#1a5c3a] text-white text-sm font-bold py-3 px-8 rounded-lg border-0 cursor-pointer"
                                 onClick={() => navigate("/login")}
-							>
-								Get Started
-							</button>
-							<button
-								className="flex items-center gap-2 bg-transparent border-0 text-slate-700 text-sm font-semibold cursor-pointer"
-								onClick={() => alert("Pressed!")}
-							>
-								<span
-									className="flex items-center justify-center w-10 h-10 rounded-full text-white text-xs"
-									style={{ background: "#FF8A33" }}
-								>
-									▶
-								</span>
-								Video Play
-							</button>
-						</div>
+                            >
+                                Get Started
+                            </button>
+                            <button
+                                className="flex items-center gap-2 bg-transparent border-0 text-slate-700 text-sm font-semibold cursor-pointer"
+                                onClick={() => alert("Pressed!")}
+                            >
+                                <span
+                                    className="flex items-center justify-center w-10 h-10 rounded-full text-white text-xs"
+                                    style={{ background: "#FF8A33" }}
+                                >
+                                    ▶
+                                </span>
+                                Video Play
+                            </button>
+                        </div>
 
-						{/* Active students */}
-						<div className="flex items-center gap-3 mt-2">
-							<div className="flex" style={{ gap: "-8px" }}>
-								{[
-									"https://randomuser.me/api/portraits/men/32.jpg",
-									"https://randomuser.me/api/portraits/men/44.jpg",
-									"https://randomuser.me/api/portraits/women/68.jpg",
-									"https://randomuser.me/api/portraits/women/44.jpg",
-								].map((src, i) => (
-									<img
-										key={i}
-										src={src}
-										alt="student"
-										style={{ width: 40, height: 40, borderRadius: "50%", border: "2px solid white", objectFit: "cover", marginLeft: i === 0 ? 0 : -10 }}
-									/>
-								))}
-							</div>
-							<div>
-								<div className="text-slate-800 text-sm font-bold">10.00+ Active</div>
-								<div className="text-slate-800 text-sm font-bold">Student</div>
-							</div>
-						</div>
-					</div>
+                        {/* Active students */}
+                        <div className="flex items-center gap-3 mt-2">
+                            <div className="flex" style={{ gap: "-8px" }}>
+                                {[
+                                    "https://randomuser.me/api/portraits/men/32.jpg",
+                                    "https://randomuser.me/api/portraits/men/44.jpg",
+                                    "https://randomuser.me/api/portraits/women/68.jpg",
+                                    "https://randomuser.me/api/portraits/women/44.jpg",
+                                ].map((src, i) => (
+                                    <img
+                                        key={i}
+                                        src={src}
+                                        alt="student"
+                                        style={{ width: 40, height: 40, borderRadius: "50%", border: "2px solid white", objectFit: "cover", marginLeft: i === 0 ? 0 : -10 }}
+                                    />
+                                ))}
+                            </div>
+                            <div>
+                                <div className="text-slate-800 text-sm font-bold">10.00+ Active</div>
+                                <div className="text-slate-800 text-sm font-bold">Student</div>
+                            </div>
+                        </div>
+                    </div>
 
-					{/* Right panel — teal */}
-					<div
-						className="flex flex-1 items-center justify-center relative overflow-hidden"
-						style={{ background: "#0e7c67" }}
-					>
-						{/* Top-right cloud outline */}
-						<svg
-							className="absolute"
-							style={{ top: 70, right: 30, opacity: 0.58 }}
-							width="1200"
-							height="80"
-							viewBox="0 0 120 78"
-							fill="none"
-						>
-							<path
-								d="M7 33 C12 16 22 9 35 8 C48 6 58 13 63 23 C68 11 77 7 86 9 C96 12 100 20 100 30 C111 31 117 38 116 47 C114 58 103 63 92 62"
-								stroke="#9CD7CC"
-								strokeWidth="2.2"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-							/>
-							<path
-								d="M7 33 C12 16 22 9 35 8 C48 6 58 13 63 23 C68 11 77 7 86 9 C96 12 100 20 100 30 C111 31 117 38 116 47 C114 58 103 63 92 62"
-								stroke="#9CD7CC"
-								strokeWidth="2.2"
-								strokeLinecap="round"
-							/>
-						</svg>
+                    {/* Right panel — teal */}
+                    <div
+                        className="flex flex-1 items-center justify-center relative overflow-hidden"
+                        style={{ background: "#0e7c67" }}
+                    >
+                        {/* Top-right cloud outline */}
+                        <svg
+                            className="absolute"
+                            style={{ top: 70, right: 30, opacity: 0.58 }}
+                            width="1200"
+                            height="80"
+                            viewBox="0 0 120 78"
+                            fill="none"
+                        >
+                            <path
+                                d="M7 33 C12 16 22 9 35 8 C48 6 58 13 63 23 C68 11 77 7 86 9 C96 12 100 20 100 30 C111 31 117 38 116 47 C114 58 103 63 92 62"
+                                stroke="#9CD7CC"
+                                strokeWidth="2.2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                            <path
+                                d="M7 33 C12 16 22 9 35 8 C48 6 58 13 63 23 C68 11 77 7 86 9 C96 12 100 20 100 30 C111 31 117 38 116 47 C114 58 103 63 92 62"
+                                stroke="#9CD7CC"
+                                strokeWidth="2.2"
+                                strokeLinecap="round"
+                            />
+                        </svg>
 
-						{/* Bottom-right striped circle */}
-						<svg
-							className="absolute"
-							style={{ right: 36, bottom: 28, opacity: 0.62 }}
-							width="170"
-							height="170"
-							viewBox="0 0 170 170"
-							fill="none"
-						>
-							<defs>
-								<clipPath id="heroStripeCircle">
-									<circle cx="85" cy="85" r="70" />
-								</clipPath>
-							</defs>
-							<circle cx="85" cy="85" r="70" fill="#189987" fillOpacity="0.42" />
-							<g clipPath="url(#heroStripeCircle)" stroke="#2CC0AB" strokeWidth="4">
-								<line x1="-20" y1="45" x2="65" y2="130" />
-								<line x1="-8" y1="33" x2="77" y2="118" />
-								<line x1="4" y1="21" x2="89" y2="106" />
-								<line x1="16" y1="9" x2="101" y2="94" />
-								<line x1="28" y1="-3" x2="113" y2="82" />
-								<line x1="40" y1="-15" x2="125" y2="70" />
-								<line x1="52" y1="-27" x2="137" y2="58" />
-								<line x1="64" y1="-39" x2="149" y2="46" />
-								<line x1="76" y1="-51" x2="161" y2="34" />
-								<line x1="88" y1="-63" x2="173" y2="22" />
-								<line x1="100" y1="-75" x2="185" y2="10" />
-							</g>
-						</svg>
-					</div>
+                        {/* Bottom-right striped circle */}
+                        <svg
+                            className="absolute"
+                            style={{ right: 36, bottom: 28, opacity: 0.62 }}
+                            width="170"
+                            height="170"
+                            viewBox="0 0 170 170"
+                            fill="none"
+                        >
+                            <defs>
+                                <clipPath id="heroStripeCircle">
+                                    <circle cx="85" cy="85" r="70" />
+                                </clipPath>
+                            </defs>
+                            <circle cx="85" cy="85" r="70" fill="#189987" fillOpacity="0.42" />
+                            <g clipPath="url(#heroStripeCircle)" stroke="#2CC0AB" strokeWidth="4">
+                                <line x1="-20" y1="45" x2="65" y2="130" />
+                                <line x1="-8" y1="33" x2="77" y2="118" />
+                                <line x1="4" y1="21" x2="89" y2="106" />
+                                <line x1="16" y1="9" x2="101" y2="94" />
+                                <line x1="28" y1="-3" x2="113" y2="82" />
+                                <line x1="40" y1="-15" x2="125" y2="70" />
+                                <line x1="52" y1="-27" x2="137" y2="58" />
+                                <line x1="64" y1="-39" x2="149" y2="46" />
+                                <line x1="76" y1="-51" x2="161" y2="34" />
+                                <line x1="88" y1="-63" x2="173" y2="22" />
+                                <line x1="100" y1="-75" x2="185" y2="10" />
+                            </g>
+                        </svg>
+                    </div>
 
-					{/* Center visual card across split */}
-					<div className="pointer-events-none absolute inset-y-0 left-250 z-20 hidden -translate-x-1/2 items-center md:flex">
-						<div className="relative h-[400px] w-[350px] rounded-[22px] overflow-hidden">
-							<div
-								className="absolute inset-0 pr-100"
-								style={{
-									background:
-										"repeating-linear-gradient(102deg, #f8c8b8 0px, #f8c8b8 8px, #fde7de 8px, #fde7de 18px)",
-								}}
-							/>
-							<img
-								src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/0lfkrcpg_expires_30_days.png"
-								alt="Student"
-								className="absolute -bottom-1 left-40 z-10 h-[400px] w-auto -translate-x-1/2 object-contain"
-							/>
-						</div>
-					</div>
-				</div>
+                    {/* Center visual card across split */}
+                    <div className="pointer-events-none absolute inset-y-0 left-250 z-20 hidden -translate-x-1/2 items-center md:flex">
+                        <div className="relative h-[400px] w-[350px] rounded-[22px] overflow-hidden">
+                            <div
+                                className="absolute inset-0 pr-100"
+                                style={{
+                                    background:
+                                        "repeating-linear-gradient(102deg, #f8c8b8 0px, #f8c8b8 8px, #fde7de 8px, #fde7de 18px)",
+                                }}
+                            />
+                            <img
+                                src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/0lfkrcpg_expires_30_days.png"
+                                alt="Student"
+                                className="absolute -bottom-1 left-40 z-10 h-[400px] w-auto -translate-x-1/2 object-contain"
+                            />
+                        </div>
+                    </div>
+                </div>
 
                 {/* Featured Courses Section - Fixed padding and margins */}
                 <motion.div
@@ -619,6 +639,52 @@ export default (props) => {
                             <span className="h-1.5 w-1.5 rounded-full bg-[#4D73EE]" />
                             <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
                         </div>
+                    </div>
+                </motion.div>
+
+                {/* Newsletter Section */}
+                <motion.div
+                    className="self-stretch bg-[#0e7c67] px-4 py-16 sm:py-20"
+                    initial="hidden"
+                    whileInView="show"
+                    viewport={{ once: true, amount: 0.2 }}
+                    variants={fadeUp}
+                >
+                    <div className="mx-auto w-full max-w-[800px] text-center">
+                        <motion.div variants={fadeUp}>
+                            <div className="flex justify-center mb-4">
+                            </div>
+                            <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-white">
+                                Stay Updated with EduMart
+                            </h2>
+                            <p className="mt-3 text-base text-white/80 max-w-2xl mx-auto">
+                                Subscribe to our newsletter and get the latest updates on new courses, features, and exclusive offers directly in your inbox.
+                            </p>
+                        </motion.div>
+
+                        <motion.div variants={fadeUp} className="mt-8">
+                            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto">
+                                <input
+                                    type="email"
+                                    placeholder="Enter your email address"
+                                    value={newsletterEmail}
+                                    onChange={(e) => setNewsletterEmail(e.target.value)}
+                                    className="flex-1 px-6 py-4 rounded-xl bg-white text-slate-700 placeholder:text-slate-400 text-base focus:outline-none focus:ring-2 focus:ring-[#FF8A33] border-0"
+                                    required
+                                />
+                                <button
+                                    type="submit"
+                                    className="bg-[#FF8A33] text-white font-bold py-4 px-8 rounded-xl hover:bg-[#e07a2e] transition-colors whitespace-nowrap"
+                                >
+                                    Subscribe Now
+                                </button>
+                            </form>
+                            {newsletterMessage && (
+                                <p className={`mt-4 text-sm ${newsletterSubmitted ? "text-green-200" : "text-red-200"}`}>
+                                    {newsletterMessage}
+                                </p>
+                            )}
+                        </motion.div>
                     </div>
                 </motion.div>
             </div>

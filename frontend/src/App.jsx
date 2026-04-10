@@ -13,6 +13,9 @@ import Features from './pages/Features'
 import Pricing from './pages/Pricing'
 import About from './pages/About'
 import Contact from './pages/Contact'
+import TermsAndCondition from './pages/Terms&Condition'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import RefundPolicy from './pages/RefundPolicy'
 import SuperAdminLayout from './components/superadmin/SuperAdminLayout'
 import SuperAdminOverview from './pages/super admin/SuperAdminOverview'
 import SuperAdminDashboard from './pages/super admin/SuperAdminDashboard'
@@ -82,6 +85,9 @@ function App() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/forgetpassword" element={<ForgetPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/terms-and-conditions" element={<TermsAndCondition />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
         </Route>
         <Route path="/superadmin-signup" element={<SuperAdminSignup />} />
         <Route path="/admin-signup" element={<AdminSignup />} />

@@ -322,14 +322,18 @@ export default function AdminLiveClasses() {
   const [activeFilter, setActiveFilter] = useState('All Classes')
   const [selectedSession, setSelectedSession] = useState(null)
   const [search, setSearch] = useState('')
+  const [activeCourseFilter, setActiveCourseFilter] = useState('All Courses')
   const [loading, setLoading] = useState(false)
   const [createError, setCreateError] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
   const [actionError, setActionError] = useState('')
   const [regeneratingId, setRegeneratingId] = useState('')
   const [reassignTarget, setReassignTarget] = useState(null)
   const [reassignInstructorId, setReassignInstructorId] = useState('')
   const [reassigningId, setReassigningId] = useState('')
   const [hostMode, setHostMode] = useState('self')
+  const [courseInputMode, setCourseInputMode] = useState('select')
+  const [manualCourseName, setManualCourseName] = useState('')
 
   const tenantId = localStorage.getItem('lms_tenant_id')
 
@@ -399,6 +403,25 @@ export default function AdminLiveClasses() {
   })
 
   const courseMap = useMemo(() => new Map(courses.map((c) => [c._id, c])), [courses])
+  const courseProgramOptions = useMemo(() => {
+    const optionsByValue = new Map()
+
+    courses.forEach((course) => {
+      const value = String(course?._id || '').trim()
+      if (!value) return
+      const label = String(course?.title || value).trim() || value
+      optionsByValue.set(value, { value, label })
+    })
+
+    classes.forEach((liveClass) => {
+      const value = String(liveClass?.course_id || '').trim()
+      if (!value || optionsByValue.has(value)) return
+      optionsByValue.set(value, { value, label: value })
+    })
+
+    return [...optionsByValue.values()].sort((a, b) => a.label.localeCompare(b.label))
+  }, [courses, classes])
+
   const userMap = useMemo(() => {
     const map = new Map()
     instructors.forEach((u) => map.set(u._id, u))
@@ -434,6 +457,7 @@ export default function AdminLiveClasses() {
   }, [classes, courseMap, userMap])
 
   const filtered = useMemo(() => {
+    const selectedCourse = activeCourseFilter.trim().toLowerCase()
     return sessions.filter((s) => {
       const matchFilter =
         activeFilter === 'All Classes' ||
@@ -442,6 +466,8 @@ export default function AdminLiveClasses() {
         (activeFilter === 'Recent' && s.status === 'recent') ||
         (activeFilter === 'Cancelled' && s.status === 'cancelled')
 
+      const matchCourse = selectedCourse === 'all courses' || s.course.toLowerCase() === selectedCourse
+
       const q = search.trim().toLowerCase()
       const matchSearch =
         !q ||
@@ -449,9 +475,16 @@ export default function AdminLiveClasses() {
         s.instructor.toLowerCase().includes(q) ||
         s.course.toLowerCase().includes(q)
 
-      return matchFilter && matchSearch
+      return matchFilter && matchCourse && matchSearch
     })
-  }, [sessions, activeFilter, search])
+  }, [sessions, activeFilter, activeCourseFilter, search])
+
+  const courseFilters = useMemo(() => {
+    const names = [...new Set(sessions.map((s) => String(s.course || '').trim()).filter(Boolean))].sort((a, b) =>
+      a.localeCompare(b),
+    )
+    return ['All Courses', ...names]
+  }, [sessions])
 
   const stats = useMemo(() => {
     const total = sessions.length
@@ -474,18 +507,23 @@ export default function AdminLiveClasses() {
   }
 
   const createClass = async () => {
+    if (isCreating) return
+
     setCreateError('')
+    setIsCreating(true)
     const title = form.title.trim()
-    const courseId = form.course_id.trim()
+    const courseId = courseInputMode === 'manual' ? manualCourseName.trim() : form.course_id.trim()
     const instructorId = hostMode === 'self' ? currentUser?._id || '' : form.instructor_id.trim()
 
     if (!title || !courseId || !form.start_at) {
       setCreateError('Please fill class title, course, and start date/time.')
+      setIsCreating(false)
       return
     }
 
     if (!instructorId) {
       setCreateError('Please select class host.')
+      setIsCreating(false)
       return
     }
 
@@ -515,10 +553,15 @@ export default function AdminLiveClasses() {
         image_url: '',
         attendee_ids: [],
       })
+      setCourseInputMode('select')
+      setManualCourseName('')
       setIsAddSessionOpen(false)
-      await loadData()
+      setActiveView('list')
+      loadData()
     } catch (error) {
       setCreateError(error?.message || 'Unable to create class.')
+    } finally {
+      setIsCreating(false)
     }
   }
 
@@ -590,24 +633,28 @@ export default function AdminLiveClasses() {
 
   if (activeView === 'create') {
     return (
-      <div className="min-h-full bg-[#f6f8fa] p-4 sm:p-5">
-        <div className="mx-auto max-w-[1180px] rounded-[10px] border border-black/[0.08] bg-white p-5">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <button onClick={() => setActiveView('list')} className="inline-flex items-center gap-2 text-[13px] font-medium text-[#5b3df6]">
+      <div className="min-h-full bg-gradient-to-b from-[#f6f8fa] to-[#eef3f9] p-4 sm:p-6">
+        <div className="mx-auto max-w-[1240px] rounded-[14px] border border-black/[0.08] bg-white p-5 shadow-sm sm:p-6">
+          <div className="mb-5 flex flex-col gap-3 border-b border-black/[0.06] pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <button onClick={() => setActiveView('list')} className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#5b3df6] hover:text-[#4a2ed8]">
               <ArrowLeft className="h-4 w-4" /> Back to Live Classes
             </button>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-              <button onClick={() => setActiveView('list')} className="h-9 rounded-[7px] border border-black/[0.08] bg-white px-3 text-[12px] font-semibold text-[#334155]">
+              <button onClick={() => setActiveView('list')} className="h-10 rounded-[8px] border border-black/[0.08] bg-white px-4 text-[12px] font-semibold text-[#334155] hover:bg-[#f8fafc]">
                 Cancel
               </button>
-              <button onClick={createClass} className="h-9 rounded-[7px] bg-[#5b3df6] px-3 text-[12px] font-semibold text-white">
-                Create Zoom Meeting
+              <button
+                onClick={createClass}
+                disabled={isCreating}
+                className="h-10 rounded-[8px] bg-[#5b3df6] px-4 text-[12px] font-semibold text-white hover:bg-[#4f34df] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isCreating ? 'Creating...' : 'Create Zoom Meeting'}
               </button>
             </div>
           </div>
 
-          <p className="text-[12px] text-[#94a3b8]">Live Classes / Create Zoom Meeting</p>
-          <h2 className="mt-1 text-[26px] font-bold text-[#0f172a] sm:text-[32px]">Create Zoom Meeting</h2>
+          <p className="text-[12px] font-medium text-[#94a3b8]">Live Classes / Create Zoom Meeting</p>
+          <h2 className="mt-1 text-[30px] font-bold leading-tight text-[#0f172a] sm:text-[36px]">Create Zoom Meeting</h2>
 
           {createError ? (
             <div className="mt-3 rounded-[8px] border border-[#fecaca] bg-[#fff1f2] p-3 text-[12px] text-[#991b1b]">
@@ -615,49 +662,75 @@ export default function AdminLiveClasses() {
             </div>
           ) : null}
 
-          <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[1.5fr_1fr]">
-            <section className="rounded-[8px] border border-black/[0.08] bg-white p-4">
-              <h3 className="text-[18px] font-bold text-[#111827]">Batch Configuration</h3>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[1.55fr_1fr]">
+            <section className="rounded-[12px] border border-black/[0.08] bg-[#fcfdff] p-5">
+              <h3 className="text-[20px] font-bold text-[#111827]">Batch Configuration</h3>
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Session title *</label>
+                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Session title *</label>
                   <input
                     value={form.title}
                     onChange={(e) => handleFormChange('title', e.target.value)}
-                    className="h-10 w-full rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
+                    className="h-11 w-full rounded-[8px] border border-black/[0.08] bg-white px-3 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
                     placeholder="e.g. Math Mastery Live - Chapter 5"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Course program *</label>
-                  <div className="relative">
-                    <select
-                      value={form.course_id}
-                      onChange={(e) => handleFormChange('course_id', e.target.value)}
-                      className="h-10 w-full appearance-none rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
+                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Course program *</label>
+                  <div className="mb-2 grid grid-cols-2 gap-2 rounded-[8px] border border-black/[0.06] bg-[#f1f5f9] p-1">
+                    <button
+                      type="button"
+                      onClick={() => setCourseInputMode('select')}
+                      className={`h-8 rounded-[7px] text-[12px] font-semibold transition-colors ${courseInputMode === 'select' ? 'bg-white text-[#0f172a] shadow-sm' : 'text-[#64748b] hover:text-[#334155]'}`}
                     >
-                      {courses.map((c) => (
-                        <option key={c._id} value={c._id}>{c.title}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                      Select
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCourseInputMode('manual')}
+                      className={`h-8 rounded-[7px] text-[12px] font-semibold transition-colors ${courseInputMode === 'manual' ? 'bg-white text-[#0f172a] shadow-sm' : 'text-[#64748b] hover:text-[#334155]'}`}
+                    >
+                      Manual
+                    </button>
                   </div>
+                  {courseInputMode === 'manual' ? (
+                    <input
+                      value={manualCourseName}
+                      onChange={(e) => setManualCourseName(e.target.value)}
+                      className="h-11 w-full rounded-[8px] border border-black/[0.08] bg-white px-3 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
+                      placeholder="Type course name"
+                    />
+                  ) : (
+                    <div className="relative">
+                      <select
+                        value={form.course_id}
+                        onChange={(e) => handleFormChange('course_id', e.target.value)}
+                        className="h-11 w-full appearance-none rounded-[8px] border border-black/[0.08] bg-white px-3 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
+                      >
+                        {courseProgramOptions.length === 0 ? <option value="">No Subjects found</option> : null}
+                        {courseProgramOptions.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                    </div>
+                  )}
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Who will host?</label>
-                  <div className="grid grid-cols-2 gap-2 rounded-[8px] bg-[#f1f5f9] p-1">
+                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Who will host?</label>
+                  <div className="grid grid-cols-2 gap-2 rounded-[8px] border border-black/[0.06] bg-[#f1f5f9] p-1">
                     <button
                       type="button"
                       onClick={() => setHostMode('self')}
-                      className={`h-9 rounded-[7px] text-[12px] font-semibold ${hostMode === 'self' ? 'bg-white text-[#0f172a]' : 'text-[#64748b]'}`}
+                      className={`h-9 rounded-[7px] text-[12px] font-semibold transition-colors ${hostMode === 'self' ? 'bg-white text-[#0f172a] shadow-sm' : 'text-[#64748b] hover:text-[#334155]'}`}
                     >
                       I will host
                     </button>
                     <button
                       type="button"
                       onClick={() => setHostMode('assign')}
-                      className={`h-9 rounded-[7px] text-[12px] font-semibold ${hostMode === 'assign' ? 'bg-white text-[#0f172a]' : 'text-[#64748b]'}`}
+                      className={`h-9 rounded-[7px] text-[12px] font-semibold transition-colors ${hostMode === 'assign' ? 'bg-white text-[#0f172a] shadow-sm' : 'text-[#64748b] hover:text-[#334155]'}`}
                     >
                       Assign
                     </button>
@@ -665,9 +738,9 @@ export default function AdminLiveClasses() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Instructor</label>
+                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Instructor</label>
                   {hostMode === 'self' ? (
-                    <div className="h-10 rounded-[7px] border border-black/[0.08] bg-[#f8fafc] px-3 text-[12px] text-[#334155] flex items-center">
+                    <div className="flex h-11 items-center rounded-[8px] border border-black/[0.08] bg-[#f8fafc] px-3 text-[12px] text-[#334155]">
                       {currentUser?.full_name || currentUser?.email || 'Current admin'}
                     </div>
                   ) : (
@@ -675,7 +748,7 @@ export default function AdminLiveClasses() {
                       <select
                         value={form.instructor_id}
                         onChange={(e) => handleFormChange('instructor_id', e.target.value)}
-                        className="h-10 w-full appearance-none rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
+                        className="h-11 w-full appearance-none rounded-[8px] border border-black/[0.08] bg-white px-3 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
                       >
                         <option value="">Select instructor</option>
                         {instructors.map((i) => (
@@ -688,63 +761,63 @@ export default function AdminLiveClasses() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Date & time *</label>
+                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Date & time *</label>
                   <input
                     type="datetime-local"
                     value={form.start_at}
                     onChange={(e) => handleFormChange('start_at', e.target.value)}
-                    className="h-10 w-full rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
+                    className="h-11 w-full rounded-[8px] border border-black/[0.08] bg-white px-3 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Duration (minutes)</label>
+                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Duration (minutes)</label>
                   <input
                     type="number"
                     min="15"
                     value={form.duration_minutes}
                     onChange={(e) => handleFormChange('duration_minutes', Number(e.target.value || 60))}
-                    className="h-10 w-full rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
+                    className="h-11 w-full rounded-[8px] border border-black/[0.08] bg-white px-3 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Amount</label>
+                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Amount</label>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     value={form.amount}
                     onChange={(e) => handleFormChange('amount', e.target.value)}
-                    className="h-10 w-full rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
+                    className="h-11 w-full rounded-[8px] border border-black/[0.08] bg-white px-3 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
                     placeholder="0.00"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[12px] font-medium text-[#334155]">Image URL</label>
+                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Image URL</label>
                   <input
                     value={form.image_url}
                     onChange={(e) => handleFormChange('image_url', e.target.value)}
-                    className="h-10 w-full rounded-[7px] border border-black/[0.08] px-3 text-[13px]"
+                    className="h-11 w-full rounded-[8px] border border-black/[0.08] bg-white px-3 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
                     placeholder="https://example.com/class.jpg"
                   />
                 </div>
               </div>
 
-              <div className="mt-3">
-                <label className="mb-1 block text-[12px] font-medium text-[#334155]">Or upload class image</label>
+              <div className="mt-4">
+                <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Or upload class image</label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleImageSelect}
-                  className="w-full rounded-[7px] border border-black/[0.08] px-3 py-2 text-[12px] file:mr-3 file:rounded file:border-0 file:bg-[#5b3df6] file:px-3 file:py-1 file:text-white"
+                  className="w-full rounded-[8px] border border-black/[0.08] bg-white px-3 py-2 text-[12px] file:mr-3 file:rounded-[6px] file:border-0 file:bg-[#5b3df6] file:px-3 file:py-1.5 file:font-medium file:text-white"
                 />
               </div>
 
-              <div className="mt-3">
-                <label className="mb-1 block text-[12px] font-medium text-[#334155]">Invite students</label>
-                <div className="max-h-44 overflow-y-auto rounded-[8px] border border-black/[0.08] p-2">
+              <div className="mt-4">
+                <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Invite students</label>
+                <div className="max-h-44 overflow-y-auto rounded-[8px] border border-black/[0.08] bg-white p-2">
                   {students.length === 0 ? (
                     <p className="text-[12px] text-[#94a3b8] p-2">No students found.</p>
                   ) : (
@@ -771,12 +844,12 @@ export default function AdminLiveClasses() {
               </div>
             </section>
 
-            <aside className="space-y-3">
-              <section className="rounded-[8px] border border-black/[0.08] bg-white p-4">
+            <aside className="space-y-3 xl:sticky xl:top-4 xl:self-start">
+              <section className="rounded-[12px] border border-black/[0.08] bg-[#fcfdff] p-5">
                 <h3 className="text-[16px] font-bold text-[#111827]">Session Summary</h3>
                 <div className="mt-2 space-y-2 text-[12px] text-[#64748b]">
                   <p>Title: {form.title || '-'}</p>
-                  <p>Course: {courseMap.get(form.course_id)?.title || '-'}</p>
+                  <p>Course: {courseInputMode === 'manual' ? (manualCourseName || '-') : (courseMap.get(form.course_id)?.title || '-')}</p>
                   <p>Host: {hostMode === 'self' ? (currentUser?.full_name || currentUser?.email || '-') : (userMap.get(form.instructor_id)?.full_name || userMap.get(form.instructor_id)?.email || '-')}</p>
                   <p>Duration: {form.duration_minutes || 60} mins</p>
                   <p>Amount: INR {Number(form.amount || 0).toFixed(2)}</p>
@@ -784,9 +857,9 @@ export default function AdminLiveClasses() {
               </section>
 
               {form.image_url ? (
-                <section className="rounded-[8px] border border-black/[0.08] bg-white p-4">
+                <section className="rounded-[12px] border border-black/[0.08] bg-[#fcfdff] p-5">
                   <h3 className="text-[16px] font-bold text-[#111827] mb-2">Image Preview</h3>
-                  <img src={form.image_url} alt="Preview" className="h-36 w-full rounded-[8px] border border-black/[0.08] object-cover" />
+                  <img src={form.image_url} alt="Preview" className="h-40 w-full rounded-[10px] border border-black/[0.08] object-cover" />
                 </section>
               ) : null}
             </aside>
@@ -836,6 +909,18 @@ export default function AdminLiveClasses() {
                   placeholder="Search classes..."
                   className="h-9 w-[200px] rounded-[7px] border border-black/[0.08] pl-9 pr-3 text-[12px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
                 />
+              </div>
+              <div className="relative">
+                <select
+                  value={activeCourseFilter}
+                  onChange={(e) => setActiveCourseFilter(e.target.value)}
+                  className="h-9 w-[190px] appearance-none rounded-[7px] border border-black/[0.08] bg-white px-3 pr-8 text-[12px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
+                >
+                  {courseFilters.map((courseName) => (
+                    <option key={courseName} value={courseName}>{courseName}</option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
               </div>
               <button onClick={() => setIsAddSessionOpen(true)} className="inline-flex h-9 items-center gap-1 rounded-[7px] bg-[#5b3df6] px-3 text-[12px] font-semibold text-white">
                 <Plus className="h-4 w-4" /> Add session
@@ -942,18 +1027,44 @@ export default function AdminLiveClasses() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Course / Batch *</label>
-                  <div className="relative">
-                    <select
-                      value={form.course_id}
-                      onChange={(e) => handleFormChange('course_id', e.target.value)}
-                      className="h-10 w-full appearance-none rounded-[8px] border border-black/[0.08] px-4 text-[13px]"
+                  <div className="mb-2 grid grid-cols-2 gap-2 rounded-[8px] bg-[#f1f5f9] p-1">
+                    <button
+                      type="button"
+                      onClick={() => setCourseInputMode('select')}
+                      className={`h-8 rounded-[7px] text-[12px] font-semibold ${courseInputMode === 'select' ? 'bg-white text-[#0f172a]' : 'text-[#64748b]'}`}
                     >
-                      {courses.map((c) => (
-                        <option key={c._id} value={c._id}>{c.title}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                      Select
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCourseInputMode('manual')}
+                      className={`h-8 rounded-[7px] text-[12px] font-semibold ${courseInputMode === 'manual' ? 'bg-white text-[#0f172a]' : 'text-[#64748b]'}`}
+                    >
+                      Manual
+                    </button>
                   </div>
+                  {courseInputMode === 'manual' ? (
+                    <input
+                      value={manualCourseName}
+                      onChange={(e) => setManualCourseName(e.target.value)}
+                      className="h-10 w-full rounded-[8px] border border-black/[0.08] px-4 text-[13px]"
+                      placeholder="Type course name"
+                    />
+                  ) : (
+                    <div className="relative">
+                      <select
+                        value={form.course_id}
+                        onChange={(e) => handleFormChange('course_id', e.target.value)}
+                        className="h-10 w-full appearance-none rounded-[8px] border border-black/[0.08] px-4 text-[13px]"
+                      >
+                        {courseProgramOptions.length === 0 ? <option value="">No course found</option> : null}
+                        {courseProgramOptions.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Host *</label>
@@ -1043,8 +1154,12 @@ export default function AdminLiveClasses() {
               <button onClick={() => setIsAddSessionOpen(false)} className="h-10 rounded-[8px] border border-black/[0.08] bg-white px-5 text-[13px] font-semibold text-[#4b5563]">
                 Cancel
               </button>
-              <button onClick={createClass} className="h-10 rounded-[8px] bg-[#5b3df6] px-5 text-[13px] font-semibold text-white">
-                Schedule session
+              <button
+                onClick={createClass}
+                disabled={isCreating}
+                className="h-10 rounded-[8px] bg-[#5b3df6] px-5 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isCreating ? 'Scheduling...' : 'Schedule session'}
               </button>
             </div>
           </div>

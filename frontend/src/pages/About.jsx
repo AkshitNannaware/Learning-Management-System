@@ -7,7 +7,7 @@ export default (props) => {
   return (
     <div className="flex flex-col bg-white">
       <div className="self-stretch bg-[#F7FCFF]">
-        {/* Hero Section - About Us with matching gradient */}
+        {/* Hero Section - About Us */}
         <div className="self-stretch pt-[30px] pb-[78px] px-4 sm:px-8 md:px-16 lg:px-36 mb-[7px]"
           style={{
             background: "linear-gradient(135deg, #0e7c67 0%, #1a5c3a 100%)"
@@ -17,28 +17,28 @@ export default (props) => {
               <button className="flex flex-col items-start bg-white/10 text-left py-[13px] px-3.5 mb-4 rounded-xl border-0 cursor-pointer hover:bg-white/20 transition-colors w-fit"
                 onClick={() => alert("Pressed!")}>
                 <span className="text-white text-[20px]">
-                  {"About Us"}
+                  {"About EduMart"}
                 </span>
               </button>
               <div className="flex flex-col self-stretch pb-[1px] mb-[17px]">
                 <span className="text-white text-4xl sm:text-5xl lg:text-[58px] font-bold leading-tight">
-                  {"We help educators build better learning businesses."}
+                  {"Transforming education through technology and accessibility."}
                 </span>
               </div>
               <div className="flex flex-col items-start self-stretch py-[7px] mb-[18px]">
                 <span className="text-white/90 text-base sm:text-[17px] leading-relaxed max-w-full lg:w-[545px]">
-                  {"LMS was created to make online education easier to launch, simpler to manage, and more rewarding to grow. From individual instructors to multi-branch institutes, we give teams the tools to teach, sell, and scale with confidence."}
+                  {"EduMart is a comprehensive Learning Management System (LMS) and digital education platform designed to transform the way students learn, practice, and succeed in today's competitive academic environment."}
                 </span>
               </div>
               <div className="flex items-start self-stretch pb-7 gap-3.5 flex-wrap">
                 <button className="flex flex-col shrink-0 items-start bg-[#FF8A33] text-left py-[17px] px-5 rounded-md border-0 hover:bg-[#e07a2e] transition-colors cursor-pointer"
-                  onClick={() => alert("Pressed!")}>
+                  onClick={() => navigate("/signup")}>
                   <span className="text-white text-sm">
                     {"Get Started"}
                   </span>
                 </button>
                 <button className="flex flex-col shrink-0 items-start bg-transparent text-left py-[17px] px-[22px] rounded-md border border-solid border-white/30 hover:bg-white/10 transition-colors cursor-pointer"
-                  onClick={() => alert("Pressed!")}>
+                  onClick={() => navigate("/contact")}>
                   <span className="text-white text-sm">
                     {"Book Demo"}
                   </span>
@@ -48,7 +48,7 @@ export default (props) => {
             <img
               src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/tiz0xrlu_expires_30_days.png"}
               className="flex-1 h-[300px] sm:h-[350px] lg:h-[394px] mt-0 lg:mt-[51px] object-cover rounded-lg"
-              alt="About us"
+              alt="About EduMart"
             />
           </div>
 
@@ -57,66 +57,66 @@ export default (props) => {
             <div className="flex flex-col shrink-0 items-start bg-white/10 py-[19px] px-5 gap-0.5 rounded-lg backdrop-blur-sm">
               <div className="flex flex-col items-start pb-[1px]">
                 <span className="text-white text-[28px] font-bold">
-                  {"12k+"}
+                  {"50k+"}
                 </span>
               </div>
               <div className="flex flex-col items-start pb-[1px]">
                 <span className="text-white/80 text-[13px]">
-                  {"Active educators"}
+                  {"Active Students"}
                 </span>
               </div>
             </div>
             <div className="flex flex-col shrink-0 items-start bg-white/10 py-[19px] px-5 gap-0.5 rounded-lg backdrop-blur-sm">
               <div className="flex flex-col items-start pb-[1px]">
                 <span className="text-white text-[28px] font-bold">
-                  {"1.8M"}
+                  {"200+"}
                 </span>
               </div>
               <div className="flex flex-col items-start pb-[1px]">
                 <span className="text-white/80 text-[13px]">
-                  {"Learners reached"}
+                  {"Partner Schools"}
                 </span>
               </div>
             </div>
             <div className="flex flex-col shrink-0 items-start bg-white/10 py-[19px] px-5 gap-0.5 rounded-lg backdrop-blur-sm">
               <div className="flex flex-col items-start pb-[1px]">
                 <span className="text-white text-[28px] font-bold">
-                  {"48"}
+                  {"1000+"}
                 </span>
               </div>
               <div className="flex flex-col items-start pb-[1px]">
                 <span className="text-white/80 text-[13px]">
-                  {"Countries served"}
+                  {"Expert Tutors"}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Our Story Section - Matching Features.jsx style */}
+        {/* Our Vision Section */}
         <div className="flex flex-col lg:flex-row items-stretch self-stretch py-[88px] px-4 sm:px-8 md:px-16 lg:px-36 gap-9 max-w-[1400px] mx-auto">
           <div className="flex-1 bg-white pt-10 px-6 sm:px-10 rounded-lg shadow-md hover:shadow-lg transition-shadow">
             <div className="flex flex-col items-start self-stretch">
               <button className="flex flex-col items-start bg-[#EEF2F6] text-left py-[11px] px-3.5 rounded-xl border-0 cursor-pointer hover:bg-[#e2e8f0] transition-colors"
                 onClick={() => alert("Pressed!")}>
                 <span className="text-[#0b8276] text-[13px] font-bold">
-                  {"Our Story"}
+                  {"Our Vision"}
                 </span>
               </button>
               <div className="flex flex-col items-start self-stretch pb-[1px] mt-4">
                 <span className="text-[#111b2f] text-2xl sm:text-[28px] font-bold max-w-[426px]">
-                  {"Built for the people shaping the future of learning."}
+                  {"Integrating education, technology, and accessibility."}
                 </span>
               </div>
             </div>
             <div className="flex flex-col items-start self-stretch pt-4 mb-[1px]">
               <span className="text-slate-500 text-[15px] leading-relaxed max-w-[451px]">
-                {"What started as a platform for a small group of online educators quickly grew into a full LMS ecosystem for schools, academies, and digital course businesses. We saw the same problem everywhere: powerful learning tools were either too fragmented or too hard to use."}
+                {"Built with a strong vision to integrate education, technology, and accessibility, EduMart delivers a complete end-to-end learning solution—covering Live Classes, E-Library, Online Examinations, and Academic Support Services under one unified platform."}
               </span>
             </div>
             <div className="flex flex-col items-start self-stretch pt-3.5 mb-[55px]">
               <span className="text-slate-500 text-[15px] leading-relaxed max-w-[459px]">
-                {"So we designed LMS to feel modern, trustworthy, and easy from day one — giving education teams one place to manage courses, students, payments, analytics, and growth."}
+                {"We are not just an education platform; we are building a scalable digital ecosystem that seamlessly connects students, teachers, schools, and learning content across India."}
               </span>
             </div>
           </div>
@@ -125,7 +125,7 @@ export default (props) => {
             <button className="flex flex-col items-start bg-[#EEF2F6] text-left py-[11px] px-3.5 mb-[23px] rounded-xl border-0 cursor-pointer hover:bg-[#e2e8f0] transition-colors w-fit"
               onClick={() => alert("Pressed!")}>
               <span className="text-[#0b8276] text-[13px] font-bold">
-                {"Why teams choose us"}
+                {"Why choose EduMart"}
               </span>
             </button>
             <div className="flex flex-col self-stretch mb-[67px] gap-[15px]">
@@ -138,12 +138,12 @@ export default (props) => {
                 <div className="flex flex-1 flex-col gap-1">
                   <div className="flex flex-col items-start self-stretch py-1">
                     <span className="text-[#111b2f] text-base font-bold">
-                      {"All-in-one operations"}
+                      {"Live Classes"}
                     </span>
                   </div>
                   <div className="flex flex-col self-stretch py-[3px]">
                     <span className="text-slate-500 text-sm leading-relaxed">
-                      {"Course delivery, billing, student management, and reporting in one streamlined workspace."}
+                      {"Interactive real-time sessions with expert educators and doubt-solving support."}
                     </span>
                   </div>
                 </div>
@@ -157,12 +157,12 @@ export default (props) => {
                 <div className="flex flex-1 flex-col gap-1">
                   <div className="flex flex-col items-start self-stretch py-[5px] pl-[1px]">
                     <span className="text-[#111b2f] text-base font-bold">
-                      {"Built for scale"}
+                      {"E-Library"}
                     </span>
                   </div>
                   <div className="flex flex-col self-stretch py-[5px]">
                     <span className="text-slate-500 text-sm leading-relaxed">
-                      {"Perfect for solo creators, fast-growing academies, and multi-tenant institute networks."}
+                      {"Vast collection of study materials, eBooks, and resources at your fingertips."}
                     </span>
                   </div>
                 </div>
@@ -176,12 +176,12 @@ export default (props) => {
                 <div className="flex flex-1 flex-col gap-1">
                   <div className="flex flex-col items-start self-stretch py-[5px] pl-[1px]">
                     <span className="text-[#111b2f] text-base font-bold">
-                      {"Reliable and secure"}
+                      {"Online Examinations"}
                     </span>
                   </div>
                   <div className="flex flex-col self-stretch py-[3px]">
                     <span className="text-slate-500 text-sm leading-relaxed">
-                      {"Trusted infrastructure, payment integrations, and learner-friendly experiences built in."}
+                      {"Test series, mock exams, and performance analytics to track progress."}
                     </span>
                   </div>
                 </div>
@@ -190,23 +190,23 @@ export default (props) => {
           </div>
         </div>
 
-        {/* Our Values Section - Matching Features.jsx "Six modules" style */}
+        {/* Our Core Values Section */}
         <div className="flex flex-col items-center self-stretch bg-[#f7efeb] py-16 sm:py-24 px-4 sm:px-8 md:px-16 lg:px-[120px] gap-14">
           <div className="flex flex-col items-center pb-1.5 px-[18px] text-center">
             <button className="flex flex-col items-start bg-white text-left py-[11px] px-3.5 mb-5 rounded-xl border-0 cursor-pointer hover:bg-gray-50 transition-colors shadow-sm"
               onClick={() => alert("Pressed!")}>
               <span className="text-[#0b8276] text-[13px] font-bold">
-                {"Our Values"}
+                {"Our Core Values"}
               </span>
             </button>
             <div className="flex flex-col items-center pb-[1px] mb-[17px]">
               <span className="text-[#111b2f] text-3xl sm:text-4xl lg:text-[42px] font-bold text-center">
-                {"What guides every product decision"}
+                {"What drives us every day"}
               </span>
             </div>
             <div className="flex flex-col items-center pb-[1px]">
               <span className="text-slate-500 text-base text-center max-w-[736px]">
-                {"We believe education platforms should be simple to run, delightful to use, and powerful enough to support long-term growth."}
+                {"We believe in creating meaningful impact through education, innovation, and unwavering commitment to student success."}
               </span>
             </div>
           </div>
@@ -220,12 +220,12 @@ export default (props) => {
               />
               <div className="flex flex-col items-start pb-[1px] mb-[19px]">
                 <span className="text-[#111b2f] text-xl font-bold">
-                  {"Clarity first"}
+                  {"Quality Education"}
                 </span>
               </div>
               <div className="flex flex-col self-stretch pb-[1px]">
                 <span className="text-slate-500 text-sm leading-relaxed">
-                  {"We remove friction so educators can focus on teaching, not on managing complicated software."}
+                  {"We are committed to delivering high-quality learning experiences that prepare students for competitive success."}
                 </span>
               </div>
             </div>
@@ -237,12 +237,12 @@ export default (props) => {
               />
               <div className="flex flex-col items-start pb-[1px] mb-[19px]">
                 <span className="text-[#111b2f] text-xl font-bold">
-                  {"Human-centered learning"}
+                  {"Accessibility"}
                 </span>
               </div>
               <div className="flex flex-col items-start pb-[1px]">
                 <span className="text-slate-500 text-sm leading-relaxed">
-                  {"Every workflow is designed around better outcomes for teams, instructors, and learners."}
+                  {"Making quality education accessible to every student across India, regardless of their location."}
                 </span>
               </div>
             </div>
@@ -254,19 +254,19 @@ export default (props) => {
               />
               <div className="flex flex-col items-start pb-[1px] mb-[23px]">
                 <span className="text-[#111b2f] text-xl font-bold">
-                  {"Growth with confidence"}
+                  {"Innovation"}
                 </span>
               </div>
               <div className="flex flex-col self-stretch pb-[1px]">
                 <span className="text-slate-500 text-sm leading-relaxed">
-                  {"We help education businesses expand with tools that are dependable, scalable, and measurable."}
+                  {"Continuously evolving our platform with cutting-edge technology to enhance learning outcomes."}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Our Journey Section - Gradient matching Features.jsx */}
+        {/* Our Journey Section */}
         <div className="flex flex-col items-center self-stretch py-16 sm:py-24 px-4 sm:px-8 md:px-16 lg:px-[120px] gap-14"
           style={{
             background: "linear-gradient(135deg, #0e7c67 0%, #1a5c3a 100%)"
@@ -280,12 +280,12 @@ export default (props) => {
             </button>
             <div className="flex flex-col items-center pb-[1px] mb-[18px]">
               <span className="text-white text-3xl sm:text-4xl lg:text-[42px] font-bold text-center max-w-[670px]">
-                {"From a course platform to a full LMS ecosystem"}
+                {"Building a scalable digital ecosystem for India"}
               </span>
             </div>
             <div className="flex flex-col items-center pb-[1px]">
               <span className="text-white/90 text-base text-center max-w-[679px]">
-                {"We have grown alongside the educators and institutes who trust us to power their learning experience."}
+                {"We have grown alongside students, teachers, and schools who trust us to power their learning journey."}
               </span>
             </div>
           </div>
@@ -295,17 +295,17 @@ export default (props) => {
               <button className="flex flex-col items-start bg-white/20 text-left py-[13px] px-[21px] mb-[22px] rounded-xl border-0 cursor-pointer"
                 onClick={() => alert("Pressed!")}>
                 <span className="text-white text-[13px] font-bold">
-                  {"2021"}
+                  {"The Beginning"}
                 </span>
               </button>
               <div className="flex flex-col items-start pb-[1px] mb-6">
                 <span className="text-white text-[19px] font-bold">
-                  {"The idea"}
+                  {"Launched with a vision"}
                 </span>
               </div>
               <div className="flex flex-col self-stretch pb-[1px]">
                 <span className="text-white/80 text-sm leading-relaxed">
-                  {"We launched our first version to help instructors publish and monetize their courses faster."}
+                  {"EduMart started as a platform to bridge the gap between quality education and student accessibility."}
                 </span>
               </div>
             </div>
@@ -313,17 +313,17 @@ export default (props) => {
               <button className="flex flex-col items-start bg-white/20 text-left py-[13px] px-5 mb-[22px] rounded-xl border-0 cursor-pointer"
                 onClick={() => alert("Pressed!")}>
                 <span className="text-white text-[13px] font-bold">
-                  {"2022"}
+                  {"Growth"}
                 </span>
               </button>
               <div className="flex flex-col items-start pb-[1px] mb-6">
                 <span className="text-white text-[19px] font-bold">
-                  {"Multi-tenant launch"}
+                  {"Expanding our reach"}
                 </span>
               </div>
               <div className="flex flex-col self-stretch pb-[1px]">
                 <span className="text-white/80 text-sm leading-relaxed">
-                  {"Institutes gained branded portals, flexible admin controls, and stronger organization tools."}
+                  {"Partnered with schools and tutors across India to deliver comprehensive learning solutions."}
                 </span>
               </div>
             </div>
@@ -331,17 +331,17 @@ export default (props) => {
               <button className="flex flex-col items-start bg-white/20 text-left py-[13px] px-[19px] mb-[22px] rounded-xl border-0 cursor-pointer"
                 onClick={() => alert("Pressed!")}>
                 <span className="text-white text-[13px] font-bold">
-                  {"2023"}
+                  {"Innovation"}
                 </span>
               </button>
               <div className="flex flex-col items-start pb-[1px] mb-6">
                 <span className="text-white text-[19px] font-bold">
-                  {"Global reach"}
+                  {"Tech-driven learning"}
                 </span>
               </div>
               <div className="flex flex-col self-stretch pb-[1px]">
                 <span className="text-white/80 text-sm leading-relaxed">
-                  {"Expanded payments, analytics, and integrations helped customers serve learners worldwide."}
+                  {"Introduced live classes, e-library, and online test series for complete exam preparation."}
                 </span>
               </div>
             </div>
@@ -349,40 +349,40 @@ export default (props) => {
               <button className="flex flex-col items-start bg-white/20 text-left py-[13px] px-[19px] mb-[22px] rounded-xl border-0 cursor-pointer"
                 onClick={() => alert("Pressed!")}>
                 <span className="text-white text-[13px] font-bold">
-                  {"2024"}
+                  {"Today & Beyond"}
                 </span>
               </button>
               <div className="flex flex-col items-start pb-[1px] mb-6">
                 <span className="text-white text-[19px] font-bold">
-                  {"Smarter growth"}
+                  {"Empowering learners"}
                 </span>
               </div>
               <div className="flex flex-col self-stretch pb-[1px]">
                 <span className="text-white/80 text-sm leading-relaxed">
-                  {"Today LMS powers modern learning businesses with better automation, insights, and support."}
+                  {"Thousands of students trust EduMart to learn, practice, and succeed in competitive exams."}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Our Team Section - Matching Features.jsx style */}
+        {/* Our Team Section */}
         <div className="flex flex-col items-center self-stretch bg-[#f7efeb] py-16 sm:py-24 px-4 sm:px-8 md:px-16 lg:px-[120px] gap-14">
           <div className="flex flex-col items-center pb-0.5 px-2 text-center">
             <button className="flex flex-col items-start bg-white text-left py-[13px] px-[15px] mb-5 rounded-xl border-0 cursor-pointer hover:bg-gray-50 transition-colors shadow-sm"
               onClick={() => alert("Pressed!")}>
               <span className="text-[#0b8276] text-[13px] font-bold">
-                {"Our Team"}
+                {"Our Leadership"}
               </span>
             </button>
             <div className="flex flex-col items-center pb-[1px] mb-[18px]">
               <span className="text-[#111b2f] text-3xl sm:text-4xl lg:text-[42px] font-bold text-center">
-                {"Meet the people behind LMS"}
+                {"Meet the team behind EduMart"}
               </span>
             </div>
             <div className="flex flex-col items-center pb-[1px]">
               <span className="text-slate-500 text-base text-center max-w-[740px]">
-                {"A small, focused team of product builders, education thinkers, and operators committed to helping learning businesses grow."}
+                {"A passionate team of educators, technologists, and innovators committed to transforming education in India."}
               </span>
             </div>
           </div>
@@ -392,21 +392,21 @@ export default (props) => {
               <img
                 src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/vwiue9y6_expires_30_days.png"}
                 className="w-24 h-24 mb-6 rounded-full object-cover"
-                alt="Sarah Jenkins"
+                alt="Team member"
               />
               <div className="flex flex-col items-center pb-[1px] mb-[18px]">
                 <span className="text-[#111b2f] text-lg font-bold">
-                  {"Sarah Jenkins"}
+                  {"Rahul Mehta"}
                 </span>
               </div>
               <div className="flex flex-col items-center pb-[1px] mb-2.5">
                 <span className="text-[#0b8276] text-sm font-medium">
-                  {"Co-Founder & CEO"}
+                  {"Founder & CEO"}
                 </span>
               </div>
               <div className="flex flex-col self-stretch pb-[1px] text-center">
                 <span className="text-slate-500 text-sm leading-relaxed">
-                  {"Shapes product vision and works closely with education partners on platform strategy."}
+                  {"Visionary leader driving EduMart's mission to make quality education accessible across India."}
                 </span>
               </div>
             </div>
@@ -414,21 +414,21 @@ export default (props) => {
               <img
                 src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/wzh17xdx_expires_30_days.png"}
                 className="w-24 h-24 mb-6 rounded-full object-cover"
-                alt="David Chen"
+                alt="Team member"
               />
               <div className="flex flex-col items-center pb-[1px] mb-[17px]">
                 <span className="text-[#111b2f] text-lg font-bold">
-                  {"David Chen"}
+                  {"Priya Sharma"}
                 </span>
               </div>
               <div className="flex flex-col items-center pb-[1px] mb-[11px]">
                 <span className="text-[#0b8276] text-sm font-medium">
-                  {"Head of Product"}
+                  {"Head of Academics"}
                 </span>
               </div>
               <div className="flex flex-col self-stretch pb-[1px] text-center">
                 <span className="text-slate-500 text-sm leading-relaxed">
-                  {"Leads roadmap planning and keeps the platform intuitive for instructors and admins."}
+                  {"Leads curriculum development and ensures high-quality learning content for all students."}
                 </span>
               </div>
             </div>
@@ -436,21 +436,21 @@ export default (props) => {
               <img
                 src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/x943adnz_expires_30_days.png"}
                 className="w-24 h-24 mb-6 rounded-full object-cover"
-                alt="Priya Nair"
+                alt="Team member"
               />
               <div className="flex flex-col items-center pb-[1px] mb-[15px]">
                 <span className="text-[#111b2f] text-lg font-bold">
-                  {"Priya Nair"}
+                  {"Amit Kumar"}
                 </span>
               </div>
               <div className="flex flex-col items-center pb-[1px] mb-2.5">
                 <span className="text-[#0b8276] text-sm font-medium">
-                  {"Customer Success Lead"}
+                  {"Chief Technology Officer"}
                 </span>
               </div>
               <div className="flex flex-col self-stretch pb-[1px] text-center">
                 <span className="text-slate-500 text-sm leading-relaxed">
-                  {"Helps schools and course creators launch smoothly and scale with confidence."}
+                  {"Builds and scales the technology platform to deliver seamless learning experiences."}
                 </span>
               </div>
             </div>
@@ -458,28 +458,28 @@ export default (props) => {
               <img
                 src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/3jop35i9_expires_30_days.png"}
                 className="w-24 h-24 mb-6 rounded-full object-cover"
-                alt="Lucas Rivera"
+                alt="Team member"
               />
               <div className="flex flex-col items-center pb-[1px] mb-[17px]">
                 <span className="text-[#111b2f] text-lg font-bold">
-                  {"Lucas Rivera"}
+                  {"Neha Gupta"}
                 </span>
               </div>
               <div className="flex flex-col items-center pb-[1px] mb-2">
                 <span className="text-[#0b8276] text-sm font-medium">
-                  {"Engineering Lead"}
+                  {"Student Success Lead"}
                 </span>
               </div>
               <div className="flex flex-col self-stretch pb-[1px] text-center">
                 <span className="text-slate-500 text-sm leading-relaxed">
-                  {"Builds secure, reliable systems that support modern learning experiences at scale."}
+                  {"Ensures every student gets the support and guidance they need to succeed."}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom CTA Section - Matching Features.jsx gradient CTA */}
+        {/* Bottom CTA Section */}
         <div className="self-stretch py-16 px-4 sm:px-8 md:px-16 lg:px-36"
           style={{
             background: "linear-gradient(135deg, #0e7c67 0%, #1a5c3a 100%)"
@@ -488,12 +488,12 @@ export default (props) => {
             <div className="flex flex-col shrink-0 items-start gap-3 text-center lg:text-left mb-6 lg:mb-0">
               <div className="flex flex-col items-start py-0.5">
                 <span className="text-white text-2xl sm:text-[32px] font-bold max-w-[572px]">
-                  {"Want to build the next great learning platform?"}
+                  {"Ready to transform your learning journey?"}
                 </span>
               </div>
               <div className="flex flex-col items-start py-1">
                 <span className="text-white/90 text-[15px] max-w-[559px]">
-                  {"Join thousands of educators, academies, and training businesses already using LMS to launch courses, manage students, and grow revenue."}
+                  {"Join thousands of students and educators already using EduMart to learn, teach, and grow. Start your journey today."}
                 </span>
               </div>
             </div>
@@ -501,13 +501,13 @@ export default (props) => {
               <button className="flex flex-col shrink-0 items-start bg-[#FF8A33] text-left py-[13px] px-[22px] rounded-md border-0 hover:bg-[#e07a2e] transition-colors cursor-pointer"
                 onClick={() => navigate("/signup")}>
                 <span className="text-white text-sm font-bold">
-                  {"Start for Free"}
+                  {"Start Learning"}
                 </span>
               </button>
               <button className="flex flex-col shrink-0 items-start bg-white/10 text-left py-[13px] px-[23px] rounded-md border border-solid border-white/30 hover:bg-white/20 transition-colors cursor-pointer"
                 onClick={() => navigate("/contact")}>
                 <span className="text-white text-sm font-bold">
-                  {"Talk to Sales"}
+                  {"Contact Us"}
                 </span>
               </button>
             </div>

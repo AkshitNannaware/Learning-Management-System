@@ -576,7 +576,7 @@ export default function StudentLiveClasses() {
           courseId: r.course_id,
           image: r.image_url || course.image_url || course.thumbnail_url || course.cover_image || '',
           title: r.title || 'Live Class',
-          course: course.title || 'Course',
+          course: course.title || r.course_id || 'Course',
           instructor: r.instructor_id || 'Instructor',
           instructorAvatar: AVATARS[idx % AVATARS.length],
           instructorRole: 'Instructor',
@@ -628,25 +628,32 @@ export default function StudentLiveClasses() {
   useRealtime(tenantId ? `tenant:${tenantId}` : '', () => loadLiveClasses())
 
   const [activeFilter, setActiveFilter] = useState('All Sessions')
+  const [activeCourseFilter, setActiveCourseFilter] = useState('All Courses')
   const [search, setSearch] = useState('')
   const [enrollModal, setEnrollModal] = useState(null)   // session to enroll
   const [detailModal, setDetailModal] = useState(null)   // session to view detail
+
+  const courseFilters = [...new Set(liveSessions.map((s) => String(s.course || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b))
+  const allCourseFilters = ['All Courses', ...courseFilters]
 
   const handleEnrollSuccess = (courseId) => {
     setEnrolledCourseIds((prev) => (prev.includes(courseId) ? prev : [...prev, courseId]))
   }
 
   const filtered = liveSessions.filter(s => {
+    const selectedCourse = activeCourseFilter.trim().toLowerCase()
     const matchFilter =
       activeFilter === 'All Sessions' ||
       (activeFilter === 'Live Now' && s.status === 'live') ||
       (activeFilter === 'Upcoming' && s.status === 'upcoming') ||
       (activeFilter === 'Enrolled' && enrolledCourseIds.includes(s.courseId))
+    const matchCourse = selectedCourse === 'all courses' || s.course.toLowerCase() === selectedCourse
     const matchSearch =
       s.title.toLowerCase().includes(search.toLowerCase()) ||
       s.instructor.toLowerCase().includes(search.toLowerCase()) ||
       s.course.toLowerCase().includes(search.toLowerCase())
-    return matchFilter && matchSearch
+    return matchFilter && matchCourse && matchSearch
   })
 
   const liveCount = liveSessions.filter(s => s.status === 'live').length
@@ -726,6 +733,18 @@ export default function StudentLiveClasses() {
                 className="h-10 w-full rounded-[8px] border border-black/[0.08] pl-9 pr-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
                 placeholder="Search by topic, mentor, or course..."
               />
+            </div>
+            <div className="relative sm:w-[220px]">
+              <select
+                value={activeCourseFilter}
+                onChange={(e) => setActiveCourseFilter(e.target.value)}
+                className="h-10 w-full appearance-none rounded-[8px] border border-black/[0.08] bg-white px-3 pr-8 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
+              >
+                {allCourseFilters.map((courseName) => (
+                  <option key={courseName} value={courseName}>{courseName}</option>
+                ))}
+              </select>
+              <ChevronRight className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 rotate-90 text-[#94a3b8]" />
             </div>
             <div className="flex flex-wrap gap-2">
               {FILTERS.map(f => (
