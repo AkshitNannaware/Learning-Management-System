@@ -237,7 +237,6 @@ export default function InstructorDashboard() {
           </div>
           <div className="mt-4 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
             <BtnPrimary onClick={() => navigate('/instructor/online-classes')} className="w-full justify-center sm:w-auto">Open Classes</BtnPrimary>
-            <BtnOutline onClick={() => fetchData()} className="w-full justify-center sm:w-auto">Refresh Data</BtnOutline>
           </div>
         </section>
 
@@ -259,7 +258,6 @@ export default function InstructorDashboard() {
             ) : (
               myClasses.map((item) => (
                 <div key={item._id} className="flex items-start gap-[16px] p-[16px] border border-black/[0.08] rounded-[6px]">
-                  <IconBox icon="\uD83D\uDDA5" />
                   <div className="flex-1 min-w-0">
                     <div className="text-[14px] font-semibold text-[#0f172a] leading-snug">{item.title || 'Untitled class'}</div>
                     <div className="text-[13px] text-[#94a3b8] mt-[4px] leading-relaxed">
@@ -296,7 +294,6 @@ export default function InstructorDashboard() {
             ) : (
               myCourses.map((item) => (
                 <div key={item._id} className="flex items-start gap-[12px] p-[16px] border border-black/[0.08] rounded-[6px]">
-                  <IconBox icon="\uD83D\uDCD8" />
                   <div className="flex-1 min-w-0">
                     <div className="text-[14px] font-semibold text-[#0f172a] leading-snug mb-[4px]">{item.title || 'Untitled course'}</div>
                     <div className="text-[13px] text-[#94a3b8] leading-relaxed line-clamp-2">{item.description || 'No description'}</div>

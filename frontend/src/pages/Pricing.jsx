@@ -1,8 +1,60 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { api } from "../lib/api";
 
 export default (props) => {
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [plansError, setPlansError] = useState("");
   const [input1, onChangeInput1] = useState('');
   const [input2, onChangeInput2] = useState('');
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+
+    let mounted = true;
+
+    const loadPlans = async () => {
+      try {
+        setPlansLoading(true);
+        setPlansError("");
+        const res = await api("/lms/public/plans?limit=100&active_only=true");
+        if (!mounted) return;
+        setSubscriptionPlans(Array.isArray(res?.items) ? res.items : []);
+      } catch (error) {
+        if (!mounted) return;
+        setSubscriptionPlans([]);
+        setPlansError(error?.message || "Unable to load subscription plans.");
+      } finally {
+        if (mounted) setPlansLoading(false);
+      }
+    };
+
+    loadPlans();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const pricingPlans = useMemo(() => {
+    return subscriptionPlans
+      .slice()
+      .sort((left, right) => Number(left?.price || 0) - Number(right?.price || 0))
+      .map((plan, index) => {
+        const price = Number(plan?.price || 0);
+        const billingPeriod = (plan?.billing_period || "monthly").toLowerCase();
+        const billingLabel = billingPeriod === "yearly" ? "/year" : billingPeriod === "monthly" ? "/month" : `/${billingPeriod}`;
+
+        return {
+          id: plan?._id || `${plan?.name || "plan"}-${index}`,
+          name: plan?.name || "Subscription",
+          priceLabel: price > 0 ? `Rs. ${price.toLocaleString("en-IN")}` : "Custom",
+          billingLabel,
+          activeLabel: plan?.active === false ? "Inactive" : "Active",
+          isFeatured: index === 1,
+        };
+      });
+  }, [subscriptionPlans]);
 
   return (
     <div className="flex flex-col bg-white">
@@ -220,369 +272,82 @@ export default (props) => {
             </div>
           </div>
 
-          <div className="flex flex-col lg:flex-row items-stretch self-stretch gap-6">
-            {/* Basic Plan */}
-            <div className="flex flex-1 flex-col items-start bg-white py-[31px] px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="flex flex-col self-stretch mb-6 gap-2.5">
-                <div className="flex flex-col items-start self-stretch pb-[1px]">
-                  <span className="text-[#111b2f] text-2xl font-bold">
-                    {"Basic"}
-                  </span>
-                </div>
-                <div className="flex flex-col items-start self-stretch pb-[1px]">
-                  <span className="text-slate-500 text-sm">
-                    {"For new creators and small academies launching their first paid courses."}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-start self-stretch mb-[17px] gap-[9px]">
-                <div className="flex flex-col shrink-0 items-start py-0.5 px-[1px]">
-                  <span className="text-[#111b2f] text-[56px] font-bold">
-                    {"$29"}
-                  </span>
-                </div>
-                <div className="flex flex-col shrink-0 items-start py-2 mt-[25px]">
-                  <span className="text-slate-500 text-[15px]">
-                    {"/mo"}
-                  </span>
-                </div>
-              </div>
-              <span className="text-slate-500 text-[13px] mb-[29px]">
-                {"Up to 100 students"}
-              </span>
-              <div className="flex flex-col self-stretch pb-[18px] mb-6 gap-3.5">
-                <div className="flex items-center self-stretch py-[1px] gap-3">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/gpwlobgx_expires_30_days.png"}
-                    className="w-5 h-5 object-fill"
-                    alt="check"
-                  />
-                  <div className="flex flex-col shrink-0 items-start py-[3px]">
-                    <span className="text-[#111b2f] text-sm">
-                      {"5 published courses"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center self-stretch py-[1px] gap-3">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/ss5djwbn_expires_30_days.png"}
-                    className="w-5 h-5 object-fill"
-                    alt="check"
-                  />
-                  <div className="flex flex-col shrink-0 items-start py-[3px]">
-                    <span className="text-[#111b2f] text-sm">
-                      {"Video, quiz, and file lessons"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center self-stretch py-[1px] gap-3">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/blr70v7d_expires_30_days.png"}
-                    className="w-5 h-5 object-fill"
-                    alt="check"
-                  />
-                  <div className="flex flex-col shrink-0 items-start py-[3px] px-[1px]">
-                    <span className="text-[#111b2f] text-sm">
-                      {"Basic coupons and checkout"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center self-stretch py-[1px] gap-3">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/dewhpy6x_expires_30_days.png"}
-                    className="w-5 h-5 object-fill"
-                    alt="check"
-                  />
-                  <div className="flex flex-col shrink-0 items-start py-[3px] px-[1px]">
-                    <span className="text-[#111b2f] text-sm">
-                      {"Email support"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center self-stretch py-[1px] gap-3">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/40japh7b_expires_30_days.png"}
-                    className="w-5 h-5 object-fill"
-                    alt="check"
-                  />
-                  <div className="flex flex-col shrink-0 items-start py-[5px]">
-                    <span className="text-[#111b2f] text-sm">
-                      {"Custom domain"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center self-stretch py-[1px] gap-3">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/cas72wdr_expires_30_days.png"}
-                    className="w-5 h-5 object-fill"
-                    alt="check"
-                  />
-                  <div className="flex flex-col shrink-0 items-start py-[3px]">
-                    <span className="text-[#111b2f] text-sm">
-                      {"Advanced analytics"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col self-stretch gap-3.5">
-                <input
-                  placeholder={"Best for solo educators validating their course idea."}
-                  value={input1}
-                  onChange={(event) => onChangeInput1(event.target.value)}
-                  className="self-stretch text-slate-600 bg-[#F3F6F9] text-[13px] py-[18px] px-3.5 rounded-md border-0 focus:outline-none focus:ring-2 focus:ring-[#0b8276]"
-                />
-                <button className="flex flex-col items-center self-stretch bg-transparent text-left py-[18px] rounded-md border border-solid border-[#00000012] hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => alert("Pressed!")}>
-                  <span className="text-[#111b2f] text-sm font-bold">
-                    {"Choose Basic"}
-                  </span>
-                </button>
-              </div>
+          {plansLoading ? (
+            <div className="col-span-full rounded-lg bg-white px-6 py-10 text-center text-slate-500 shadow-md">
+              Loading subscription plans...
             </div>
-
-            {/* Pro Plan - Highlighted matching Features.jsx highlighted style */}
-            <div className="flex-1 relative">
-              <div className="flex flex-col items-start self-stretch bg-[#141B2D] py-[31px] px-6 rounded-lg shadow-xl"
-                style={{
-                  boxShadow: "0px 28px 64px rgba(0,0,0,0.2)"
-                }}>
-                <div className="flex flex-col self-stretch mb-6 gap-2.5">
-                  <div className="flex flex-col items-start self-stretch pb-[1px]">
-                    <span className="text-white text-2xl font-bold">
-                      {"Pro"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-start self-stretch pb-[1px]">
-                    <span className="text-white/80 text-sm">
-                      {"For growing learning brands that want automation, scale, and premium control."}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-start self-stretch mb-[17px] gap-2">
-                  <div className="flex flex-col shrink-0 items-start py-0.5 px-[1px]">
-                    <span className="text-white text-[56px] font-bold">
-                      {"$79"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col shrink-0 items-start py-2 mt-[25px]">
-                    <span className="text-white/60 text-[15px]">
-                      {"/mo"}
-                    </span>
-                  </div>
-                </div>
-                <span className="text-white/80 text-[13px] mb-8">
-                  {"Unlimited students and courses"}
-                </span>
-                <div className="flex flex-col self-stretch mb-6 gap-3.5">
-                  <div className="flex items-center self-stretch py-[1px] gap-3">
-                    <img
-                      src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/2une7vr2_expires_30_days.png"}
-                      className="w-5 h-5 object-fill"
-                      alt="check"
-                    />
-                    <div className="flex flex-col shrink-0 items-start py-[3px] px-[1px]">
-                      <span className="text-white text-sm">
-                        {"Unlimited published courses"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center self-stretch py-[1px] gap-3">
-                    <img
-                      src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/uvh9xu2n_expires_30_days.png"}
-                      className="w-5 h-5 object-fill"
-                      alt="check"
-                    />
-                    <div className="flex flex-col shrink-0 items-start py-[5px]">
-                      <span className="text-white text-sm">
-                        {"Custom domain and branded site"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center self-stretch gap-[13px]">
-                    <img
-                      src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/3avotvwn_expires_30_days.png"}
-                      className="w-[19px] h-5 object-fill"
-                      alt="check"
-                    />
-                    <div className="flex flex-1 flex-col items-start py-[5px]">
-                      <span className="text-white text-sm">
-                        {"Automation, certificates, and drip content"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center self-stretch py-[1px] gap-3">
-                    <img
-                      src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/44whzh12_expires_30_days.png"}
-                      className="w-5 h-5 object-fill"
-                      alt="check"
-                    />
-                    <div className="flex flex-col shrink-0 items-start py-[3px] px-[1px]">
-                      <span className="text-white text-sm">
-                        {"Priority support and team seats"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center self-stretch py-[1px] gap-3">
-                    <img
-                      src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/ep8p2utz_expires_30_days.png"}
-                      className="w-5 h-5 object-fill"
-                      alt="check"
-                    />
-                    <div className="flex flex-col shrink-0 items-start py-[3px]">
-                      <span className="text-white text-sm">
-                        {"Advanced analytics and reports"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center self-stretch py-[1px] gap-3">
-                    <img
-                      src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/7xnnrlu4_expires_30_days.png"}
-                      className="w-5 h-5 object-fill"
-                      alt="check"
-                    />
-                    <div className="flex flex-col shrink-0 items-start py-[3px]">
-                      <span className="text-white text-sm">
-                        {"API and integrations"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col self-stretch gap-3.5">
-                  <input
-                    placeholder={"Ideal for serious course sellers and modern academies."}
-                    value={input2}
-                    onChange={(event) => onChangeInput2(event.target.value)}
-                    className="self-stretch text-white bg-white/10 text-[13px] py-[18px] px-3.5 rounded-md border-0 focus:outline-none focus:ring-2 focus:ring-[#FF8A33] placeholder:text-white/50"
-                  />
-                  <button className="flex flex-col items-center self-stretch bg-[#FF8A33] text-left py-[18px] rounded-md border-0 hover:bg-[#e07a2e] transition-colors cursor-pointer"
-                    onClick={() => alert("Pressed!")}>
-                    <span className="text-white text-sm font-bold">
-                      {"Choose Pro"}
-                    </span>
-                  </button>
-                </div>
-              </div>
-              <div className="flex flex-col items-center self-stretch absolute top-[-14px] right-0 left-0">
-                <button className="flex flex-col items-start bg-[#FF8A33] text-left py-2 px-[11px] rounded-xl border-0 cursor-pointer hover:bg-[#e07a2e] transition-colors"
-                  onClick={() => alert("Pressed!")}>
-                  <span className="text-white text-xs font-bold">
-                    {"Most Popular"}
-                  </span>
-                </button>
-              </div>
+          ) : plansError ? (
+            <div className="col-span-full rounded-lg bg-white px-6 py-10 text-center text-slate-500 shadow-md">
+              {plansError}
             </div>
-
-            {/* Enterprise Plan */}
-            <div className="flex flex-1 flex-col items-start bg-white py-[31px] px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="flex flex-col self-stretch mb-6 gap-2.5">
-                <div className="flex flex-col items-start self-stretch pb-[1px]">
-                  <span className="text-[#111b2f] text-2xl font-bold">
-                    {"Enterprise"}
+          ) : pricingPlans.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 self-stretch">
+              {pricingPlans.slice(0, 3).map((plan) => (
+                <div
+                  key={plan.id}
+                  className={`relative flex flex-1 flex-col items-start rounded-lg px-6 py-[31px] shadow-md transition-shadow hover:shadow-lg ${plan.isFeatured ? "bg-[#141B2D] shadow-xl" : "bg-white"}`}
+                  style={plan.isFeatured ? { boxShadow: "0px 28px 64px rgba(0,0,0,0.2)" } : undefined}
+                >
+                  <div className="flex flex-col self-stretch mb-6 gap-2.5">
+                    <div className="flex flex-col items-start self-stretch pb-[1px]">
+                      <span className={`text-2xl font-bold ${plan.isFeatured ? "text-white" : "text-[#111b2f]"}`}>
+                        {plan.name}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-start self-stretch pb-[1px]">
+                      <span className={`text-sm ${plan.isFeatured ? "text-white/80" : "text-slate-500"}`}>
+                        {"Live subscription plan from the admin billing setup."}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-start self-stretch mb-[17px] gap-[9px]">
+                    <div className="flex flex-col shrink-0 items-start py-0.5 px-[1px]">
+                      <span className={`text-[56px] font-bold ${plan.isFeatured ? "text-white" : "text-[#111b2f]"}`}>
+                        {plan.priceLabel}
+                      </span>
+                    </div>
+                    <div className="flex flex-col shrink-0 items-start py-2 mt-[25px]">
+                      <span className={`text-[15px] ${plan.isFeatured ? "text-white/60" : "text-slate-500"}`}>
+                        {plan.billingLabel}
+                      </span>
+                    </div>
+                  </div>
+                  <span className={`text-[13px] mb-[29px] ${plan.isFeatured ? "text-white/80" : "text-slate-500"}`}>
+                    {plan.activeLabel}
                   </span>
-                </div>
-                <div className="flex flex-col items-start self-stretch pb-[1px]">
-                  <span className="text-slate-500 text-sm">
-                    {"For institutions, franchises, and multi-brand education businesses with custom needs."}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col items-start self-stretch pb-[1px] mb-[17px]">
-                <span className="text-[#111b2f] text-[46px] font-bold">
-                  {"Custom"}
-                </span>
-              </div>
-              <span className="text-slate-500 text-[13px] mb-[29px]">
-                {"Tailored onboarding and architecture"}
-              </span>
-              <div className="flex flex-col self-stretch pb-7 mb-6 gap-3.5">
-                <div className="flex items-center self-stretch py-[1px] gap-3">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/rciozmjo_expires_30_days.png"}
-                    className="w-5 h-5 object-fill"
-                    alt="check"
-                  />
-                  <div className="flex flex-col shrink-0 items-start py-[3px] px-[1px]">
-                    <span className="text-[#111b2f] text-sm">
-                      {"Multi-tenant LMS setup"}
-                    </span>
+                  <div className="flex flex-col self-stretch gap-3.5">
+                    <div className={`flex flex-col items-start self-stretch rounded-md px-3.5 py-[18px] ${plan.isFeatured ? "bg-white/10" : "bg-[#F3F6F9]"}`}>
+                      <span className={`text-[13px] ${plan.isFeatured ? "text-white/80" : "text-slate-600"}`}>
+                        {"This is the current plan record configured in the backend."}
+                      </span>
+                    </div>
+                    <button
+                      className={`flex flex-col items-center self-stretch rounded-md border py-[18px] transition-colors cursor-pointer ${plan.isFeatured ? "border-0 bg-[#FF8A33] hover:bg-[#e07a2e]" : "border border-solid border-[#00000012] bg-transparent hover:bg-gray-50"}`}
+                      onClick={() => alert(`Selected ${plan.name}`)}
+                    >
+                      <span className={`text-sm font-bold ${plan.isFeatured ? "text-white" : "text-[#111b2f]"}`}>
+                        {`Choose ${plan.name}`}
+                      </span>
+                    </button>
                   </div>
+                  {plan.isFeatured ? (
+                    <div className="flex flex-col items-center self-stretch absolute top-[-14px] right-0 left-0">
+                      <button className="flex flex-col items-start bg-[#FF8A33] text-left py-2 px-[11px] rounded-xl border-0 cursor-pointer hover:bg-[#e07a2e] transition-colors"
+                        onClick={() => alert("Pressed!")}>
+                        <span className="text-white text-xs font-bold">
+                          {"Most Popular"}
+                        </span>
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
-                <div className="flex items-center self-stretch py-[1px] gap-3">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/bx5mjimu_expires_30_days.png"}
-                    className="w-5 h-5 object-fill"
-                    alt="check"
-                  />
-                  <div className="flex flex-col shrink-0 items-start py-[3px] px-[1px]">
-                    <span className="text-[#111b2f] text-sm">
-                      {"Dedicated success manager"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center self-stretch py-[1px] gap-3">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/gb6jil35_expires_30_days.png"}
-                    className="w-5 h-5 object-fill"
-                    alt="check"
-                  />
-                  <div className="flex flex-col shrink-0 items-start py-[3px]">
-                    <span className="text-[#111b2f] text-sm">
-                      {"Advanced SSO and permissions"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center self-stretch py-[1px] gap-3">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/tc648xi2_expires_30_days.png"}
-                    className="w-5 h-5 object-fill"
-                    alt="check"
-                  />
-                  <div className="flex flex-col shrink-0 items-start py-[3px]">
-                    <span className="text-[#111b2f] text-sm">
-                      {"Migration and implementation help"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center self-stretch py-[1px] gap-3">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/1w818b29_expires_30_days.png"}
-                    className="w-5 h-5 object-fill"
-                    alt="check"
-                  />
-                  <div className="flex flex-col shrink-0 items-start py-[3px]">
-                    <span className="text-[#111b2f] text-sm">
-                      {"Custom SLAs and security review"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center self-stretch py-[1px] gap-3">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/sig2tpg6_expires_30_days.png"}
-                    className="w-5 h-5 object-fill"
-                    alt="check"
-                  />
-                  <div className="flex flex-col shrink-0 items-start py-[3px] px-[1px]">
-                    <span className="text-[#111b2f] text-sm">
-                      {"Private infrastructure options"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col self-stretch gap-3.5">
-                <div className="flex flex-col items-start self-stretch bg-[#F3F6F9] py-[18px] pl-3.5 rounded-md">
-                  <span className="text-slate-600 text-[13px]">
-                    {"Built for larger rollouts, partner networks, and custom workflows."}
-                  </span>
-                </div>
-                <button className="flex flex-col items-center self-stretch bg-transparent text-left py-[18px] rounded-md border border-solid border-[#00000012] hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => alert("Pressed!")}>
-                  <span className="text-[#111b2f] text-sm font-bold">
-                    {"Contact Sales"}
-                  </span>
-                </button>
-              </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="col-span-full rounded-lg bg-white px-6 py-10 text-center text-slate-500 shadow-md">
+              No active subscription plans found.
+            </div>
+          )}
         </div>
 
         {/* Compare Plans Table - Matching Features.jsx style */}

@@ -20,7 +20,6 @@ const links = [
   { to: '/superadmin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/superadmin/tenant-management', label: 'Tenant Management', icon: Building2 },
   { to: '/superadmin/revenue', label: 'Revenue', icon: DollarSign },
-  { to: '/superadmin/user-management', label: 'User Management', icon: Users },
   { to: '/superadmin/reports', label: 'Reports', icon: FileText },
   { to: '/superadmin/plans-billing', label: 'Plans & Billing', icon: CreditCard },
   { to: '/superadmin/platform-settings', label: 'Platform Settings', icon: Settings },

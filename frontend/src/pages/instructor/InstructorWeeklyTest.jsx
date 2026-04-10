@@ -317,13 +317,6 @@ export default function InstructorWeeklyTest() {
                 <PlusCircle className="h-[18px] w-[18px]" />
                 Create test
               </button>
-              <button
-                onClick={loadData}
-                className="inline-flex h-[40px] items-center gap-2 rounded-[6px] border border-black/[0.08] bg-white px-[17px] text-[14px] font-medium text-[#0f172a] transition-colors hover:bg-[#f1f5f9]"
-              >
-                <RefreshCcw className="h-[18px] w-[18px]" />
-                Refresh
-              </button>
             </div>
           </div>
         </section>

@@ -82,38 +82,6 @@ export default function SuperAdminOverview() {
 
   return (
     <div className="min-h-full bg-[#F7FAFD]">
-      {/* Header */}
-      <header className="flex h-[76px] items-center justify-between border-b border-black/[0.08] bg-white px-[28px]">
-        <div className="relative shrink-0 w-[228.47px]">
-          <div className="flex flex-col font-medium h-[16px] justify-center leading-[0] text-[#94a3b8] text-[13px]">
-            Master admin panel
-          </div>
-          <div className="flex flex-col font-bold h-[29px] justify-center leading-[0] text-[#0f172a] text-[24px]">
-            Platform overview
-          </div>
-        </div>
-
-        <div className="flex items-center gap-[12px]">
-          <div className="bg-white border border-black/[0.08] flex items-center gap-[10px] h-[40px] min-w-[280px] px-[15px] py-[0.25px] relative rounded-[6px]">
-            <div className="relative shrink-0 size-[18px] flex items-center justify-center">
-              <div className="absolute inset-[0] flex items-center justify-center">
-                <Search className="h-[18px] w-[18px] text-[#94a3b8]" />
-              </div>
-            </div>
-            <div className="flex flex-col font-normal h-[17px] justify-center leading-[0] text-[#94a3b8] text-[14px]">
-              Search tenants, users, or logs
-            </div>
-          </div>
-
-          <div className="bg-[#e8f5ff] border border-black/[0.08] flex items-center gap-[8px] h-[40px] justify-center px-[17px] py-[0.25px] rounded-[6px] shrink-0">
-            <Download className="h-[18px] w-[18px] text-[#0f172a]" />
-            <div className="flex flex-col font-medium h-[17px] justify-center leading-[0] text-[#0f172a] text-[14px]">
-              Export
-            </div>
-          </div>
-        </div>
-      </header>
-
       <div className="bg-gradient-to-b flex flex-col from-[#f6f8fa] gap-[24px] h-full p-[28px] to-[#f7fcff]">
         {/* Hero */}
         <section className="border border-black/[0.08] border-solid content-stretch flex flex-col items-start pb-[23px] pt-[25px] px-[25px] relative rounded-[8px] shrink-0 w-full bg-gradient-to-br from-white to-[#e8f5ff]">

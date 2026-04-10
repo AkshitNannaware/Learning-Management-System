@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { BadgeCheck, ChevronLeft, ChevronRight, ClipboardCheck, Search, Star } from "lucide-react";
 import { api } from "../lib/api";
@@ -8,6 +9,7 @@ export default (props) => {
     const [coursesLoading, setCoursesLoading] = useState(true);
     const [subscriptionPlans, setSubscriptionPlans] = useState([]);
     const [plansLoading, setPlansLoading] = useState(true);
+    const navigate = useNavigate();
 
     const getYoutubeVideoId = (url) => {
         if (!url) return "";
@@ -186,7 +188,7 @@ export default (props) => {
 						<div className="flex items-center gap-5 mt-1">
 							<button
 								className="bg-[#1a5c3a] text-white text-sm font-bold py-3 px-8 rounded-lg border-0 cursor-pointer"
-								onClick={() => alert("Pressed!")}
+                                onClick={() => navigate("/login")}
 							>
 								Get Started
 							</button>

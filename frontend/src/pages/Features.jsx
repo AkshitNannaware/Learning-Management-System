@@ -1,6 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export default (props) => {
+  const navigate = useNavigate();
+
   return (
     <div className="flex flex-col bg-white">
       <div className="self-stretch bg-[#F7FCFF]">
@@ -574,13 +577,13 @@ export default (props) => {
             </div>
             <div className="flex shrink-0 items-center gap-4 flex-wrap justify-center">
               <button className="flex flex-col shrink-0 items-start bg-[#FF8A33] text-left py-3.5 px-[21px] rounded-md border-0 cursor-pointer hover:bg-[#e07a2e] transition-colors"
-                onClick={() => alert("Pressed!")}>
+                onClick={() => navigate("/login")}>
                 <span className="text-white text-sm font-bold">
                   {"Schedule Demo"}
                 </span>
               </button>
               <button className="flex flex-col shrink-0 items-start bg-[#EEF2F6] text-left py-4 px-[22px] rounded-md border-0 cursor-pointer hover:bg-[#e2e8f0] transition-colors"
-                onClick={() => alert("Pressed!")}>
+                onClick={() => navigate("/pricing")}>
                 <span className="text-[#111b2f] text-sm font-bold">
                   {"See Pricing"}
                 </span>

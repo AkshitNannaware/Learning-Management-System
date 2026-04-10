@@ -140,10 +140,6 @@ export default function AdminAnalytics() {
             <span className="inline-flex rounded-[12px] bg-[#ffd966] px-[10px] py-[5px] text-[11px] font-medium text-[#4b2e00]">Analytics overview</span>
             <h2 className="mt-3 max-w-[760px] text-[28px] font-bold leading-tight text-[#0f172a]">Track course performance, learner engagement, and revenue momentum from one analytics workspace.</h2>
             <p className="mt-2 max-w-[760px] text-[14px] text-[#94a3b8]">Review weekly trends, spot drop-offs early, and compare top-performing programs without leaving the institute dashboard.</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button className="inline-flex h-9 items-center gap-1 rounded-[7px] bg-[#5b3df6] px-3 text-[12px] font-semibold text-white"><Filter className="h-4 w-4" />Apply Filters</button>
-              <button className="inline-flex h-9 items-center gap-1 rounded-[7px] border border-black/[0.08] bg-white px-3 text-[12px] font-semibold text-[#111827]"><CalendarDays className="h-4 w-4" />Last 30 days</button>
-            </div>
           </div>
           <div className="space-y-2">
             <div className="rounded-[8px] border border-black/[0.08] bg-white p-3">

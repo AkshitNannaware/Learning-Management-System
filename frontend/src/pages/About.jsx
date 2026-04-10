@@ -1,11 +1,14 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export default (props) => {
+  const navigate = useNavigate();
+
   return (
     <div className="flex flex-col bg-white">
       <div className="self-stretch bg-[#F7FCFF]">
         {/* Hero Section - About Us with matching gradient */}
-        <div className="self-stretch pt-[60px] pb-[78px] px-4 sm:px-8 md:px-16 lg:px-36 mb-[97px]"
+        <div className="self-stretch pt-[30px] pb-[78px] px-4 sm:px-8 md:px-16 lg:px-36 mb-[7px]"
           style={{
             background: "linear-gradient(135deg, #0e7c67 0%, #1a5c3a 100%)"
           }}>
@@ -13,7 +16,7 @@ export default (props) => {
             <div className="flex-1">
               <button className="flex flex-col items-start bg-white/10 text-left py-[13px] px-3.5 mb-4 rounded-xl border-0 cursor-pointer hover:bg-white/20 transition-colors w-fit"
                 onClick={() => alert("Pressed!")}>
-                <span className="text-white text-[13px]">
+                <span className="text-white text-[20px]">
                   {"About Us"}
                 </span>
               </button>
@@ -27,7 +30,7 @@ export default (props) => {
                   {"LMS was created to make online education easier to launch, simpler to manage, and more rewarding to grow. From individual instructors to multi-branch institutes, we give teams the tools to teach, sell, and scale with confidence."}
                 </span>
               </div>
-              <div className="flex items-start self-stretch pt-[15px] gap-3.5 flex-wrap">
+              <div className="flex items-start self-stretch pb-7 gap-3.5 flex-wrap">
                 <button className="flex flex-col shrink-0 items-start bg-[#FF8A33] text-left py-[17px] px-5 rounded-md border-0 hover:bg-[#e07a2e] transition-colors cursor-pointer"
                   onClick={() => alert("Pressed!")}>
                   <span className="text-white text-sm">
@@ -496,13 +499,13 @@ export default (props) => {
             </div>
             <div className="flex shrink-0 items-center gap-4 flex-wrap justify-center">
               <button className="flex flex-col shrink-0 items-start bg-[#FF8A33] text-left py-[13px] px-[22px] rounded-md border-0 hover:bg-[#e07a2e] transition-colors cursor-pointer"
-                onClick={() => alert("Pressed!")}>
+                onClick={() => navigate("/signup")}>
                 <span className="text-white text-sm font-bold">
                   {"Start for Free"}
                 </span>
               </button>
               <button className="flex flex-col shrink-0 items-start bg-white/10 text-left py-[13px] px-[23px] rounded-md border border-solid border-white/30 hover:bg-white/20 transition-colors cursor-pointer"
-                onClick={() => alert("Pressed!")}>
+                onClick={() => navigate("/contact")}>
                 <span className="text-white text-sm font-bold">
                   {"Talk to Sales"}
                 </span>

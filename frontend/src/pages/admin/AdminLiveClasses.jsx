@@ -807,9 +807,6 @@ export default function AdminLiveClasses() {
             <button onClick={() => setActiveView('create')} className="inline-flex h-9 items-center gap-1 rounded-[7px] bg-[#5b3df6] px-3 text-[12px] font-semibold text-white">
               <Plus className="h-4 w-4" /> Create Zoom meeting
             </button>
-            <button className="h-9 rounded-[7px] border border-black/[0.08] bg-white px-3 text-[12px] font-semibold text-[#111827]" onClick={loadData}>
-              Refresh
-            </button>
           </div>
         </section>
 

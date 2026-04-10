@@ -276,8 +276,7 @@ export default function StudentELibrary() {
                         {resource.file_url ? (
                           <a
                             href={resource.file_url}
-                            target="_blank"
-                            rel="noreferrer"
+                            download={resource.title ? `${resource.title}.pdf` : 'resource.pdf'}
                             className="bg-[#5b3df6] inline-flex items-center gap-[6px] h-[36px] justify-center px-[14px] rounded-[6px]"
                           >
                             <Download className="h-[14px] w-[14px] text-white" />

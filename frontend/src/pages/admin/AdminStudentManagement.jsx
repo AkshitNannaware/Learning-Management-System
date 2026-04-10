@@ -30,6 +30,8 @@ import {
 } from 'lucide-react'
 import { api } from '../../lib/api'
 import useRealtime from '../../hooks/useRealtime'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 // ── Helper Components ──────────────────────────────────────────
 function StatusBadge({ status, type }) {
@@ -233,6 +235,89 @@ export default function StudentManagement() {
     ? Math.round(filteredStudents.reduce((acc, s) => acc + s.progress.overall, 0) / filteredStudents.length)
     : 0
 
+  const exportPdf = () => {
+    const doc = new jsPDF()
+    const margin = 14
+    const pageWidth = doc.internal.pageSize.getWidth()
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(16)
+    doc.text('Student Management Report', margin, 16)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, margin, 22)
+    doc.text(`Visible students: ${filteredStudents.length} / ${students.length}`, margin, 28)
+    doc.text(`Active users: ${students.filter((s) => s.enrollment.status === 'active').length}`, margin, 34)
+    doc.text(`Pending payments: ${pendingPaymentsCount}`, margin, 40)
+    doc.text(`Average progress: ${avgProgress}%`, margin, 46)
+
+    autoTable(doc, {
+      startY: 54,
+      head: [['Student', 'Class', 'Plan', 'Progress', 'Status', 'Email']],
+      body: filteredStudents.map((student) => [
+        student.name,
+        student.enrollment.className,
+        student.subscription.plan,
+        `${student.progress.overall}%`,
+        student.enrollment.status,
+        student.email,
+      ]),
+      margin: { left: margin, right: margin },
+      styles: {
+        fontSize: 8.5,
+        cellPadding: 2.5,
+        overflow: 'linebreak',
+        valign: 'middle',
+      },
+      headStyles: {
+        fillColor: [91, 61, 246],
+        textColor: [255, 255, 255],
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      columnStyles: {
+        0: { cellWidth: 32 },
+        1: { cellWidth: 32 },
+        2: { cellWidth: 26 },
+        3: { cellWidth: 18 },
+        4: { cellWidth: 22 },
+        5: { cellWidth: pageWidth - margin * 2 - 130 },
+      },
+    })
+
+    const lastY = doc.lastAutoTable?.finalY || 54
+    const pendingRows = filteredStudents.filter((student) => student.enrollment.paymentStatus === 'pending' || student.enrollment.paymentStatus === 'overdue')
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(12)
+    doc.text('Pending Payments', margin, lastY + 10)
+
+    if (pendingRows.length === 0) {
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      doc.text('No pending payments found in the current view.', margin, lastY + 18)
+    } else {
+      autoTable(doc, {
+        startY: lastY + 14,
+        head: [['Student', 'Class', 'Payment Status', 'Plan']],
+        body: pendingRows.map((student) => [
+          student.name,
+          student.enrollment.className,
+          student.enrollment.paymentStatus,
+          student.subscription.plan,
+        ]),
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 8.5, cellPadding: 2.5, overflow: 'linebreak' },
+        headStyles: { fillColor: [255, 217, 102], textColor: [75, 46, 0] },
+        alternateRowStyles: { fillColor: [255, 251, 235] },
+      })
+    }
+
+    doc.save(`student-management-${new Date().toISOString().slice(0, 10)}.pdf`)
+  }
+
   const bulkActions = [
     {
       key: 'payment-reminder',
@@ -281,13 +366,12 @@ export default function StudentManagement() {
               Review course performance, student health, parent contact status, and operational actions without leaving the student management workspace. The layout stays consistent with the institute dashboard while giving more room to learner operations.
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <button className="inline-flex h-10 items-center gap-2 rounded-[6px] border border-black/[0.08] bg-white px-4 text-[13px] font-medium text-[#0f172a] hover:bg-gray-50">
+              <button
+                onClick={exportPdf}
+                className="inline-flex h-10 items-center gap-2 rounded-[6px] border border-black/[0.08] bg-white px-4 text-[13px] font-medium text-[#0f172a] hover:bg-gray-50"
+              >
                 <FileText className="h-4 w-4" />
-                Import CSV
-              </button>
-              <button className="inline-flex h-10 items-center gap-2 rounded-[6px] border border-black/[0.08] bg-white px-4 text-[13px] font-medium text-[#0f172a] hover:bg-gray-50">
-                <Calendar className="h-4 w-4" />
-                This week
+                Export PDF
               </button>
             </div>
           </div>

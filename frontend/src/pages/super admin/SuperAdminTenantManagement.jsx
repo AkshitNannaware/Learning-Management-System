@@ -1,163 +1,8 @@
-// import React from 'react'
-// import { useState } from 'react'
-// import { Search, Plus, MoreVertical, Building2, Users, BookOpen } from 'lucide-react'
-// import { Modal } from '../../components/superadmin/Ui'
-
-// const tenants = [
-//   { id: 1, name: 'Bright Minds Academy', plan: 'Pro Plan', users: 4230, courses: 142, revenue: '₹3.2L', status: 'active' },
-//   { id: 2, name: 'FuturePrep Center', plan: 'Enterprise', users: 8380, courses: 436, revenue: '₹6.8L', status: 'active' },
-//   { id: 3, name: 'LearnNest Studio', plan: 'Basic Plan', users: 880, courses: 54, revenue: '₹45K', status: 'review' },
-//   { id: 4, name: 'SkillSpring Kids', plan: 'Pro Plan', users: 2340, courses: 128, revenue: '₹1.8L', status: 'inactive' },
-// ]
-
-// export default function SuperAdminTenantManagement() {
-//   const [query, setQuery] = useState('')
-//   const [showAdd, setShowAdd] = useState(false)
-//   const rows = tenants.filter((tenant) => tenant.name.toLowerCase().includes(query.toLowerCase()))
-
-//   return (
-//     <div>
-//       <header className="mb-8 flex items-center justify-between border-b border-gray-200 bg-white px-8 py-4">
-//         <div>
-//           <h1 className="text-2xl font-semibold">Tenant Management</h1>
-//           <p className="mt-1 text-sm text-gray-500">Manage all client organizations and subscriptions</p>
-//         </div>
-//         <button
-//           onClick={() => setShowAdd(true)}
-//           className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white"
-//         >
-//           <Plus className="h-4 w-4" />
-//           Add Tenant
-//         </button>
-//       </header>
-
-//       <div className="mb-8 grid grid-cols-4 gap-6">
-//         <MiniStat title="Total Tenants" value="128" meta="+12 this month" />
-//         <MiniStat title="Active Tenants" value="112" meta="87.5% of total" />
-//         <MiniStat title="Under Review" value="8" meta="Pending approval" />
-//         <MiniStat title="Inactive" value="8" meta="6.25% of total" />
-//       </div>
-
-//       <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6">
-//         <div className="relative">
-//           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-//           <input
-//             value={query}
-//             onChange={(e) => setQuery(e.target.value)}
-//             placeholder="Search tenants by name..."
-//             className="w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4"
-//           />
-//         </div>
-//       </div>
-
-//       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-//         <table className="w-full">
-//           <thead className="bg-gray-50">
-//             <tr>
-//               <Th>Tenant</Th>
-//               <Th>Plan</Th>
-//               <Th>Users</Th>
-//               <Th>Courses</Th>
-//               <Th>Revenue</Th>
-//               <Th>Status</Th>
-//               <Th>Joined</Th>
-//               <Th>Actions</Th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {rows.map((tenant) => (
-//               <tr key={tenant.id} className="border-t border-gray-100">
-//                 <Td>
-//                   <div className="flex items-center gap-3">
-//                     <div className="rounded-lg bg-indigo-100 p-2">
-//                       <Building2 className="h-5 w-5 text-indigo-600" />
-//                     </div>
-//                     <span className="font-medium">{tenant.name}</span>
-//                   </div>
-//                 </Td>
-//                 <Td>{tenant.plan}</Td>
-//                 <Td>
-//                   <div className="flex items-center gap-2">
-//                     <Users className="h-4 w-4 text-gray-400" />
-//                     {tenant.users.toLocaleString()}
-//                   </div>
-//                 </Td>
-//                 <Td>
-//                   <div className="flex items-center gap-2">
-//                     <BookOpen className="h-4 w-4 text-gray-400" />
-//                     {tenant.courses}
-//                   </div>
-//                 </Td>
-//                 <Td className="font-medium">{tenant.revenue}</Td>
-//                 <Td>
-//                   <span className={`rounded-full px-3 py-1 text-xs ${
-//                     tenant.status === 'active'
-//                       ? 'bg-teal-100 text-teal-700'
-//                       : tenant.status === 'review'
-//                       ? 'bg-yellow-100 text-yellow-700'
-//                       : 'bg-gray-100 text-gray-700'
-//                   }`}>
-//                     {tenant.status}
-//                   </span>
-//                 </Td>
-//                 <Td className="text-gray-500">2025</Td>
-//                 <Td>
-//                   <button className="rounded p-1 hover:bg-gray-100">
-//                     <MoreVertical className="h-4 w-4 text-gray-500" />
-//                   </button>
-//                 </Td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//       </div>
-
-//       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add New Tenant">
-//         <div className="space-y-3">
-//           <input className="w-full rounded-lg border border-gray-200 px-3 py-2" placeholder="Tenant name" />
-//           <input className="w-full rounded-lg border border-gray-200 px-3 py-2" placeholder="Contact email" />
-//           <button className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white">Create Tenant</button>
-//         </div>
-//       </Modal>
-//     </div>
-//   )
-// }
-
-// function Th({ children }) {
-//   return <th className="px-6 py-4 text-left text-sm font-medium text-gray-600">{children}</th>
-// }
-// function Td({ children, className = '' }) {
-//   return <td className={`px-6 py-4 text-sm ${className}`}>{children}</td>
-// }
-
-// function MiniStat({ title, value, meta }) {
-//   return (
-//     <div className="rounded-xl border border-gray-200 bg-white p-6">
-//       <div className="mb-1 text-sm text-gray-500">{title}</div>
-//       <div className="mb-2 text-3xl font-semibold">{value}</div>
-//       <div className="text-xs text-teal-600">{meta}</div>
-//     </div>
-//   )
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import React, { useEffect, useMemo, useState } from 'react'
-import { Search, Plus, Building2, Users, BookOpen, Calendar, Upload, Download } from 'lucide-react'
-import { Modal } from '../../components/superadmin/Ui'
+import { Search, Building2, Users, Calendar, Shield, ShieldOff, Eye, Mail, Phone, MapPin, X, Download } from 'lucide-react'
 import { api } from '../../lib/api'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 function StatCard({ title, value, meta, icon }) {
   return (
@@ -199,26 +44,62 @@ function Pill({ children, variant }) {
 
 export default function SuperAdminTenantManagement() {
   const [query, setQuery] = useState('')
-  const [showAdd, setShowAdd] = useState(false)
-  const [tenants, setTenants] = useState([])
+  const [admins, setAdmins] = useState([])
+  const [tenantMap, setTenantMap] = useState({})
   const [page, setPage] = useState(0)
   const limit = 20
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
-  const [actionBusyId, setActionBusyId] = useState('')
+  const [selectedAdmin, setSelectedAdmin] = useState(null)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [adminDetailsLoading, setAdminDetailsLoading] = useState(false)
+  const [adminDetailsError, setAdminDetailsError] = useState('')
+  const [adminDetails, setAdminDetails] = useState({
+    instructors: [],
+    students: [],
+    bills: [],
+    subscriptions: [],
+    insights: {
+      totalRevenue: 0,
+      paidBills: 0,
+      pendingBills: 0,
+    },
+  })
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ name: '', admin_email: '', subscription_plan: 'starter' })
 
-  const loadTenants = async () => {
+  const loadAdmins = async () => {
     try {
       setLoading(true)
       setError('')
-      const res = await api(`/lms/tenants?skip=${page * limit}&limit=${limit}&q=${encodeURIComponent(query)}`)
-        setTenants(res.items || [])
-        setTotal(res.total || 0)
+      const [adminRes, tenantsRes] = await Promise.all([
+        api(`/lms/users?role=admin&skip=0&limit=1000&q=${encodeURIComponent(query)}`),
+        api('/lms/tenants').catch(() => ({ items: [] })),
+      ])
+
+      const items = [...(adminRes.items || [])].sort(
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      )
+      setAdmins(
+        items.map((user) => ({
+          id: user._id,
+          name: user.full_name || 'Admin',
+          email: user.email || '-',
+          tenantId: user.tenant_id || '',
+          role: String(user.role || 'admin').replace('_', ' '),
+          active: user.is_active !== false,
+          createdAt: user.created_at,
+        }))
+      )
+      setTotal(items.length)
+
+      const mappedTenants = {}
+      ;((tenantsRes.items || tenantsRes) || []).forEach((tenant) => {
+        mappedTenants[tenant._id] = tenant.name
+      })
+      setTenantMap(mappedTenants)
     } catch (err) {
-      setError(err?.message || 'Unable to load tenants')
-      setTenants([])
+      setError(err?.message || 'Unable to load admins')
+      setAdmins([])
       setTotal(0)
     } finally {
       setLoading(false)
@@ -226,131 +107,303 @@ export default function SuperAdminTenantManagement() {
   }
 
   useEffect(() => {
-    loadTenants()
-  }, [page])
+    setPage(0)
+    loadAdmins()
+  }, [])
 
   useEffect(() => {
     const id = setTimeout(() => {
       setPage(0)
-      loadTenants()
+      loadAdmins()
     }, 250)
     return () => clearTimeout(id)
   }, [query])
 
-  const rows = useMemo(() => tenants, [tenants])
+  const rows = useMemo(() => admins.slice(page * limit, page * limit + limit), [admins, page])
 
-  const activeCount = rows.filter((t) => t.active).length
-  const reviewCount = rows.filter((t) => !t.active).length
-  const inactiveCount = rows.filter((t) => t.active === false).length
+  const activeCount = admins.filter((admin) => admin.active).length
+  const blockedCount = admins.filter((admin) => !admin.active).length
+  const tenantCoverage = new Set(admins.map((admin) => admin.tenantId).filter(Boolean)).size
 
-  async function createTenant() {
-    try {
-      setError('')
-      await api('/lms/tenants', { method: 'POST', body: JSON.stringify(form) })
-      setShowAdd(false)
-      setForm({ name: '', admin_email: '', subscription_plan: 'starter' })
-      loadTenants()
-    } catch (err) {
-      setError(err?.message || 'Unable to create tenant')
+  async function downloadAdminData() {
+    if (!selectedAdmin) return
+
+    const details = await loadAdminDetails(selectedAdmin)
+
+    const doc = new jsPDF()
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const margin = 14
+
+    const safeDate = selectedAdmin.createdAt ? new Date(selectedAdmin.createdAt).toLocaleDateString() : '-'
+
+    const addSectionTitle = (title, y) => {
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(12)
+      doc.text(title, margin, y)
+      return y + 4
     }
+
+    const addTable = (head, body, startY) => {
+      autoTable(doc, {
+        startY,
+        head,
+        body,
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 9, cellPadding: 2.5, overflow: 'linebreak' },
+        headStyles: { fillColor: [91, 61, 246] },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+      })
+      return doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 8 : startY + 24
+    }
+
+    let y = 14
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(16)
+    doc.text('Admin Report', margin, y)
+    y += 6
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, margin, y)
+    y += 8
+
+    y = addSectionTitle('Overview', y)
+    y = addTable(
+      [['Field', 'Value']],
+      [
+        ['Name', selectedAdmin.name],
+        ['Email', selectedAdmin.email],
+        ['Role', selectedAdmin.role],
+        ['Tenant', tenantMap[selectedAdmin.tenantId] || '-'],
+        ['Status', selectedAdmin.active ? 'Active' : 'Blocked'],
+        ['Joined', safeDate],
+        ['Total Instructors', String(details.instructors.length)],
+        ['Total Students', String(details.students.length)],
+        ['Paid Bills', String(details.insights.paidBills)],
+        ['Pending Bills', String(details.insights.pendingBills)],
+        ['Total Revenue', `₹${details.insights.totalRevenue.toLocaleString('en-IN')}`],
+      ],
+      y
+    )
+
+    y = addSectionTitle('Instructors', y)
+    if (details.instructors.length === 0) {
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal')
+      doc.text('No instructors found for this admin.', margin, y + 4)
+      y += 10
+    } else {
+      y = addTable(
+        [['Name', 'Email', 'Phone', 'Status']],
+        details.instructors.map((ins) => [
+          ins.full_name || '-',
+          ins.email || '-',
+          ins.phone || '-',
+          ins.is_active ? 'Active' : 'Inactive',
+        ]),
+        y
+      )
+    }
+
+    y = addSectionTitle('Students', y)
+    if (details.students.length === 0) {
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal')
+      doc.text('No students found for this admin.', margin, y + 4)
+      y += 10
+    } else {
+      y = addTable(
+        [['Name', 'Email', 'Phone', 'Status']],
+        details.students.map((stu) => [
+          stu.full_name || '-',
+          stu.email || '-',
+          stu.phone || '-',
+          stu.is_active ? 'Active' : 'Inactive',
+        ]),
+        y
+      )
+    }
+
+    y = addSectionTitle('Bills', y)
+    if (details.bills.length === 0) {
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal')
+      doc.text('No bills found for this admin.', margin, y + 4)
+      y += 10
+    } else {
+      y = addTable(
+        [['Order ID', 'Payment ID', 'Amount', 'Status', 'Date']],
+        details.bills.map((bill) => [
+          bill.order_id || '-',
+          bill.payment_id || '-',
+          `₹${Number(bill.amount || 0).toLocaleString('en-IN')}`,
+          bill.status || '-',
+          bill.created_at ? new Date(bill.created_at).toLocaleString() : '-',
+        ]),
+        y
+      )
+    }
+
+    y = addSectionTitle('Subscriptions', y)
+    if (details.subscriptions.length === 0) {
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal')
+      doc.text('No subscriptions found for this admin.', margin, y + 4)
+    } else {
+      addTable(
+        [['Name', 'Price', 'Billing', 'Status', 'Created']],
+        details.subscriptions.map((plan) => [
+          plan.name || '-',
+          `₹${Number(plan.price || 0).toLocaleString('en-IN')}`,
+          plan.billing_period || '-',
+          plan.active ? 'Active' : 'Inactive',
+          plan.created_at ? new Date(plan.created_at).toLocaleDateString() : '-',
+        ]),
+        y
+      )
+    }
+
+    doc.save(`admin-${selectedAdmin.name.replace(/\s+/g, '-').toLowerCase()}-report.pdf`)
   }
 
-  async function toggleTenantStatus(tenant) {
-    const tenantId = tenant?._id
-    if (!tenantId) return
+  async function loadAdminDetails(admin) {
+    if (!admin) return
     try {
-      setActionBusyId(tenantId)
-      setError('')
-      await api(`/lms/tenants/${tenantId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ active: !tenant.active }),
+      setAdminDetailsLoading(true)
+      setAdminDetailsError('')
+
+      const [instructorsRes, studentsRes, billsRes, plansRes] = await Promise.all([
+        api('/lms/users?role=instructor&skip=0&limit=1000').catch(() => ({ items: [] })),
+        api('/lms/users?role=student&skip=0&limit=1000').catch(() => ({ items: [] })),
+        api('/lms/payments?skip=0&limit=1000').catch(() => ({ items: [] })),
+        api('/lms/plans?skip=0&limit=1000').catch(() => ({ items: [] })),
+      ])
+
+      const tenantId = admin.tenantId || ''
+      const adminEmail = String(admin.email || '').trim().toLowerCase()
+      const belongsToAdmin = (item, options = {}) => {
+        const itemTenantId = String(item?.tenant_id || item?.tenantId || '').trim()
+        const itemOwnerId = String(item?.created_by || item?.user_id || item?.admin_id || '').trim()
+        const itemEmail = String(item?.email || item?.admin_email || item?.owner_email || item?.user_email || '').trim().toLowerCase()
+
+        if (tenantId && itemTenantId) return itemTenantId === tenantId
+        if (tenantId && !itemTenantId) {
+          return itemOwnerId === admin.id || itemEmail === adminEmail
+        }
+
+        if (itemOwnerId === admin.id || itemEmail === adminEmail) return true
+
+        return options.allowFallbackAll !== false && !itemTenantId
+      }
+
+      const preferScopedOrAll = (scopedItems, allItems) => (scopedItems.length > 0 ? scopedItems : allItems)
+
+      const allInstructors = instructorsRes.items || instructorsRes || []
+      const allStudents = studentsRes.items || studentsRes || []
+      const allBills = billsRes.items || billsRes || []
+      const allPlans = plansRes.items || plansRes || []
+
+      const instructors = preferScopedOrAll(
+        allInstructors.filter((x) => belongsToAdmin(x, { allowFallbackAll: true })),
+        allInstructors
+      )
+      const students = preferScopedOrAll(
+        allStudents.filter((x) => belongsToAdmin(x, { allowFallbackAll: true })),
+        allStudents
+      )
+      const bills = preferScopedOrAll(
+        allBills.filter((x) => belongsToAdmin(x, { allowFallbackAll: true })),
+        allBills
+      )
+
+      const plans = preferScopedOrAll(
+        allPlans.filter((x) => {
+        const itemTenantId = String(x?.tenant_id || x?.tenantId || '').trim()
+        const itemCreatorId = String(x?.created_by || x?.user_id || '').trim()
+        const itemCreatorEmail = String(x?.created_by_email || x?.email || '').trim().toLowerCase()
+
+        if (tenantId && itemTenantId) return itemTenantId === tenantId
+        if (tenantId && !itemTenantId) return itemCreatorId === admin.id || itemCreatorEmail === adminEmail
+        return itemCreatorId === admin.id || itemCreatorEmail === adminEmail || !itemTenantId
+      }),
+        allPlans
+      )
+
+      const paidBills = bills.filter((x) => x.status === 'captured').length
+      const pendingBills = bills.filter((x) => x.status !== 'captured').length
+      const totalRevenue = bills
+        .filter((x) => x.status === 'captured')
+        .reduce((sum, x) => sum + Number(x.amount || 0), 0)
+
+      setAdminDetails({
+        instructors,
+        students,
+        bills,
+        subscriptions: plans,
+        insights: {
+          totalRevenue,
+          paidBills,
+          pendingBills,
+        },
       })
-      await loadTenants()
+      return {
+        instructors,
+        students,
+        bills,
+        subscriptions: plans,
+        insights: {
+          totalRevenue,
+          paidBills,
+          pendingBills,
+        },
+      }
     } catch (err) {
-      setError(err?.message || 'Unable to update tenant status')
+      setAdminDetailsError(err?.message || 'Unable to load admin details')
+      const fallback = {
+        instructors: [],
+        students: [],
+        bills: [],
+        subscriptions: [],
+        insights: {
+          totalRevenue: 0,
+          paidBills: 0,
+          pendingBills: 0,
+        },
+      }
+      setAdminDetails(fallback)
+      return fallback
     } finally {
-      setActionBusyId('')
+      setAdminDetailsLoading(false)
     }
   }
 
   return (
     <div className="min-h-full bg-[#F7FAFD]">
-      {/* Header */}
-      <header className="flex h-[76px] items-center justify-between border-b border-black/[0.08] bg-white px-[28px]">
-        <div className="relative shrink-0">
-          <div className="flex flex-col font-medium h-[16px] justify-center leading-[0] text-[#94a3b8] text-[13px]">
-            Super admin panel
-          </div>
-          <div className="flex flex-col font-bold h-[29px] justify-center leading-[0] text-[#0f172a] text-[24px]">
-            Tenant Management
-          </div>
-        </div>
-
-        <div className="flex items-center gap-[12px]">
-          <div className="bg-white border border-black/[0.08] flex items-center gap-[10px] h-[40px] min-w-[280px] px-[15px] py-[0.25px] relative rounded-[6px]">
-            <div className="relative shrink-0 size-[18px] flex items-center justify-center">
-              <div className="absolute inset-[0] flex items-center justify-center">
-                <Search className="h-[18px] w-[18px] text-[#94a3b8]" />
-              </div>
-            </div>
-            <div className="flex flex-col font-normal h-[17px] justify-center leading-[0] text-[#94a3b8] text-[14px]">
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search tenants by name..."
-                className="w-full bg-transparent text-[14px] text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="bg-[#e8f5ff] border border-black/[0.08] flex items-center gap-[8px] h-[40px] justify-center px-[17px] py-[0.25px] rounded-[6px] shrink-0">
-            <Download className="h-[18px] w-[18px] text-[#0f172a]" />
-            <div className="flex flex-col font-medium h-[17px] justify-center leading-[0] text-[#0f172a] text-[14px]">
-              Export
-            </div>
-          </div>
-
-          <button
-            onClick={() => setShowAdd(true)}
-            className="bg-[#5b3df6] flex items-center gap-[8px] h-[40px] justify-center px-[16px] rounded-[6px] shrink-0"
-          >
-            <Plus className="h-[18px] w-[18px] text-white" />
-            <div className="flex flex-col font-medium h-[17px] justify-center leading-[0] text-white text-[14px]">
-              Add Tenant
-            </div>
-          </button>
-        </div>
-      </header>
-
       <div className="bg-gradient-to-b flex flex-col from-[#f6f8fa] gap-[24px] h-full p-[28px] to-[#f7fcff]">
         {/* Hero Section */}
         <section className="border border-black/[0.08] border-solid content-stretch flex flex-col items-start pb-[23px] pt-[25px] px-[25px] relative rounded-[8px] shrink-0 w-full bg-gradient-to-br from-white to-[#e8f5ff]">
           <div className="flex flex-col gap-[11px] items-start relative shrink-0">
             <div className="bg-[#ffd966] flex items-center px-[10px] py-[6.5px] rounded-[12px] shrink-0">
               <div className="flex flex-col font-medium h-[15px] justify-center leading-[0] text-[#4b2e00] text-[12px]">
-                Tenant management overview
+                Admin management overview
               </div>
             </div>
 
             <div className="flex flex-col font-bold h-[31.59px] justify-center leading-[0] text-[#0f172a] text-[28px]">
-              Manage all client organizations and subscriptions
+              View all admins across all tenant organizations
             </div>
 
             <div className="flex flex-col font-normal h-[17px] justify-center leading-[0] text-[#94a3b8] text-[14px]">
-              View, add, and manage tenant organizations across the platform.
+              Search, review, and manage admin access from one place.
             </div>
           </div>
 
           <div className="mt-4 flex items-center gap-[12px]">
-            <button
-              onClick={() => setShowAdd(true)}
-              className="bg-[#5b3df6] flex items-center gap-[8px] h-[40px] justify-center px-[16px] rounded-[6px] shrink-0"
-            >
-              <Plus className="h-[18px] w-[18px] text-white" />
+            <div className="bg-[#5b3df6] flex items-center gap-[8px] h-[40px] justify-center px-[16px] rounded-[6px] shrink-0">
+              <Users className="h-[18px] w-[18px] text-white" />
               <div className="flex flex-col font-medium h-[17px] justify-center leading-[0] text-white text-[14px]">
-                Add Tenant
+                All Admins
               </div>
-            </button>
+            </div>
             <div className="border border-black/[0.08] flex gap-[8px] h-[40px] items-center justify-center px-[17px] py-[0.25px] rounded-[6px] shrink-0 bg-white">
               <Calendar className="h-[18px] w-[18px] text-[#94a3b8]" />
               <div className="flex flex-col font-medium h-[17px] justify-center leading-[0] text-[#0f172a] text-[14px]">
@@ -363,46 +416,41 @@ export default function SuperAdminTenantManagement() {
         {/* Stats row */}
         <div className="gap-x-[16px] gap-y-[16px] grid grid-cols-[repeat(4,minmax(0,1fr))]">
           <StatCard 
-            title="Total Tenants" 
-            value={String(rows.length)} 
+            title="Total Admins" 
+            value={String(total || rows.length)} 
             meta="Live count" 
-            icon={<Building2 className="h-[18px] w-[18px] text-[#5b3df6]" />} 
+            icon={<Users className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
-            title="Active Tenants" 
+            title="Active Admins" 
             value={String(activeCount)} 
-            meta="Active subscriptions" 
-            icon={<Building2 className="h-[18px] w-[18px] text-[#5b3df6]" />} 
+            meta="Can access panel" 
+            icon={<Shield className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
-            title="Under Review" 
-            value={String(reviewCount)} 
-            meta="Needs activation" 
-            icon={<Building2 className="h-[18px] w-[18px] text-[#5b3df6]" />} 
+            title="Blocked Admins" 
+            value={String(blockedCount)} 
+            meta="Inactive accounts" 
+            icon={<ShieldOff className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
           <StatCard 
-            title="Inactive" 
-            value={String(inactiveCount)} 
-            meta="Track via plans" 
+            title="Tenant Coverage" 
+            value={String(tenantCoverage)} 
+            meta="Tenants with admins" 
             icon={<Building2 className="h-[18px] w-[18px] text-[#5b3df6]" />} 
           />
         </div>
 
         {error ? <p className="text-[13px] text-red-600">{error}</p> : null}
 
-        {/* Tenants Table */}
+        {/* Admins Table */}
         <div className="bg-white border border-black/[0.08] border-solid flex flex-col gap-[18px] items-start p-[21px] rounded-[8px]">
           <div className="flex items-center justify-between w-full">
             <div className="flex flex-col gap-[4px]">
-              <div className="font-bold text-[18px] text-[#0f172a]">All Tenants</div>
-              <div className="text-[13px] text-[#94a3b8]">Manage all client organizations across the platform</div>
+              <div className="font-bold text-[18px] text-[#0f172a]">All Admins</div>
+              <div className="text-[13px] text-[#94a3b8]">All admin accounts visible in one list</div>
             </div>
-            <div className="bg-[#e8f5ff] border border-black/[0.08] flex items-center gap-[8px] h-[40px] justify-center px-[17px] py-[0.25px] rounded-[6px] shrink-0">
-              <Upload className="h-[18px] w-[18px] text-[#5b3df6]" />
-              <div className="flex flex-col font-medium h-[17px] justify-center leading-[0] text-[#0f172a] text-[14px]">
-                Bulk Import
-              </div>
-            </div>
+            <div className="text-[13px] text-[#94a3b8]">Total: {total}</div>
           </div>
 
           {/* Search Bar */}
@@ -411,7 +459,7 @@ export default function SuperAdminTenantManagement() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search tenants by name..."
+              placeholder="Search admins by name or email..."
               className="w-full border border-black/[0.08] rounded-[6px] py-[10px] pl-[38px] pr-[15px] text-[14px] focus:outline-none focus:border-[#5b3df6]"
             />
           </div>
@@ -421,11 +469,10 @@ export default function SuperAdminTenantManagement() {
             <table className="w-full">
               <thead className="border-b border-black/[0.08]">
                 <tr>
+                  <th className="px-4 py-3 text-left text-[13px] font-medium text-[#94a3b8]">Admin</th>
+                  <th className="px-4 py-3 text-left text-[13px] font-medium text-[#94a3b8]">Email</th>
                   <th className="px-4 py-3 text-left text-[13px] font-medium text-[#94a3b8]">Tenant</th>
-                  <th className="px-4 py-3 text-left text-[13px] font-medium text-[#94a3b8]">Plan</th>
-                  <th className="px-4 py-3 text-left text-[13px] font-medium text-[#94a3b8]">Users</th>
-                  <th className="px-4 py-3 text-left text-[13px] font-medium text-[#94a3b8]">Courses</th>
-                  <th className="px-4 py-3 text-left text-[13px] font-medium text-[#94a3b8]">Revenue</th>
+                  <th className="px-4 py-3 text-left text-[13px] font-medium text-[#94a3b8]">Role</th>
                   <th className="px-4 py-3 text-left text-[13px] font-medium text-[#94a3b8]">Status</th>
                   <th className="px-4 py-3 text-left text-[13px] font-medium text-[#94a3b8]">Joined</th>
                   <th className="px-4 py-3 text-left text-[13px] font-medium text-[#94a3b8]">Actions</th>
@@ -434,55 +481,48 @@ export default function SuperAdminTenantManagement() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-6 text-center text-[13px] text-[#94a3b8]">Loading tenants...</td>
+                    <td colSpan={7} className="px-4 py-6 text-center text-[13px] text-[#94a3b8]">Loading admins...</td>
                   </tr>
                 ) : null}
-                {rows.map((tenant, idx) => (
-                  <tr key={tenant._id || idx} className={`border-b border-black/[0.08] ${idx === rows.length - 1 ? 'border-b-0' : ''}`}>
+                {rows.map((admin, idx) => (
+                  <tr key={admin.id || idx} className={`border-b border-black/[0.08] ${idx === rows.length - 1 ? 'border-b-0' : ''}`}>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-[12px]">
                         <div className="bg-[#e8f5ff] flex items-center justify-center rounded-[6px] shrink-0 size-[40px]">
-                          <Building2 className="h-[18px] w-[18px] text-[#5b3df6]" />
+                          <Users className="h-[18px] w-[18px] text-[#5b3df6]" />
                         </div>
-                        <span className="font-semibold text-[14px] text-[#0f172a]">{tenant.name}</span>
+                        <span className="font-semibold text-[14px] text-[#0f172a]">{admin.name}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-[14px] text-[#0f172a]">{tenant.subscription_plan || 'starter'}</td>
+                    <td className="px-4 py-4 text-[14px] text-[#0f172a]">{admin.email}</td>
+                    <td className="px-4 py-4 text-[14px] text-[#0f172a]">{tenantMap[admin.tenantId] || '-'}</td>
+                    <td className="px-4 py-4 text-[14px] text-[#0f172a]">{admin.role}</td>
                     <td className="px-4 py-4">
-                      <div className="flex items-center gap-[8px]">
-                        <Users className="h-[16px] w-[16px] text-[#94a3b8]" />
-                        <span className="text-[14px] text-[#0f172a]">-</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-[8px]">
-                        <BookOpen className="h-[16px] w-[16px] text-[#94a3b8]" />
-                        <span className="text-[14px] text-[#0f172a]">-</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 font-semibold text-[14px] text-[#0f172a]">-</td>
-                    <td className="px-4 py-4">
-                      <Pill variant={tenant.active ? 'active' : 'review'}>
-                        {tenant.active ? 'Active' : 'Review'}
+                      <Pill variant={admin.active ? 'active' : 'inactive'}>
+                        {admin.active ? 'Active' : 'Blocked'}
                       </Pill>
                     </td>
                     <td className="px-4 py-4 text-[14px] text-[#94a3b8]">
-                      {tenant.created_at ? new Date(tenant.created_at).getFullYear() : '-'}
+                      {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString() : '-'}
                     </td>
                     <td className="px-4 py-4">
                       <button
-                        onClick={() => toggleTenantStatus(tenant)}
-                        disabled={actionBusyId === tenant._id}
-                        className="border border-black/[0.08] flex h-[36px] items-center justify-center rounded-[6px] px-3 text-[12px] font-medium hover:bg-[#f1f5f9] disabled:opacity-60"
+                        onClick={() => {
+                          setSelectedAdmin(admin)
+                          setActiveTab('overview')
+                          loadAdminDetails(admin)
+                        }}
+                        className="border border-black/[0.08] flex h-[36px] items-center gap-1 justify-center rounded-[6px] px-3 text-[12px] font-medium hover:bg-[#f1f5f9]"
                       >
-                        {actionBusyId === tenant._id ? 'Saving...' : tenant.active ? 'Deactivate' : 'Activate'}
+                        <Eye className="h-[14px] w-[14px]" />
+                        View
                       </button>
                     </td>
                   </tr>
                 ))}
                 {!loading && rows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-6 text-center text-[13px] text-[#94a3b8]">No tenants found.</td>
+                    <td colSpan={7} className="px-4 py-6 text-center text-[13px] text-[#94a3b8]">No admins found.</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -498,35 +538,265 @@ export default function SuperAdminTenantManagement() {
         </div>
       </div>
 
-      {/* Add Tenant Modal */}
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add New Tenant" description="Create a new tenant organization">
-        <div className="space-y-[12px]">
-          <input
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className="w-full border border-black/[0.08] rounded-[6px] px-[15px] py-[10px] text-[14px] focus:outline-none focus:border-[#5b3df6]" 
-            placeholder="Tenant name" 
-          />
-          <input
-            value={form.admin_email}
-            onChange={(e) => setForm((f) => ({ ...f, admin_email: e.target.value }))}
-            className="w-full border border-black/[0.08] rounded-[6px] px-[15px] py-[10px] text-[14px] focus:outline-none focus:border-[#5b3df6]" 
-            placeholder="Contact email" 
-          />
-          <select
-            value={form.subscription_plan}
-            onChange={(e) => setForm((f) => ({ ...f, subscription_plan: e.target.value }))}
-            className="w-full border border-black/[0.08] rounded-[6px] px-[15px] py-[10px] text-[14px] focus:outline-none focus:border-[#5b3df6]"
+      {selectedAdmin ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4" onClick={() => setSelectedAdmin(null)}>
+          <div
+            className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-xl bg-white"
+            onClick={(e) => e.stopPropagation()}
           >
-            <option value="starter">Starter</option>
-            <option value="pro">Pro</option>
-            <option value="enterprise">Enterprise</option>
-          </select>
-          <button onClick={createTenant} className="bg-[#5b3df6] rounded-[6px] px-[16px] py-[10px] text-[14px] font-medium text-white w-full">
-            Create Tenant
-          </button>
+            <div className="flex items-center justify-between border-b border-gray-100 p-4 sm:p-5">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-[#f3e8ff] flex items-center justify-center text-lg font-bold text-[#475569]">
+                  {selectedAdmin.name
+                    .split(' ')
+                    .map((x) => x[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">{selectedAdmin.name}</h2>
+                  <p className="text-sm text-gray-500">{selectedAdmin.id} • {selectedAdmin.role.toUpperCase()}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={downloadAdminData}
+                  className="inline-flex h-9 items-center gap-2 rounded-lg border border-black/[0.08] px-3 text-sm font-medium text-[#0f172a] hover:bg-gray-50"
+                >
+                  <Download className="h-4 w-4" />
+                  Download
+                </button>
+                <button onClick={() => setSelectedAdmin(null)} className="rounded-lg p-2 hover:bg-gray-100">
+                  <X className="h-5 w-5 text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex overflow-x-auto border-b border-gray-100 px-4 sm:px-5">
+              {['overview', 'instructors', 'students', 'bills', 'subscriptions'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`border-b-2 px-4 py-3 text-sm font-medium capitalize transition-colors ${
+                    activeTab === tab
+                      ? 'border-[#5b3df6] text-[#5b3df6]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            <div className="max-h-[calc(90vh-140px)] overflow-y-auto p-4 sm:p-5">
+              {adminDetailsError ? (
+                <p className="mb-4 text-sm text-red-600">{adminDetailsError}</p>
+              ) : null}
+              {adminDetailsLoading ? (
+                <div className="py-12 text-center text-sm text-gray-400">Loading admin data...</div>
+              ) : null}
+              {activeTab === 'overview' ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div>
+                      <h3 className="mb-3 font-semibold text-gray-900">Personal Information</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Mail className="h-4 w-4" />
+                          <span>{selectedAdmin.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Phone className="h-4 w-4" />
+                          <span>-</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <MapPin className="h-4 w-4" />
+                          <span>{tenantMap[selectedAdmin.tenantId] || '-'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="mb-3 font-semibold text-gray-900">Admin Metadata</h3>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <p><span className="font-medium text-gray-900">Role:</span> {selectedAdmin.role}</p>
+                        <p><span className="font-medium text-gray-900">Status:</span> {selectedAdmin.active ? 'Active' : 'Blocked'}</p>
+                        <p><span className="font-medium text-gray-900">Tenant:</span> {tenantMap[selectedAdmin.tenantId] || '-'}</p>
+                        <p><span className="font-medium text-gray-900">Joined:</span> {selectedAdmin.createdAt ? new Date(selectedAdmin.createdAt).toLocaleDateString() : '-'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-4">
+                    <h3 className="mb-3 font-semibold text-gray-900">Enrollment Details</h3>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">Created Date</p>
+                        <p className="mt-1 text-sm font-medium">{selectedAdmin.createdAt ? new Date(selectedAdmin.createdAt).toLocaleDateString() : '-'}</p>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">Section</p>
+                        <p className="mt-1 text-sm font-medium">{selectedAdmin.section || 'A'}</p>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">Reference ID</p>
+                        <p className="mt-1 text-sm font-medium">{selectedAdmin.id?.slice(-8) || '-'}</p>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">Status</p>
+                        <div className="mt-1"><Pill variant={selectedAdmin.active ? 'active' : 'inactive'}>{selectedAdmin.active ? 'Active' : 'Blocked'}</Pill></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-4">
+                    <h3 className="mb-3 font-semibold text-gray-900">Subscription Plan</h3>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">Plan</p>
+                        <p className="mt-1 text-sm font-medium">{selectedAdmin.subscription_plan || 'Standard'}</p>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">Amount</p>
+                        <p className="mt-1 text-sm font-medium">₹{adminDetails.insights.totalRevenue.toLocaleString('en-IN')}</p>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">Valid Till</p>
+                        <p className="mt-1 text-sm font-medium">{new Date().toLocaleDateString()}</p>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">Status</p>
+                        <div className="mt-1"><Pill variant="active">Active</Pill></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-4">
+                    <h3 className="mb-3 font-semibold text-gray-900">Quick Summary</h3>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">Total Instructors</p>
+                        <p className="mt-1 text-sm font-medium">{adminDetails.instructors.length}</p>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">Total Students</p>
+                        <p className="mt-1 text-sm font-medium">{adminDetails.students.length}</p>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">Paid Bills</p>
+                        <p className="mt-1 text-sm font-medium">{adminDetails.insights.paidBills}</p>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">Pending Bills</p>
+                        <p className="mt-1 text-sm font-medium">{adminDetails.insights.pendingBills}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {activeTab === 'instructors' ? (
+                <div>
+                  <h3 className="mb-3 text-lg font-semibold text-gray-900">All Instructors</h3>
+                  {adminDetails.instructors.length === 0 ? (
+                    <div className="py-12 text-center text-sm text-gray-400">No instructors found for this admin.</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {adminDetails.instructors.map((ins) => (
+                        <div key={ins._id} className="rounded-lg border border-gray-200 p-3">
+                          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                            <p className="text-sm"><span className="font-medium">Name:</span> {ins.full_name || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Email:</span> {ins.email || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Phone:</span> {ins.phone || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Status:</span> {ins.is_active ? 'Active' : 'Inactive'}</p>
+                            <p className="text-sm"><span className="font-medium">Role:</span> {ins.role || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Joined:</span> {ins.created_at ? new Date(ins.created_at).toLocaleDateString() : '-'}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {activeTab === 'students' ? (
+                <div>
+                  <h3 className="mb-3 text-lg font-semibold text-gray-900">All Students</h3>
+                  {adminDetails.students.length === 0 ? (
+                    <div className="py-12 text-center text-sm text-gray-400">No students found for this admin.</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {adminDetails.students.map((stu) => (
+                        <div key={stu._id} className="rounded-lg border border-gray-200 p-3">
+                          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                            <p className="text-sm"><span className="font-medium">Name:</span> {stu.full_name || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Email:</span> {stu.email || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Phone:</span> {stu.phone || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Status:</span> {stu.is_active ? 'Active' : 'Inactive'}</p>
+                            <p className="text-sm"><span className="font-medium">Role:</span> {stu.role || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Joined:</span> {stu.created_at ? new Date(stu.created_at).toLocaleDateString() : '-'}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {activeTab === 'bills' ? (
+                <div>
+                  <h3 className="mb-3 text-lg font-semibold text-gray-900">Bills & Transactions</h3>
+                  {adminDetails.bills.length === 0 ? (
+                    <div className="py-12 text-center text-sm text-gray-400">No bills found for this admin.</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {adminDetails.bills.map((bill) => (
+                        <div key={bill._id} className="rounded-lg border border-gray-200 p-3">
+                          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                            <p className="text-sm"><span className="font-medium">Order ID:</span> {bill.order_id || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Payment ID:</span> {bill.payment_id || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Amount:</span> ₹{Number(bill.amount || 0).toLocaleString('en-IN')}</p>
+                            <p className="text-sm"><span className="font-medium">Status:</span> {bill.status || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Currency:</span> {bill.currency || 'INR'}</p>
+                            <p className="text-sm"><span className="font-medium">Date:</span> {bill.created_at ? new Date(bill.created_at).toLocaleString() : '-'}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {activeTab === 'subscriptions' ? (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Subscriptions Uploaded by Admin</h3>
+                  {adminDetails.subscriptions.length === 0 ? (
+                    <div className="py-12 text-center text-sm text-gray-400">No subscriptions found for this admin.</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {adminDetails.subscriptions.map((plan) => (
+                        <div key={plan._id} className="rounded-lg border border-gray-200 p-3">
+                          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                            <p className="text-sm"><span className="font-medium">Name:</span> {plan.name || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Price:</span> ₹{Number(plan.price || 0).toLocaleString('en-IN')}</p>
+                            <p className="text-sm"><span className="font-medium">Billing:</span> {plan.billing_period || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Status:</span> {plan.active ? 'Active' : 'Inactive'}</p>
+                            <p className="text-sm"><span className="font-medium">Tenant:</span> {tenantMap[plan.tenant_id] || '-'}</p>
+                            <p className="text-sm"><span className="font-medium">Created:</span> {plan.created_at ? new Date(plan.created_at).toLocaleDateString() : '-'}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                null
+              )}
+            </div>
+          </div>
         </div>
-      </Modal>
+      ) : null}
     </div>
   )
 }

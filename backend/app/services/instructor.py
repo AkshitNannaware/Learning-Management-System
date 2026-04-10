@@ -190,6 +190,48 @@ async def get_test_analytics(db, test_id):
         "average_score": avg_score
     }
 
+
+async def get_weekly_test_overview(db, instructor_id):
+    tests = await db["tests"].find({"created_by": str(instructor_id)}).to_list(None)
+
+    test_ids = [str(test.get("_id")) for test in tests if test.get("_id")]
+    attempts = []
+    if test_ids:
+        attempts = await db["test_attempts"].find({"test_id": {"$in": test_ids}}).to_list(None)
+
+    published_tests = 0
+    draft_or_scheduled_tests = 0
+
+    for test in tests:
+        status = str(test.get("status") or "").lower()
+        is_published = bool(test.get("is_published"))
+
+        if status in {"active", "closed", "published"} or is_published:
+            published_tests += 1
+        else:
+            draft_or_scheduled_tests += 1
+
+    total_attempts = len(attempts)
+    score_sum = 0
+    score_count = 0
+
+    for attempt in attempts:
+        score = attempt.get("score")
+        total = attempt.get("total")
+        if total and isinstance(total, (int, float)) and total > 0 and isinstance(score, (int, float)):
+            score_sum += (score / total) * 100
+            score_count += 1
+
+    average_score = round(score_sum / score_count, 2) if score_count else 0
+
+    return {
+        "total_tests": len(tests),
+        "published_tests": published_tests,
+        "draft_or_scheduled_tests": draft_or_scheduled_tests,
+        "total_attempts": total_attempts,
+        "average_score": average_score,
+    }
+
 # from datetime import datetime
 
 

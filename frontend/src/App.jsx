@@ -18,7 +18,6 @@ import SuperAdminOverview from './pages/super admin/SuperAdminOverview'
 import SuperAdminDashboard from './pages/super admin/SuperAdminDashboard'
 import SuperAdminTenantManagement from './pages/super admin/SuperAdminTenantManagement'
 import SuperAdminRevenue from './pages/super admin/SuperAdminRevenue'
-import SuperAdminUsers from './pages/super admin/SuperAdminUsers'
 import SuperAdminReports from './pages/super admin/SuperAdminReports'
 import SuperAdminPlansBilling from './pages/super admin/SuperAdminPlansBilling'
 import SuperAdminSettings from './pages/super admin/SuperAdminSettings'
@@ -92,7 +91,6 @@ function App() {
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="tenant-management" element={<SuperAdminTenantManagement />} />
           <Route path="revenue" element={<SuperAdminRevenue />} />
-          <Route path="user-management" element={<SuperAdminUsers />} />
           <Route path="reports" element={<SuperAdminReports />} />
           <Route path="plans-billing" element={<SuperAdminPlansBilling />} />
           <Route path="platform-settings" element={<SuperAdminSettings />} />

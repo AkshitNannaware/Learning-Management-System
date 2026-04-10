@@ -188,22 +188,6 @@ export default function InstructorStudentInsights() {
                 <span>{insightsSummary?.needs_support || 0} need support</span>
               </div>
             </div>
-            <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
-              <button
-                onClick={() => setShowFilterModal(true)}
-                className="inline-flex h-[40px] w-full items-center justify-center gap-2 rounded-[6px] bg-[#5b3df6] px-[16px] text-[14px] font-medium text-white transition-colors cursor-pointer hover:bg-[#4c2dd9] sm:w-auto"
-              >
-                <Filter className="h-[18px] w-[18px]" />
-                Filter insights
-              </button>
-              <button
-                onClick={loadData}
-                className="inline-flex h-[40px] w-full items-center justify-center gap-2 rounded-[6px] border border-black/[0.08] bg-white px-[17px] text-[14px] font-medium text-[#0f172a] transition-colors cursor-pointer hover:bg-[#f1f5f9] sm:w-auto"
-              >
-                <FileText className="h-[18px] w-[18px]" />
-                Refresh data
-              </button>
-            </div>
           </div>
         </section>
 
