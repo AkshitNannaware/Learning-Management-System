@@ -14,11 +14,15 @@ import {
   X,
   CheckCircle2,
   UserCheck,
+  Star,
 } from 'lucide-react'
 import { api } from '../../lib/api'
 
 const isClassCreationManagedByAdmin = true
 const FILTERS = ['All', 'Live Now', 'Upcoming', 'Completed']
+const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000
+
+const IST_WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 const STATUS_CONFIG = {
   live: {
@@ -44,30 +48,43 @@ const STATUS_CONFIG = {
   },
 }
 
-function formatDayLabel(dateValue) {
-  if (!dateValue) return 'Unscheduled'
-  const date = new Date(dateValue)
-  const now = new Date()
+function toIstDate(value) {
+  const raw = value ? new Date(value) : null
+  if (!raw || Number.isNaN(raw.getTime())) return null
+  return new Date(raw.getTime() + IST_OFFSET_MS)
+}
 
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-  const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24))
+function formatIstTime(istDate) {
+  if (!istDate) return '-'
+  let hour = istDate.getUTCHours()
+  const minute = String(istDate.getUTCMinutes()).padStart(2, '0')
+  const suffix = hour >= 12 ? 'pm' : 'am'
+  hour = hour % 12
+  if (hour === 0) hour = 12
+  return `${String(hour).padStart(2, '0')}:${minute} ${suffix}`
+}
+
+function formatDayLabel(dateValue) {
+  const targetIst = toIstDate(dateValue)
+  if (!targetIst) return 'Unscheduled'
+
+  const nowIst = new Date(Date.now() + IST_OFFSET_MS)
+  const todayUtcMidnight = Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate())
+  const targetUtcMidnight = Date.UTC(targetIst.getUTCFullYear(), targetIst.getUTCMonth(), targetIst.getUTCDate())
+  const diffDays = Math.round((targetUtcMidnight - todayUtcMidnight) / (24 * 60 * 60 * 1000))
 
   if (diffDays === 0) return 'Today'
   if (diffDays === 1) return 'Tomorrow'
   if (diffDays === -1) return 'Yesterday'
 
-  return date.toLocaleDateString(undefined, { weekday: 'long' })
+  return IST_WEEKDAYS[targetIst.getUTCDay()]
 }
 
 function formatClockRange(dateValue, durationMins) {
-  if (!dateValue) return '-'
-  const start = new Date(dateValue)
-  const end = new Date(start.getTime() + (Number(durationMins || 60) * 60 * 1000))
-
-  const startText = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  const endText = end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  return `${startText} to ${endText}`
+  const startIst = toIstDate(dateValue)
+  if (!startIst) return '-'
+  const endIst = new Date(startIst.getTime() + (Number(durationMins || 60) * 60 * 1000))
+  return `${formatIstTime(startIst)} to ${formatIstTime(endIst)}`
 }
 
 function getDisplayStatus(rawStatus, startAt) {
@@ -108,6 +125,8 @@ function toSession(item) {
     chatMessages: 0,
     currentSlide: status === 'completed' ? 'Completed' : 'Live board',
     tags: [formatDayLabel(item.start_at), platform, status === 'live' ? 'Live now' : status],
+    avgRating: Number(item.avg_rating || item.rating || 0),
+    ratingCount: Number(item.rating_count || 0),
   }
 }
 
@@ -152,13 +171,15 @@ function SessionDetailModal({ session, onClose }) {
                 { icon: BarChart2, label: 'Attendance', value: `${session.attendanceRate}%` },
                 { icon: MessageSquare, label: 'Chat Msgs', value: session.chatMessages },
                 { icon: Monitor, label: 'Current Slide', value: session.currentSlide },
-              ].map(({ icon: Icon, label, value }) => (
+              ].map(({ icon, label, value }) => {
+                const IconComponent = icon
+                return (
                 <div key={label} className="rounded-[10px] bg-white/10 p-3">
-                  <Icon className="h-4 w-4 text-white/50" />
+                  <IconComponent className="h-4 w-4 text-white/50" />
                   <p className="mt-1 text-[16px] font-bold text-white">{value}</p>
                   <p className="text-[10px] text-white/50">{label}</p>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </div>
@@ -172,17 +193,19 @@ function SessionDetailModal({ session, onClose }) {
               { label: 'Platform', value: session.platform, icon: Video },
               { label: 'Students Enrolled', value: session.studentsEnrolled, icon: Users },
               ...(isLive ? [{ label: 'Live Attendance', value: `${session.attendanceRate}%`, icon: BarChart2 }] : []),
-            ].map(({ label, value, icon: Icon }) => (
+            ].map(({ label, value, icon }) => {
+              const IconComponent = icon
+              return (
               <div key={label} className="flex items-center gap-3 rounded-[10px] border border-black/[0.06] p-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#f7f4ff]">
-                  <Icon className="h-4 w-4 text-[#5b3df6]" />
+                  <IconComponent className="h-4 w-4 text-[#5b3df6]" />
                 </div>
                 <div>
                   <p className="text-[11px] text-[#94a3b8]">{label}</p>
                   <p className="text-[13px] font-semibold text-[#0f172a]">{value}</p>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
 
           <div className="rounded-[10px] bg-[#f8fafc] border border-black/[0.07] p-4">
@@ -267,6 +290,12 @@ function SessionCard({ session, onViewClick }) {
           <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
             <Video className="h-3.5 w-3.5 text-[#94a3b8]" />
             <span>{session.platform} - {session.duration}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
+            <Star className={`h-3.5 w-3.5 ${Number(session.avgRating || 0) > 0 ? 'fill-[#f59e0b] text-[#f59e0b]' : 'text-[#cbd5e1]'}`} />
+            <span>
+              {Number(session.avgRating || 0) > 0 ? `${session.avgRating.toFixed(1)} (${session.ratingCount})` : 'Not rated'}
+            </span>
           </div>
         </div>
 

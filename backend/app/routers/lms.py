@@ -18,6 +18,7 @@ from app.schemas.lms import (
     PlanIn,
     PlatformSettingsIn,
     LibraryResourceIn,
+    RatingIn,
     ReportGenerateIn,
     RazorpayOrderIn,
     ResetPasswordIn,
@@ -62,6 +63,57 @@ async def paged(collection, query: dict, sort_field: str, sort_dir: int, skip: i
     total = await collection.count_documents(query)
     items = [as_dict(x) async for x in collection.find(query).sort(sort_field, sort_dir).skip(skip).limit(limit)]
     return {"items": items, "total": total, "skip": skip, "limit": limit}
+
+
+async def _rating_map(target_type: str, target_ids: list[str], tenant_id: str | None = None) -> dict[str, dict]:
+    ids = [str(x) for x in target_ids if x]
+    if not ids:
+        return {}
+
+    query: dict = {"target_type": target_type, "target_id": {"$in": ids}}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+
+    pipeline = [
+        {"$match": query},
+        {
+            "$group": {
+                "_id": "$target_id",
+                "avg_rating": {"$avg": "$rating"},
+                "rating_count": {"$sum": 1},
+            }
+        },
+    ]
+    rows = [x async for x in db.ratings.aggregate(pipeline)]
+    output: dict[str, dict] = {}
+    for row in rows:
+        target_id = str(row.get("_id") or "")
+        if not target_id:
+            continue
+        avg_rating = float(row.get("avg_rating") or 0)
+        output[target_id] = {
+            "avg_rating": round(avg_rating, 1),
+            "rating_count": int(row.get("rating_count") or 0),
+        }
+    return output
+
+
+async def _attach_ratings(items: list[dict], *, target_type: str, tenant_id: str | None = None) -> list[dict]:
+    target_ids = [str(item.get("_id") or "") for item in items]
+    rating_map = await _rating_map(target_type, target_ids, tenant_id)
+    enriched = []
+    for item in items:
+        key = str(item.get("_id") or "")
+        summary = rating_map.get(key, {"avg_rating": 0.0, "rating_count": 0})
+        enriched_item = {
+            **item,
+            "avg_rating": summary["avg_rating"],
+            "rating_count": summary["rating_count"],
+            # Backward-compatible key used by some frontend pages.
+            "rating": summary["avg_rating"],
+        }
+        enriched.append(enriched_item)
+    return enriched
 
 
 async def _tenant_user_ids(tenant_id: str, roles: list[str] | None = None, exclude_ids: set[str] | None = None) -> list[str]:
@@ -352,7 +404,10 @@ async def list_courses(
     query = {"tenant_id": tenant_id} if tenant_id else {}
     if q:
         query["title"] = {"$regex": q, "$options": "i"}
-    return await paged(db.courses, query, "created_at", -1, skip, limit)
+    total = await db.courses.count_documents(query)
+    items = [as_dict(x) async for x in db.courses.find(query).sort("created_at", -1).skip(skip).limit(limit)]
+    items = await _attach_ratings(items, target_type="course", tenant_id=tenant_id)
+    return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
 @router.get("/public/courses")
@@ -364,7 +419,10 @@ async def list_public_courses(
     query: dict = {}
     if q:
         query["title"] = {"$regex": q, "$options": "i"}
-    return await paged(db.courses, query, "created_at", -1, skip, limit)
+    total = await db.courses.count_documents(query)
+    items = [as_dict(x) async for x in db.courses.find(query).sort("created_at", -1).skip(skip).limit(limit)]
+    items = await _attach_ratings(items, target_type="course", tenant_id=None)
+    return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
 @router.patch("/courses/{course_id}")
@@ -470,7 +528,10 @@ async def list_live_classes(
     query = {"tenant_id": tenant_id} if tenant_id else {}
     if status:
         query["status"] = status
-    return await paged(db.live_classes, query, "start_at", 1, skip, limit)
+    total = await db.live_classes.count_documents(query)
+    items = [as_dict(x) async for x in db.live_classes.find(query).sort("start_at", 1).skip(skip).limit(limit)]
+    items = await _attach_ratings(items, target_type="live_class", tenant_id=tenant_id)
+    return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
 @router.patch("/live-classes/{live_class_id}")
@@ -622,6 +683,108 @@ async def list_enrollments(
     if user.get("role") == Role.STUDENT.value:
         query["student_id"] = user.get("sub")
     return await paged(db.enrollments, query, "created_at", -1, skip, limit)
+
+
+@router.post("/ratings")
+async def upsert_rating(
+    payload: RatingIn,
+    tenant_id: str = Depends(get_tenant_id),
+    user=Depends(require_roles(Role.STUDENT)),
+):
+    student_id = user.get("sub")
+    now = datetime.now(timezone.utc)
+    effective_tenant_id = tenant_id
+
+    def _id_variants(value: str | None) -> list:
+        val = str(value or "").strip()
+        if not val:
+            return []
+        variants: list = [val]
+        if ObjectId.is_valid(val):
+            variants.append(ObjectId(val))
+        return variants
+
+    student_variants = _id_variants(student_id)
+    if not student_variants:
+        raise HTTPException(status_code=401, detail="Invalid student identity")
+
+    async def _find_enrollment(course_variants: list) -> dict | None:
+        base_query = {
+            "student_id": {"$in": student_variants},
+            "course_id": {"$in": course_variants},
+        }
+        # Primary path: tenant scoped lookup.
+        if tenant_id:
+            scoped_query = {**base_query, "tenant_id": tenant_id}
+            hit = await db.enrollments.find_one(scoped_query)
+            if hit:
+                return hit
+        # Fallback path: legacy rows that may not have tenant_id set.
+        return await db.enrollments.find_one(base_query)
+
+    if payload.target_type == "course":
+        course_variants = _id_variants(payload.target_id)
+        enrolled = await _find_enrollment(course_variants)
+        if not enrolled:
+            raise HTTPException(status_code=403, detail="You can only rate enrolled courses")
+        effective_tenant_id = effective_tenant_id or enrolled.get("tenant_id")
+    else:
+        if not ObjectId.is_valid(payload.target_id):
+            raise HTTPException(status_code=400, detail="Invalid live class id")
+        live_class_query = {"_id": ObjectId(payload.target_id)}
+        if tenant_id:
+            live_class_query["tenant_id"] = tenant_id
+        live_class = await db.live_classes.find_one(live_class_query)
+        if not live_class:
+            raise HTTPException(status_code=404, detail="Live class not found")
+        effective_tenant_id = effective_tenant_id or live_class.get("tenant_id")
+        course_variants = _id_variants(str(live_class.get("course_id") or ""))
+        enrolled = await _find_enrollment(course_variants)
+        if not enrolled:
+            raise HTTPException(status_code=403, detail="You can only rate enrolled live classes")
+        effective_tenant_id = effective_tenant_id or enrolled.get("tenant_id")
+
+    query = {
+        "student_id": str(student_id),
+        "target_type": payload.target_type,
+        "target_id": payload.target_id,
+    }
+    if effective_tenant_id:
+        query["tenant_id"] = effective_tenant_id
+    updates = {
+        "$set": {
+            "tenant_id": effective_tenant_id,
+            "rating": payload.rating,
+            "comment": payload.comment or "",
+            "updated_at": now,
+        },
+        "$setOnInsert": {"created_at": now},
+    }
+    await db.ratings.update_one(query, updates, upsert=True)
+    saved = await db.ratings.find_one(query)
+    return as_dict(saved)
+
+
+@router.get("/ratings")
+async def list_ratings(
+    tenant_id: str = Depends(get_tenant_id),
+    user=Depends(get_current_user),
+    target_type: str | None = None,
+    target_id: str | None = None,
+    mine: bool = False,
+    skip: int = 0,
+    limit: int = 200,
+):
+    query: dict = {"tenant_id": tenant_id} if tenant_id else {}
+    if target_type:
+        query["target_type"] = target_type
+    if target_id:
+        query["target_id"] = target_id
+
+    if mine or user.get("role") == Role.STUDENT.value:
+        query["student_id"] = user.get("sub")
+
+    return await paged(db.ratings, query, "updated_at", -1, skip, limit)
 
 
 @router.get("/dashboard/admin")

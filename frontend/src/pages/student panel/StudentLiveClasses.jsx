@@ -22,7 +22,141 @@ const STATUS_CONFIG = {
   recent: { label: 'Completed', bg: 'bg-[#dcfce7]', text: 'text-[#14532d]', dot: 'bg-[#22c55e]' },
 }
 
-const FILTERS = ['All Sessions', 'Live Now', 'Upcoming', 'Enrolled']
+const FILTERS = ['All Sessions', 'Live Now', 'Upcoming', 'Recent', 'Enrolled']
+const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000
+
+const LIVE_SUBSCRIPTION_TEMPLATES = [
+  { key: 'demo', name: 'Demo', period: 'Demo', defaultFactor: 0.1 },
+  { key: 'half', name: 'Half', period: 'Half (half course complete hone tak)', defaultFactor: 0.5 },
+  { key: 'full', name: 'Full', period: 'Full (full course complete hone tak)', defaultFactor: 1 },
+]
+
+function normalizePlanKey(name) {
+  const normalized = String(name || '').trim().toLowerCase()
+  if (!normalized) return ''
+  if (normalized.includes('demo')) return 'demo'
+  if (normalized.includes('half')) return 'half'
+  if (normalized.includes('full')) return 'full'
+  return ''
+}
+
+function buildLiveSubscriptionPlans(rawPlans, classAmountValue) {
+  const classAmount = Number(classAmountValue || 0)
+  const sourceByKey = new Map()
+
+  ;(rawPlans || []).forEach((plan) => {
+    const key = normalizePlanKey(plan?.name)
+    if (!key || sourceByKey.has(key)) return
+    sourceByKey.set(key, plan)
+  })
+
+  return LIVE_SUBSCRIPTION_TEMPLATES.map((template) => {
+    const source = sourceByKey.get(template.key)
+    const rawPrice = Number(source?.price || 0)
+
+    // If admin plan price is in 0-100 range, treat it as percent of live class amount.
+    const factor = rawPrice > 0 && rawPrice <= 100 ? rawPrice / 100 : template.defaultFactor
+    const computedAmount = classAmount > 0
+      ? Math.max(0, Math.round(classAmount * factor))
+      : Math.max(0, rawPrice)
+
+    return {
+      id: source?.id || source?._id || template.key,
+      key: template.key,
+      name: source?.name || template.name,
+      period: source?.period || source?.billing_period || template.period,
+      price: computedAmount,
+      factor,
+    }
+  })
+}
+
+function getMinSubscriptionLabel(rawPlans, classAmountValue) {
+  const plans = buildLiveSubscriptionPlans(rawPlans, classAmountValue)
+  if (plans.length === 0) return null
+  const minPrice = Math.min(...plans.map((p) => Number(p.price || 0)))
+  return `from ₹${Number(minPrice || 0).toLocaleString('en-IN')}`
+}
+
+function parseServerDateAsUtc(value) {
+  if (!value) return null
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value
+  }
+
+  const raw = String(value).trim()
+  if (!raw) return null
+
+  const hasTimezone = /([zZ]|[+-]\d{2}:\d{2})$/.test(raw)
+  if (hasTimezone) {
+    const parsed = new Date(raw)
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+
+  // Legacy rows without timezone are treated as IST local wall time.
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?(?:\.(\d{1,3}))?$/)
+  if (!m) {
+    const fallback = new Date(raw)
+    return Number.isNaN(fallback.getTime()) ? null : fallback
+  }
+
+  const year = Number(m[1])
+  const month = Number(m[2])
+  const day = Number(m[3])
+  const hour = Number(m[4])
+  const minute = Number(m[5])
+  const second = Number(m[6] || 0)
+  const millisecond = Number(String(m[7] || '0').padEnd(3, '0'))
+  const utcMs = Date.UTC(year, month - 1, day, hour, minute, second, millisecond) - IST_OFFSET_MS
+  return new Date(utcMs)
+}
+
+function toIstDate(value) {
+  const raw = parseServerDateAsUtc(value)
+  if (!raw || Number.isNaN(raw.getTime())) return null
+  return new Date(raw.getTime() + IST_OFFSET_MS)
+}
+
+function formatDateInIst(value) {
+  const istDate = toIstDate(value)
+  if (!istDate) return 'Not scheduled'
+  const day = String(istDate.getUTCDate()).padStart(2, '0')
+  const month = String(istDate.getUTCMonth() + 1).padStart(2, '0')
+  const year = istDate.getUTCFullYear()
+  return `${day}/${month}/${year}`
+}
+
+function formatTimeInIst(value) {
+  const istDate = toIstDate(value)
+  if (!istDate) return '-'
+  let hour = istDate.getUTCHours()
+  const minute = String(istDate.getUTCMinutes()).padStart(2, '0')
+  const suffix = hour >= 12 ? 'pm' : 'am'
+  hour = hour % 12
+  if (hour === 0) hour = 12
+  return `${String(hour).padStart(2, '0')}:${minute} ${suffix}`
+}
+
+function getSessionStatus(rawStatus, startAtValue, durationMinutes) {
+  const status = String(rawStatus || '').toLowerCase()
+  if (status === 'recent' || status === 'completed') return 'recent'
+  if (status === 'cancelled') return 'recent'
+
+  const startAt = parseServerDateAsUtc(startAtValue)
+  const startMs = startAt ? startAt.getTime() : null
+  if (!startMs) return status === 'live' ? 'live' : 'upcoming'
+
+  const durationMs = Math.max(1, Number(durationMinutes || 60)) * 60 * 1000
+  const endMs = startMs + durationMs
+  const now = Date.now()
+
+  if (status === 'live') {
+    return now <= endMs ? 'live' : 'recent'
+  }
+
+  if (now > endMs) return 'recent'
+  return 'upcoming'
+}
 
 function StatusBadge({ status }) {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.upcoming
@@ -41,15 +175,17 @@ function EnrollmentModal({ session, plans, me, onClose, onSuccess }) {
   const [modalError, setModalError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (!selectedPlanId && plans.length > 0) {
-      setSelectedPlanId(plans[0].id)
-    }
-  }, [plans, selectedPlanId])
+  const normalizedPlans = buildLiveSubscriptionPlans(plans, session?.priceAmount)
 
-  const selectedPlan = plans.find((p) => p.id === selectedPlanId) || null
+  useEffect(() => {
+    if (!selectedPlanId && normalizedPlans.length > 0) {
+      setSelectedPlanId(normalizedPlans[0].id)
+    }
+  }, [normalizedPlans, selectedPlanId])
+
+  const selectedPlan = normalizedPlans.find((p) => p.id === selectedPlanId) || null
   const classAmount = Number(session.priceAmount || 0)
-  const payableAmount = classAmount > 0 ? classAmount : Number(selectedPlan?.price || 0)
+  const payableAmount = Number(selectedPlan?.price || classAmount || 0)
   const payableLabel = `₹${Number(payableAmount || 0).toLocaleString('en-IN')}`
 
   const handlePay = async () => {
@@ -110,7 +246,7 @@ function EnrollmentModal({ session, plans, me, onClose, onSuccess }) {
       })
 
       if (session.link) {
-        onSuccess(session.courseId)
+        onSuccess(session.id)
         onClose()
         window.open(session.link, '_blank', 'noopener,noreferrer')
         return
@@ -144,7 +280,7 @@ function EnrollmentModal({ session, plans, me, onClose, onSuccess }) {
               </div>
             </div>
             <button
-              onClick={() => { onSuccess(session.courseId); onClose() }}
+              onClick={() => { onSuccess(session.id); onClose() }}
               className="mt-5 w-full h-11 rounded-[10px] bg-[#5b3df6] text-[14px] font-semibold text-white hover:bg-[#4a2ed8] transition-colors"
             >
               {session.status === 'live' ? 'Join Class Now' : 'Go to My Sessions'}
@@ -208,8 +344,8 @@ function EnrollmentModal({ session, plans, me, onClose, onSuccess }) {
               <div>
                 <p className="text-[12px] font-semibold text-[#0f172a] mb-2">Choose subscription:</p>
                 <div className="space-y-2">
-                  {plans.length > 0 ? (
-                    plans.map((plan) => (
+                  {normalizedPlans.length > 0 ? (
+                    normalizedPlans.map((plan) => (
                       <button
                         key={plan.id}
                         onClick={() => setSelectedPlanId(plan.id)}
@@ -258,7 +394,7 @@ function EnrollmentModal({ session, plans, me, onClose, onSuccess }) {
                 </div>
                 <button
                   onClick={handlePay}
-                  disabled={loading || (plans.length > 0 && !selectedPlan)}
+                  disabled={loading || (normalizedPlans.length > 0 && !selectedPlan)}
                   className="h-11 rounded-[10px] bg-[#5b3df6] px-6 text-[13px] font-semibold text-white hover:bg-[#4a2ed8] transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
                 >
                   {loading ? (
@@ -402,7 +538,7 @@ function ClassDetailModal({ session, onClose }) {
 }
 
 // Main Session Card
-function SessionCard({ session, isEnrolled, onJoinClick, onEnrollClick }) {
+function SessionCard({ session, isEnrolled, onJoinClick, onEnrollClick, onRate, ratingValue, ratingSaving, enrollPriceLabel }) {
   const isLive = session.status === 'live'
 
   return (
@@ -472,9 +608,32 @@ function SessionCard({ session, isEnrolled, onJoinClick, onEnrollClick }) {
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
             <Star className="h-3.5 w-3.5 text-[#eab308] fill-[#eab308]" />
-            <span>{session.rating} rating</span>
+            <span>
+              {Number(session.rating || 0) > 0
+                ? `${session.rating}${session.ratingCount ? ` (${session.ratingCount})` : ''} rating`
+                : 'Not rated'}
+            </span>
           </div>
         </div>
+
+        {isEnrolled && (
+          <div className="mt-3 rounded-[8px] border border-black/[0.08] bg-[#fafcff] px-2.5 py-2">
+            <p className="text-[10px] font-medium text-[#64748b]">Your class rating</p>
+            <div className="mt-1 flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => onRate(session, value)}
+                  disabled={ratingSaving}
+                  className="rounded p-0.5 disabled:opacity-60"
+                >
+                  <Star className={`h-4 w-4 ${value <= Number(ratingValue || 0) ? 'fill-[#f59e0b] text-[#f59e0b]' : 'text-[#cbd5e1]'}`} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Live Indicator */}
         {isLive && (
@@ -522,7 +681,7 @@ function SessionCard({ session, isEnrolled, onJoinClick, onEnrollClick }) {
                 onClick={() => onEnrollClick(session)}
                 className="flex-1 h-9 rounded-[8px] bg-[#5b3df6] text-[12px] font-semibold text-white flex items-center justify-center gap-1.5 hover:bg-[#4a2ed8] transition-colors"
               >
-                <Lock className="h-3.5 w-3.5" /> Enroll {session.price}
+                <Lock className="h-3.5 w-3.5" /> Enroll {enrollPriceLabel || session.price}
               </button>
             </>
           )}
@@ -535,17 +694,38 @@ function SessionCard({ session, isEnrolled, onJoinClick, onEnrollClick }) {
 export default function StudentLiveClasses() {
   const [liveSessions, setLiveSessions] = useState([])
   const [me, setMe] = useState(null)
-  const [enrolledCourseIds, setEnrolledCourseIds] = useState([])
+  const [enrolledSessionIds, setEnrolledSessionIds] = useState([])
+  const [liveClassRatings, setLiveClassRatings] = useState({})
+  const [ratingSavingFor, setRatingSavingFor] = useState('')
   const [subscriptionPlans, setSubscriptionPlans] = useState([])
   const tenantId = localStorage.getItem('lms_tenant_id')
 
+  const handleRateLiveClass = async (session, rating) => {
+    setRatingSavingFor(session.id)
+    try {
+      const saved = await api('/lms/ratings', {
+        method: 'POST',
+        body: JSON.stringify({
+          target_type: 'live_class',
+          target_id: session.id,
+          rating,
+        }),
+      })
+      setLiveClassRatings((prev) => ({ ...prev, [session.id]: Number(saved?.rating || rating) }))
+    } catch {
+      // Silent fail keeps page usable.
+    } finally {
+      setRatingSavingFor('')
+    }
+  }
+
   const loadLiveClasses = async () => {
     try {
-      const [classesRes, coursesRes, enrollRes, plansRes] = await Promise.all([
+      const [classesRes, coursesRes, plansRes, ratingsRes] = await Promise.all([
         api('/lms/live-classes?limit=300').catch(() => ({ items: [] })),
         api('/lms/courses?limit=500').catch(() => ({ items: [] })),
-        api('/lms/enrollments?limit=500').catch(() => ({ items: [] })),
         api('/lms/plans?limit=300&active_only=true').catch(() => ({ items: [] })),
+        api('/lms/ratings?mine=true&target_type=live_class&limit=500').catch(() => ({ items: [] })),
       ])
 
       const activePlans = (plansRes.items || []).filter((p) => Boolean(p?.active ?? true)).map((p) => ({
@@ -556,19 +736,29 @@ export default function StudentLiveClasses() {
       }))
       setSubscriptionPlans(activePlans)
 
+      const ratingMap = {}
+      for (const row of ratingsRes.items || []) {
+        if (row?.target_id) ratingMap[row.target_id] = Number(row?.rating || 0)
+      }
+      setLiveClassRatings(ratingMap)
+
       const courseMap = new Map((coursesRes.items || []).map((c) => [c._id, c]))
-      const enrollmentRows = enrollRes.items || []
-      const enrolledSet = new Set(enrollmentRows.map((e) => e.course_id).filter(Boolean))
-      setEnrolledCourseIds([...enrolledSet])
+      const currentStudentId = String(me?._id || me?.sub || '').trim()
+      const enrolledSet = new Set()
 
       const rows = classesRes.items || []
       const mapped = rows.map((r, idx) => {
         const course = courseMap.get(r.course_id) || {}
-        const startAt = r.start_at ? new Date(r.start_at) : new Date()
+        const startAt = parseServerDateAsUtc(r.start_at)
+        const hasValidStart = !!startAt
+        const attendeeIds = (r.attendee_ids || []).map((id) => String(id))
+        if (currentStudentId && attendeeIds.includes(currentStudentId)) {
+          enrolledSet.add(String(r._id))
+        }
         const numericPrice = Number(r.amount ?? course.price ?? 0)
-        const status = r.status === 'live' || r.status === 'recent' ? r.status : 'upcoming'
+        const status = getSessionStatus(r.status, r.start_at, r.duration_minutes)
         const tags = [
-          status === 'live' ? 'Live today' : 'Upcoming',
+          status === 'live' ? 'Live today' : status === 'recent' ? 'Completed' : 'Upcoming',
           course.title ? 'Course Linked' : 'Live Class',
         ]
         return {
@@ -580,24 +770,26 @@ export default function StudentLiveClasses() {
           instructor: r.instructor_id || 'Instructor',
           instructorAvatar: AVATARS[idx % AVATARS.length],
           instructorRole: 'Instructor',
-          date: startAt.toLocaleDateString(),
-          time: startAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          date: hasValidStart ? formatDateInIst(r.start_at) : 'Not scheduled',
+          time: hasValidStart ? formatTimeInIst(r.start_at) : '-',
           duration: `${r.duration_minutes || 60} mins`,
           platform: (r.meeting_provider || 'Zoom').toString().toUpperCase(),
           status,
           link: r.join_url || '',
           topic: r.title || 'Session Topic',
           attendanceRate: 0,
-          studentsEnrolled: enrollmentRows.filter((e) => e.course_id === r.course_id).length,
+          studentsEnrolled: attendeeIds.length,
           studentsPresent: 0,
           chatMessages: 0,
           currentSlide: '—',
           tags,
           price: `₹${numericPrice.toLocaleString('en-IN')}`,
           priceAmount: numericPrice,
-          rating: '4.8',
+          rating: Number(r.avg_rating || r.rating || 0) > 0 ? Number(r.avg_rating || r.rating || 0).toFixed(1) : '',
+          ratingCount: Number(r.rating_count || 0),
         }
       })
+      setEnrolledSessionIds([...enrolledSet])
       setLiveSessions(mapped)
     } catch {
       setLiveSessions([])
@@ -623,7 +815,15 @@ export default function StudentLiveClasses() {
       mounted = false
       clearTimeout(timer)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (me?._id || me?.sub) {
+      loadLiveClasses()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?._id, me?.sub])
 
   useRealtime(tenantId ? `tenant:${tenantId}` : '', () => loadLiveClasses())
 
@@ -637,17 +837,20 @@ export default function StudentLiveClasses() {
     .sort((a, b) => a.localeCompare(b))
   const allCourseFilters = ['All Courses', ...courseFilters]
 
-  const handleEnrollSuccess = (courseId) => {
-    setEnrolledCourseIds((prev) => (prev.includes(courseId) ? prev : [...prev, courseId]))
+  const handleEnrollSuccess = (sessionId) => {
+    const normalized = String(sessionId || '')
+    if (!normalized) return
+    setEnrolledSessionIds((prev) => (prev.includes(normalized) ? prev : [...prev, normalized]))
   }
 
   const filtered = liveSessions.filter(s => {
     const selectedCourse = activeCourseFilter.trim().toLowerCase()
     const matchFilter =
-      activeFilter === 'All Sessions' ||
+      (activeFilter === 'All Sessions' && (s.status === 'live' || s.status === 'upcoming')) ||
       (activeFilter === 'Live Now' && s.status === 'live') ||
       (activeFilter === 'Upcoming' && s.status === 'upcoming') ||
-      (activeFilter === 'Enrolled' && enrolledCourseIds.includes(s.courseId))
+      (activeFilter === 'Recent' && s.status === 'recent') ||
+      (activeFilter === 'Enrolled' && enrolledSessionIds.includes(s.id))
     const matchCourse = selectedCourse === 'all courses' || s.course.toLowerCase() === selectedCourse
     const matchSearch =
       s.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -657,7 +860,8 @@ export default function StudentLiveClasses() {
   })
 
   const liveCount = liveSessions.filter(s => s.status === 'live').length
-  const enrolledCount = enrolledCourseIds.length
+  const recentCount = liveSessions.filter(s => s.status === 'recent').length
+  const enrolledCount = enrolledSessionIds.length
 
   return (
     <div className="min-h-full bg-[#F7FAFD]">
@@ -696,7 +900,7 @@ export default function StudentLiveClasses() {
                   <div className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> {s.studentsPresent} students in class</div>
                   <div className="flex items-center gap-1.5"><Video className="h-3.5 w-3.5" /> {s.platform} • {s.duration}</div>
                 </div>
-                {enrolledCourseIds.includes(s.courseId) ? (
+                {enrolledSessionIds.includes(s.id) ? (
                   <button
                     onClick={() => window.open(s.link, '_blank')}
                     className="mt-4 w-full h-10 rounded-[8px] bg-[#ef4444] text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-[#dc2626] transition-colors"
@@ -757,6 +961,9 @@ export default function StudentLiveClasses() {
                   {f === 'Live Now' && (
                     <span className="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#ef4444] text-[9px] font-bold text-white">{liveCount}</span>
                   )}
+                  {f === 'Recent' && (
+                    <span className="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#16a34a] text-[9px] font-bold text-white">{recentCount}</span>
+                  )}
                   {f === 'Enrolled' && (
                     <span className="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#16a34a] text-[9px] font-bold text-white">{enrolledCount}</span>
                   )}
@@ -770,7 +977,15 @@ export default function StudentLiveClasses() {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-[18px] font-bold text-[#0f172a]">
-              {activeFilter === 'Enrolled' ? 'My Enrolled Sessions' : 'Upcoming Sessions'}
+              {activeFilter === 'Enrolled'
+                ? 'My Enrolled Sessions'
+                : activeFilter === 'Recent'
+                  ? 'Recently Completed Sessions'
+                  : activeFilter === 'Live Now'
+                    ? 'Live Sessions'
+                    : activeFilter === 'All Sessions'
+                      ? 'All Sessions'
+                      : 'Upcoming Sessions'}
             </h2>
             <span className="text-[12px] text-[#94a3b8]">{filtered.length} sessions</span>
           </div>
@@ -787,9 +1002,13 @@ export default function StudentLiveClasses() {
                 <SessionCard
                   key={session.id}
                   session={session}
-                  isEnrolled={enrolledCourseIds.includes(session.courseId)}
+                  isEnrolled={enrolledSessionIds.includes(session.id)}
                   onJoinClick={(s) => setDetailModal(s)}
                   onEnrollClick={(s) => setEnrollModal(s)}
+                  onRate={handleRateLiveClass}
+                  ratingValue={liveClassRatings[session.id]}
+                  ratingSaving={ratingSavingFor === session.id}
+                  enrollPriceLabel={getMinSubscriptionLabel(subscriptionPlans, session.priceAmount)}
                 />
               ))}
             </div>

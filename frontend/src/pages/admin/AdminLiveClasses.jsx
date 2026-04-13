@@ -14,6 +14,7 @@ import {
   Trash2,
   AlertCircle,
   UserCheck,
+  Star,
 } from 'lucide-react'
 import { api } from '../../lib/api'
 import useRealtime from '../../hooks/useRealtime'
@@ -25,6 +26,103 @@ const STATUS_CONFIG = {
   upcoming: { label: 'Upcoming', bg: 'bg-[#fef9c3]', text: 'text-[#854d0e]', dot: 'bg-[#eab308]' },
   recent: { label: 'Completed', bg: 'bg-[#dcfce7]', text: 'text-[#14532d]', dot: 'bg-[#22c55e]' },
   cancelled: { label: 'Cancelled', bg: 'bg-[#f1f5f9]', text: 'text-[#475569]', dot: 'bg-[#94a3b8]' },
+}
+
+const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000
+
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'))
+const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
+const IST_TIME_ZONE = 'Asia/Kolkata'
+
+function istDateTimePartsToIso(dateValue, timeValue) {
+  const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(String(dateValue || ''))
+  const timeOk = /^\d{2}:\d{2}$/.test(String(timeValue || ''))
+  if (!dateOk || !timeOk) return ''
+  return `${dateValue}T${timeValue}:00+05:30`
+}
+
+function getCurrentIstDateTimeParts() {
+  const now = new Date(Date.now() + IST_OFFSET_MS)
+  return {
+    start_date: `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`,
+    start_time: `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`,
+  }
+}
+
+function parseServerDateAsUtc(value) {
+  if (!value) return null
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value
+  }
+
+  const raw = String(value).trim()
+  if (!raw) return null
+
+  const hasTimezone = /([zZ]|[+-]\d{2}:\d{2})$/.test(raw)
+  if (hasTimezone) {
+    const parsed = new Date(raw)
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+
+  // Legacy rows without timezone are treated as IST local wall time.
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?(?:\.(\d{1,3}))?$/)
+  if (!m) {
+    const fallback = new Date(raw)
+    return Number.isNaN(fallback.getTime()) ? null : fallback
+  }
+
+  const year = Number(m[1])
+  const month = Number(m[2])
+  const day = Number(m[3])
+  const hour = Number(m[4])
+  const minute = Number(m[5])
+  const second = Number(m[6] || 0)
+  const millisecond = Number(String(m[7] || '0').padEnd(3, '0'))
+  const utcMs = Date.UTC(year, month - 1, day, hour, minute, second, millisecond) - IST_OFFSET_MS
+  return new Date(utcMs)
+}
+
+function formatDateInIst(value) {
+  const date = parseServerDateAsUtc(value)
+  if (!date) return 'Not scheduled'
+  const istDate = new Date(date.getTime() + IST_OFFSET_MS)
+  const day = String(istDate.getUTCDate()).padStart(2, '0')
+  const month = String(istDate.getUTCMonth() + 1).padStart(2, '0')
+  const year = istDate.getUTCFullYear()
+  return `${day}/${month}/${year}`
+}
+
+function formatTimeInIst(value) {
+  const date = parseServerDateAsUtc(value)
+  if (!date) return '-'
+  const istDate = new Date(date.getTime() + IST_OFFSET_MS)
+  let hour = istDate.getUTCHours()
+  const minute = String(istDate.getUTCMinutes()).padStart(2, '0')
+  const suffix = hour >= 12 ? 'pm' : 'am'
+  hour = hour % 12
+  if (hour === 0) hour = 12
+  return `${String(hour).padStart(2, '0')}:${minute} ${suffix}`
+}
+
+function getSessionStatus(rawStatus, startAtValue, durationMinutes) {
+  const status = String(rawStatus || '').toLowerCase()
+  if (status === 'cancelled') return 'cancelled'
+  if (status === 'recent' || status === 'completed') return 'recent'
+
+  const startAt = parseServerDateAsUtc(startAtValue)
+  const startMs = startAt ? startAt.getTime() : null
+  if (!startMs) return status === 'live' ? 'live' : 'upcoming'
+
+  const durationMs = Math.max(1, Number(durationMinutes || 60)) * 60 * 1000
+  const endMs = startMs + durationMs
+  const now = Date.now()
+
+  if (status === 'live') {
+    return now <= endMs ? 'live' : 'recent'
+  }
+
+  if (now > endMs) return 'recent'
+  return 'upcoming'
 }
 
 function StatusBadge({ status }) {
@@ -75,21 +173,23 @@ function ClassDetailModal({ session, attendeeUsers, onClose, onCancel, onRegener
             {[
               { label: 'Course', value: session.course, icon: BookOpen },
               { label: 'Instructor', value: session.instructor, icon: UserCheck },
-              { label: 'Date & Time', value: `${session.date} • ${session.time}`, icon: CalendarDays },
+              { label: 'Date & Time (IST)', value: `${session.date} • ${session.time}`, icon: CalendarDays },
               { label: 'Duration', value: session.duration, icon: Clock3 },
               { label: 'Students Enrolled', value: String(session.studentsEnrolled), icon: Users },
               { label: 'Amount', value: `INR ${session.amountText}`, icon: Link2 },
-            ].map(({ label, value, icon: Icon }) => (
+            ].map(({ label, value, icon }) => {
+              const IconComponent = icon
+              return (
               <div key={label} className="flex items-center gap-3 rounded-[10px] border border-black/[0.06] p-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#f7f4ff]">
-                  <Icon className="h-4 w-4 text-[#5b3df6]" />
+                  <IconComponent className="h-4 w-4 text-[#5b3df6]" />
                 </div>
                 <div>
                   <p className="text-[11px] text-[#94a3b8]">{label}</p>
                   <p className="text-[13px] font-semibold text-[#0f172a]">{value || '-'}</p>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
 
           {session.image ? (
@@ -235,7 +335,7 @@ function SessionCard({ session, onClick, onDelete, onRegenerate, onReassign, reg
               e.stopPropagation()
               onDelete(session.id)
             }}
-            className="opacity-0 group-hover:opacity-100 rounded-[6px] p-1 hover:bg-[#fee2e2] transition-all"
+            className="rounded-[6px] p-1 hover:bg-[#fee2e2] transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
           >
             <Trash2 className="h-3.5 w-3.5 text-[#ef4444]" />
           </button>
@@ -267,6 +367,12 @@ function SessionCard({ session, onClick, onDelete, onRegenerate, onReassign, reg
           <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
             <span className="font-medium text-[#4338ca]">Amount:</span>
             <span>INR {session.amountText}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
+            <Star className={`h-3.5 w-3.5 ${Number(session.avgRating || 0) > 0 ? 'fill-[#f59e0b] text-[#f59e0b]' : 'text-[#cbd5e1]'}`} />
+            <span>
+              {Number(session.avgRating || 0) > 0 ? `${session.avgRating.toFixed(1)} (${session.ratingCount})` : 'Not rated'}
+            </span>
           </div>
         </div>
 
@@ -341,7 +447,8 @@ export default function AdminLiveClasses() {
     title: '',
     course_id: '',
     instructor_id: '',
-    start_at: '',
+    start_date: '',
+    start_time: '',
     duration_minutes: 60,
     amount: '',
     image_url: '',
@@ -383,9 +490,6 @@ export default function AdminLiveClasses() {
       setStudents(studentsRes.items || [])
       setCurrentUser(me)
 
-      if (!form.course_id && (coursesRes.items || []).length > 0) {
-        setForm((prev) => ({ ...prev, course_id: coursesRes.items[0]._id }))
-      }
     } finally {
       setLoading(false)
     }
@@ -393,7 +497,6 @@ export default function AdminLiveClasses() {
 
   useEffect(() => {
     loadData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useRealtime(tenantId ? `tenant:${tenantId}` : '', (payload) => {
@@ -406,21 +509,16 @@ export default function AdminLiveClasses() {
   const courseProgramOptions = useMemo(() => {
     const optionsByValue = new Map()
 
-    courses.forEach((course) => {
-      const value = String(course?._id || '').trim()
-      if (!value) return
-      const label = String(course?.title || value).trim() || value
-      optionsByValue.set(value, { value, label })
-    })
-
     classes.forEach((liveClass) => {
       const value = String(liveClass?.course_id || '').trim()
       if (!value || optionsByValue.has(value)) return
-      optionsByValue.set(value, { value, label: value })
+      const mappedCourse = courseMap.get(value)
+      const label = String(mappedCourse?.title || value).trim() || value
+      optionsByValue.set(value, { value, label })
     })
 
     return [...optionsByValue.values()].sort((a, b) => a.label.localeCompare(b.label))
-  }, [courses, classes])
+  }, [classes, courseMap])
 
   const userMap = useMemo(() => {
     const map = new Map()
@@ -431,9 +529,11 @@ export default function AdminLiveClasses() {
 
   const sessions = useMemo(() => {
     return classes.map((c) => {
-      const start = c.start_at ? new Date(c.start_at) : null
+      const start = parseServerDateAsUtc(c.start_at)
+      const hasValidStart = !!start
       const course = courseMap.get(c.course_id)
       const instructor = userMap.get(c.instructor_id)
+      const status = getSessionStatus(c.status, c.start_at, c.duration_minutes)
 
       return {
         id: c._id,
@@ -441,17 +541,19 @@ export default function AdminLiveClasses() {
         course: course?.title || c.course_id || 'Course',
         instructorId: c.instructor_id || '',
         instructor: instructor?.full_name || instructor?.email || c.instructor_id || 'Instructor',
-        date: start ? start.toLocaleDateString() : '-',
-        time: start ? start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
+        date: hasValidStart ? formatDateInIst(c.start_at) : 'Not scheduled',
+        time: hasValidStart ? formatTimeInIst(c.start_at) : '-',
         duration: `${c.duration_minutes || 60} mins`,
         platform: (c.meeting_provider || 'Zoom').toString().toUpperCase(),
-        status: c.status || 'upcoming',
+        status,
         joinLink: c.join_url || '',
         topic: c.title || 'Session',
         studentsEnrolled: (c.attendee_ids || []).length,
         attendeeIds: c.attendee_ids || [],
         amountText: Number(c.amount || 0).toFixed(2),
         image: c.image_url || '',
+        avgRating: Number(c.avg_rating || c.rating || 0),
+        ratingCount: Number(c.rating_count || 0),
       }
     })
   }, [classes, courseMap, userMap])
@@ -460,7 +562,7 @@ export default function AdminLiveClasses() {
     const selectedCourse = activeCourseFilter.trim().toLowerCase()
     return sessions.filter((s) => {
       const matchFilter =
-        activeFilter === 'All Classes' ||
+        (activeFilter === 'All Classes' && s.status !== 'cancelled') ||
         (activeFilter === 'Live' && s.status === 'live') ||
         (activeFilter === 'Upcoming' && s.status === 'upcoming') ||
         (activeFilter === 'Recent' && s.status === 'recent') ||
@@ -515,8 +617,8 @@ export default function AdminLiveClasses() {
     const courseId = courseInputMode === 'manual' ? manualCourseName.trim() : form.course_id.trim()
     const instructorId = hostMode === 'self' ? currentUser?._id || '' : form.instructor_id.trim()
 
-    if (!title || !courseId || !form.start_at) {
-      setCreateError('Please fill class title, course, and start date/time.')
+    if (!title || !courseId || !form.start_date || !form.start_time) {
+      setCreateError('Please fill class title, course, and IST date/time.')
       setIsCreating(false)
       return
     }
@@ -528,6 +630,13 @@ export default function AdminLiveClasses() {
     }
 
     try {
+      const startAtIso = istDateTimePartsToIso(form.start_date, form.start_time)
+      if (!startAtIso) {
+        setCreateError('Please choose a valid date and time in IST.')
+        setIsCreating(false)
+        return
+      }
+
       await api('/lms/live-classes', {
         method: 'POST',
         body: JSON.stringify({
@@ -535,7 +644,7 @@ export default function AdminLiveClasses() {
           course_id: courseId,
           instructor_id: instructorId,
           attendee_ids: form.attendee_ids,
-          start_at: new Date(form.start_at).toISOString(),
+          start_at: startAtIso,
           duration_minutes: Number(form.duration_minutes || 60),
           amount: Number(form.amount || 0),
           image_url: form.image_url.trim(),
@@ -545,9 +654,10 @@ export default function AdminLiveClasses() {
 
       setForm({
         title: '',
-        course_id: courses[0]?._id || '',
+        course_id: '',
         instructor_id: '',
-        start_at: '',
+        start_date: '',
+        start_time: '',
         duration_minutes: 60,
         amount: '',
         image_url: '',
@@ -568,7 +678,26 @@ export default function AdminLiveClasses() {
   const handleDelete = async (id) => {
     try {
       setActionError('')
-      await api(`/lms/live-classes/${id}`, { method: 'DELETE' })
+      try {
+        await api(`/lms/live-classes/${id}`, { method: 'DELETE' })
+      } catch {
+        // Fallback for environments where DELETE may be blocked by proxy/security rules.
+        await api(`/lms/live-classes/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'cancelled' }),
+        })
+      }
+
+      setClasses((prev) =>
+        prev.map((item) =>
+          String(item?._id || '') === String(id) ? { ...item, status: 'cancelled' } : item,
+        ),
+      )
+
+      if (activeFilter === 'All Classes') {
+        setSelectedSession(null)
+      }
+
       await loadData()
       if (selectedSession?.id === id) setSelectedSession(null)
     } catch (error) {
@@ -761,13 +890,53 @@ export default function AdminLiveClasses() {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Date & time *</label>
+                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Date (IST) *</label>
                   <input
-                    type="datetime-local"
-                    value={form.start_at}
-                    onChange={(e) => handleFormChange('start_at', e.target.value)}
+                    type="date"
+                    value={form.start_date}
+                    onChange={(e) => handleFormChange('start_date', e.target.value)}
                     className="h-11 w-full rounded-[8px] border border-black/[0.08] bg-white px-3 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
                   />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Time (IST) *</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="relative">
+                      <select
+                        value={form.start_time.split(':')[0] || ''}
+                        onChange={(e) => {
+                          const hour = e.target.value
+                          const minute = form.start_time.split(':')[1] || '00'
+                          handleFormChange('start_time', `${hour}:${minute}`)
+                        }}
+                        className="h-11 w-full appearance-none rounded-[8px] border border-black/[0.08] bg-white px-3 pr-8 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
+                      >
+                        <option value="">Hour</option>
+                        {HOUR_OPTIONS.map((hour) => (
+                          <option key={hour} value={hour}>{hour}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={form.start_time.split(':')[1] || ''}
+                        onChange={(e) => {
+                          const minute = e.target.value
+                          const hour = form.start_time.split(':')[0] || '00'
+                          handleFormChange('start_time', `${hour}:${minute}`)
+                        }}
+                        className="h-11 w-full appearance-none rounded-[8px] border border-black/[0.08] bg-white px-3 pr-8 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
+                      >
+                        <option value="">Min</option>
+                        {MINUTE_OPTIONS.map((minute) => (
+                          <option key={minute} value={minute}>{minute}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -877,7 +1046,13 @@ export default function AdminLiveClasses() {
           <h2 className="mt-3 max-w-[700px] text-[26px] font-bold leading-tight text-[#0f172a]">Schedule, track, and manage every live session from one class operations workspace.</h2>
           <p className="mt-2 max-w-[700px] text-[14px] text-[#94a3b8]">All class cards below are loaded from real backend data.</p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button onClick={() => setActiveView('create')} className="inline-flex h-9 items-center gap-1 rounded-[7px] bg-[#5b3df6] px-3 text-[12px] font-semibold text-white">
+            <button
+              onClick={() => {
+                setForm((prev) => ({ ...prev, ...getCurrentIstDateTimeParts() }))
+                setActiveView('create')
+              }}
+              className="inline-flex h-9 items-center gap-1 rounded-[7px] bg-[#5b3df6] px-3 text-[12px] font-semibold text-white"
+            >
               <Plus className="h-4 w-4" /> Create Zoom meeting
             </button>
           </div>
@@ -922,7 +1097,13 @@ export default function AdminLiveClasses() {
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
               </div>
-              <button onClick={() => setIsAddSessionOpen(true)} className="inline-flex h-9 items-center gap-1 rounded-[7px] bg-[#5b3df6] px-3 text-[12px] font-semibold text-white">
+              <button
+                onClick={() => {
+                  setForm((prev) => ({ ...prev, ...getCurrentIstDateTimeParts() }))
+                  setIsAddSessionOpen(true)
+                }}
+                className="inline-flex h-9 items-center gap-1 rounded-[7px] bg-[#5b3df6] px-3 text-[12px] font-semibold text-white"
+              >
                 <Plus className="h-4 w-4" /> Add session
               </button>
             </div>
@@ -1095,13 +1276,52 @@ export default function AdminLiveClasses() {
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Start Date & Time *</label>
+                  <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Start Date (IST) *</label>
                   <input
-                    type="datetime-local"
-                    value={form.start_at}
-                    onChange={(e) => handleFormChange('start_at', e.target.value)}
+                    type="date"
+                    value={form.start_date}
+                    onChange={(e) => handleFormChange('start_date', e.target.value)}
                     className="h-10 w-full rounded-[8px] border border-black/[0.08] px-4 text-[13px]"
                   />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Start Time (IST) *</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="relative">
+                      <select
+                        value={form.start_time.split(':')[0] || ''}
+                        onChange={(e) => {
+                          const hour = e.target.value
+                          const minute = form.start_time.split(':')[1] || '00'
+                          handleFormChange('start_time', `${hour}:${minute}`)
+                        }}
+                        className="h-10 w-full appearance-none rounded-[8px] border border-black/[0.08] px-3 pr-8 text-[13px]"
+                      >
+                        <option value="">Hour</option>
+                        {HOUR_OPTIONS.map((hour) => (
+                          <option key={hour} value={hour}>{hour}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={form.start_time.split(':')[1] || ''}
+                        onChange={(e) => {
+                          const minute = e.target.value
+                          const hour = form.start_time.split(':')[0] || '00'
+                          handleFormChange('start_time', `${hour}:${minute}`)
+                        }}
+                        className="h-10 w-full appearance-none rounded-[8px] border border-black/[0.08] px-3 pr-8 text-[13px]"
+                      >
+                        <option value="">Min</option>
+                        {MINUTE_OPTIONS.map((minute) => (
+                          <option key={minute} value={minute}>{minute}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-[13px] font-semibold text-[#374151]">Duration *</label>

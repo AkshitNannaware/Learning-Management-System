@@ -13,6 +13,7 @@ import {
   Clock,
   AlertCircle,
   Video,
+  Star,
   Link as LinkIcon,
 } from 'lucide-react'
 import { api } from '../../lib/api'
@@ -63,13 +64,14 @@ function Pill({ children, variant }) {
   )
 }
 
-function StatCard({ label, value, icon: Icon }) {
+function StatCard({ label, value, icon }) {
+  const IconComponent = icon
   return (
     <div className="bg-white border border-black/[0.08] rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[12px] text-[#94a3b8]">{label}</span>
         <div className="p-2 rounded-lg bg-[#ede9ff]">
-          <Icon className="h-4 w-4 text-[#5b3df6]" />
+          <IconComponent className="h-4 w-4 text-[#5b3df6]" />
         </div>
       </div>
       <p className="text-[28px] font-bold text-[#0f172a]">{value}</p>
@@ -209,7 +211,6 @@ function SimpleCreateCourseForm({ onBack, onCreate, loading: parentLoading }) {
                   >
                     <option value="free">Free</option>
                     <option value="paid">Paid</option>
-                    <option value="demo">Demo</option>
                   </select>
                 </div>
                 <div>
@@ -288,7 +289,7 @@ function EditCourseModal({ course, onClose, onSave }) {
   const [form, setForm] = useState({ 
     title: course.title, 
     description: course.description || '', 
-    course_type: course.course_type || 'free',
+    course_type: course.course_type === 'paid' ? 'paid' : 'free',
     youtube_url: course.youtube_url || '',
     price: course.price || '',
   })
@@ -327,7 +328,6 @@ function EditCourseModal({ course, onClose, onSave }) {
           )}
           
           <div>
-            <label className="block text-[13px] font-semibold text-[#0f172a] mb-1">YouTube URL</label>
             <input name="youtube_url" value={form.youtube_url} onChange={handleChange} placeholder="https://youtube.com/watch?v=..." className="w-full rounded-[8px] border border-black/[0.08] px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]" />
           </div>
           <div>
@@ -344,7 +344,6 @@ function EditCourseModal({ course, onClose, onSave }) {
               <select name="course_type" value={form.course_type} onChange={handleChange} className="w-full rounded-[8px] border border-black/[0.08] px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]">
                 <option value="free">Free</option>
                 <option value="paid">Paid</option>
-                <option value="demo">Demo</option>
               </select>
             </div>
             <div>
@@ -619,7 +618,7 @@ export default function AdminCourseManagement() {
                 className="w-full pl-9 pr-3 py-2 border border-black/[0.08] rounded-[8px] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]" />
             </div>
             <div className="flex gap-2">
-              {['all', 'free', 'paid', 'demo'].map(s => (
+              {['all', 'free', 'paid'].map(s => (
                 <button key={s} onClick={() => setFilterStatus(s)}
                   className={`px-3 py-1.5 rounded-[6px] text-[12px] font-medium transition-colors ${filterStatus === s ? 'bg-[#5b3df6] text-white' : 'bg-gray-100 text-[#64748b] hover:bg-gray-200'}`}>
                   {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -655,6 +654,14 @@ export default function AdminCourseManagement() {
                   <h3 className="text-[15px] font-bold text-[#0f172a] line-clamp-1 flex-1">{course.title}</h3>
                 </div>
                 <p className="text-[12px] text-[#94a3b8] line-clamp-2 mb-3">{course.description || 'No description'}</p>
+                <div className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#475569]">
+                  <Star className={`h-3.5 w-3.5 ${Number(course.avg_rating || course.rating || 0) > 0 ? 'fill-[#f59e0b] text-[#f59e0b]' : 'text-[#cbd5e1]'}`} />
+                  <span>
+                    {Number(course.avg_rating || course.rating || 0) > 0
+                      ? `${Number(course.avg_rating || course.rating || 0).toFixed(1)} (${Number(course.rating_count || 0)})`
+                      : 'Not rated'}
+                  </span>
+                </div>
                 <div className="flex flex-wrap gap-3 mb-3 text-[11px] text-[#94a3b8]">
                   <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{new Date(course.created_at || course.createdAt || Date.now()).toLocaleDateString()}</span>
                   <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{course.students_count || 0} students</span>

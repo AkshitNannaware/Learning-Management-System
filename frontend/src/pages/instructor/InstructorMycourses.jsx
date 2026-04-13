@@ -12,6 +12,7 @@ import {
   Clock,
   AlertCircle,
   Video,
+  Star,
   Link as LinkIcon,
 } from 'lucide-react'
 import { api } from '../../lib/api'
@@ -58,13 +59,14 @@ function Pill({ children, variant }) {
   )
 }
 
-function StatCard({ label, value, icon: Icon }) {
+function StatCard({ label, value, icon }) {
+  const IconComponent = icon
   return (
     <div className="bg-white border border-black/[0.08] rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[12px] text-[#94a3b8]">{label}</span>
         <div className="p-2 rounded-lg bg-[#ede9ff]">
-          <Icon className="h-4 w-4 text-[#5b3df6]" />
+          <IconComponent className="h-4 w-4 text-[#5b3df6]" />
         </div>
       </div>
       <p className="text-[28px] font-bold text-[#0f172a]">{value}</p>
@@ -205,7 +207,6 @@ function SimpleCreateCourseForm({ onBack, onCreate, loading: parentLoading }) {
                   >
                     <option value="free">Free</option>
                     <option value="paid">Paid</option>
-                    <option value="demo">Demo</option>
                   </select>
                 </div>
                 <div>
@@ -335,7 +336,6 @@ function EditCourseModal({ course, onClose, onSave }) {
               <select name="course_type" value={form.course_type} onChange={handleChange} className="w-full rounded-[8px] border border-black/[0.08] px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]">
                 <option value="free">Free</option>
                 <option value="paid">Paid</option>
-                <option value="demo">Demo</option>
               </select>
             </div>
             <div>
@@ -433,7 +433,6 @@ function ViewCourseModal({ course, onClose }) {
 }
 
 export default function InstructorMycourses() {
-  const [allCourses, setAllCourses] = useState([])
   const [myCourses, setMyCourses] = useState([])
   const [showCreatePage, setShowCreatePage] = useState(false)
   const [editCourse, setEditCourse] = useState(null)
@@ -443,7 +442,6 @@ export default function InstructorMycourses() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [currentUserId, setCurrentUserId] = useState('')
 
   const loadCourses = async () => {
     try {
@@ -458,12 +456,9 @@ export default function InstructorMycourses() {
       const list = Array.isArray(response?.items) ? response.items : []
       const mine = userId ? list.filter((c) => String(c?.created_by || '') === userId) : list
 
-      setCurrentUserId(userId)
-      setAllCourses(list)
       setMyCourses(mine)
     } catch (err) {
       setError(err?.message || 'Unable to load courses.')
-      setAllCourses([])
       setMyCourses([])
     } finally {
       setLoading(false)
@@ -613,7 +608,7 @@ export default function InstructorMycourses() {
               />
             </div>
             <div className="flex gap-2">
-              {['all', 'free', 'paid', 'demo'].map((s) => (
+              {['all', 'free', 'paid'].map((s) => (
                 <button
                   key={s}
                   onClick={() => setFilterStatus(s)}
@@ -655,6 +650,14 @@ export default function InstructorMycourses() {
                   <h3 className="text-[15px] font-bold text-[#0f172a] line-clamp-1 flex-1">{course.title}</h3>
                 </div>
                 <p className="text-[12px] text-[#94a3b8] line-clamp-2 mb-3">{course.description || 'No description'}</p>
+                <div className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#475569]">
+                  <Star className={`h-3.5 w-3.5 ${Number(course.avg_rating || course.rating || 0) > 0 ? 'fill-[#f59e0b] text-[#f59e0b]' : 'text-[#cbd5e1]'}`} />
+                  <span>
+                    {Number(course.avg_rating || course.rating || 0) > 0
+                      ? `${Number(course.avg_rating || course.rating || 0).toFixed(1)} (${Number(course.rating_count || 0)})`
+                      : 'Not rated'}
+                  </span>
+                </div>
                 <div className="flex flex-wrap gap-3 mb-3 text-[11px] text-[#94a3b8]">
                   <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{new Date(course.created_at || course.createdAt || Date.now()).toLocaleDateString()}</span>
                   <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{course.students_count || 0} students</span>

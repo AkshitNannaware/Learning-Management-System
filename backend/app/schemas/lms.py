@@ -76,6 +76,13 @@ class EnrollmentIn(BaseModel):
     student_id: str
 
 
+class RatingIn(BaseModel):
+    target_type: str = Field(pattern="^(course|live_class)$")
+    target_id: str
+    rating: int = Field(ge=1, le=5)
+    comment: str = ""
+
+
 class CouponIn(BaseModel):
     code: str
     discount_type: str = Field(pattern="^(percent|flat)$")

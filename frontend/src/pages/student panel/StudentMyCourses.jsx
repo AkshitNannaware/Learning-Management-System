@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { BookOpen, Clock, PlayCircle } from 'lucide-react'
+import { BookOpen, Clock, PlayCircle, Star } from 'lucide-react'
 import { api } from '../../lib/api'
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1400&q=80'
@@ -59,8 +59,29 @@ function formatDate(value) {
 
 export default function StudentMyCourses() {
 	const [courses, setCourses] = useState([])
+	const [courseRatings, setCourseRatings] = useState({})
+	const [ratingSavingFor, setRatingSavingFor] = useState('')
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState('')
+
+	const handleRateCourse = async (courseId, ratingValue) => {
+		setRatingSavingFor(courseId)
+		try {
+			const saved = await api('/lms/ratings', {
+				method: 'POST',
+				body: JSON.stringify({
+					target_type: 'course',
+					target_id: courseId,
+					rating: ratingValue,
+				}),
+			})
+			setCourseRatings((prev) => ({ ...prev, [courseId]: Number(saved?.rating || ratingValue) }))
+		} catch (err) {
+			setError(err?.message || 'Unable to save rating.')
+		} finally {
+			setRatingSavingFor('')
+		}
+	}
 
 	useEffect(() => {
 		setLoading(true)
@@ -68,13 +89,19 @@ export default function StudentMyCourses() {
 		Promise.all([
 			api('/lms/enrollments?limit=200').catch(() => ({ items: [] })),
 			api('/lms/courses?limit=500').catch(() => ({ items: [] })),
+			api('/lms/ratings?mine=true&target_type=course&limit=500').catch(() => ({ items: [] })),
 		])
-			.then(([enr, crs]) => {
+			.then(([enr, crs, ratingsRes]) => {
 				const enrollMap = new Map((enr.items || []).map((x) => [x.course_id, x]))
 				const mapped = (crs.items || [])
 					.filter((course) => enrollMap.has(course._id))
 					.map((course) => ({ ...course, enrolledAt: enrollMap.get(course._id)?.created_at || null }))
 				setCourses(mapped)
+				const ratingsMap = {}
+				for (const row of ratingsRes.items || []) {
+					if (row?.target_id) ratingsMap[row.target_id] = Number(row?.rating || 0)
+				}
+				setCourseRatings(ratingsMap)
 			})
 			.catch((err) => {
 				setCourses([])
@@ -150,6 +177,38 @@ export default function StudentMyCourses() {
 											<div className="flex items-center gap-2">
 												<Clock className="h-4 w-4 text-[#5b3df6]" />
 													<span>{course?.course_type === 'paid' ? 'Paid access' : 'Self-paced'}</span>
+											</div>
+										</div>
+
+										<div className="rounded-[10px] border border-black/[0.08] bg-[#f8fafc] p-2.5 text-[11px] font-medium text-[#475569]">
+											<div className="inline-flex items-center gap-1.5">
+												<Star className={`h-3.5 w-3.5 ${Number(course?.avg_rating || course?.rating || 0) > 0 ? 'fill-[#f59e0b] text-[#f59e0b]' : 'text-[#cbd5e1]'}`} />
+												<span>
+													{Number(course?.avg_rating || course?.rating || 0) > 0
+														? `Community rating: ${Number(course?.avg_rating || course?.rating || 0).toFixed(1)} (${Number(course?.rating_count || 0)})`
+														: 'Community rating: Not rated yet'}
+												</span>
+											</div>
+										</div>
+
+										<div className="rounded-[10px] border border-black/[0.08] bg-white p-2.5">
+											<p className="text-[11px] font-medium text-[#64748b]">Rate this course</p>
+											<div className="mt-1 flex items-center gap-1">
+												{[1, 2, 3, 4, 5].map((value) => {
+													const current = Number(courseRatings[course?._id] || 0)
+													return (
+														<button
+															key={value}
+															type="button"
+															onClick={() => handleRateCourse(course?._id, value)}
+															disabled={ratingSavingFor === course?._id}
+															className="rounded p-0.5 disabled:opacity-60"
+														>
+															<Star className={`h-4 w-4 ${value <= current ? 'fill-[#f59e0b] text-[#f59e0b]' : 'text-[#cbd5e1]'}`} />
+														</button>
+													)
+												})}
+												<span className="ml-1 text-[11px] text-[#94a3b8]">{Number(courseRatings[course?._id] || 0) || 'Not rated'}</span>
 											</div>
 										</div>
 
