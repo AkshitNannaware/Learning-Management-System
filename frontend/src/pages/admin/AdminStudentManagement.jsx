@@ -134,60 +134,132 @@ export default function StudentManagement() {
   const tenantId = localStorage.getItem('lms_tenant_id')
 
   const loadStudents = () =>
-    api('/lms/users?limit=300')
-      .then((res) => {
-        const rows = res.items || res || []
-        if (!Array.isArray(rows) || rows.length === 0) {
+    Promise.all([
+      api('/lms/users?role=student&limit=300'),
+      api('/lms/enrollments?limit=1000').catch(() => ({ items: [] })),
+      api('/lms/courses?limit=500').catch(() => ({ items: [] })),
+      api('/lms/public/courses?limit=500').catch(() => ({ items: [] })),
+      api('/lms/payments?limit=1000').catch(() => ({ items: [] })),
+      api('/lms/notifications?limit=1000').catch(() => ({ items: [] })),
+    ])
+      .then(([usersRes, enrollmentsRes, coursesRes, publicCoursesRes, paymentsRes, notificationsRes]) => {
+        const rows = Array.isArray(usersRes?.items) ? usersRes.items : Array.isArray(usersRes) ? usersRes : []
+        if (rows.length === 0) {
           setStudents([])
           return
         }
-        const mapped = rows.map((u, idx) => ({
-          role: (u.role || 'student').toLowerCase(),
-          id: u._id || `STU${String(idx + 1).padStart(3, '0')}`,
-          name: u.full_name || 'Student',
-          email: u.email || '',
-          phone: u.phone || '-',
-          address: u.address || '-',
-          avatar: ['#c7d2fe', '#fce7f3', '#d1fae5', '#fef3c7'][idx % 4],
-          enrollment: {
-            class: u.class || 'class-general',
-            className: u.class_name || (u.role ? String(u.role).replace('_', ' ').toUpperCase() : 'General Class'),
-            grade: u.grade || 'General',
-            section: u.section || 'A',
-            rollNumber: u.roll_number || '-',
-            enrollmentDate: u.created_at || new Date().toISOString(),
-            status: u.is_active ? 'active' : 'inactive',
-            paymentStatus: 'pending',
-          },
-          subscription: {
-            plan: 'Standard',
-            amount: 0,
-            billingCycle: 'monthly',
-            startDate: u.created_at || new Date().toISOString(),
-            endDate: new Date().toISOString(),
-            autoRenew: false,
-            status: 'active',
-          },
-          certificates: [],
-          bills: [],
-          progress: {
-            overall: 0,
-            subjects: [],
-            attendance: 0,
-            assignmentsCompleted: 0,
-            totalAssignments: 0,
-            averageQuizScore: 0,
-            teacherRemarks: [],
-            performanceHistory: [{ month: 'Now', score: 0 }],
-          },
-          parent: {
-            name: '-',
-            relation: '-',
-            phone: '-',
-            email: '-',
-          },
-          notes: [],
-        }))
+
+        const studentRows = rows.filter((u) => {
+          const role = String(u?.role || '').trim().toLowerCase().replace(/[-\s]+/g, '_')
+          return role === 'student' || role === 'learner' || role.includes('student')
+        })
+
+        const enrollments = Array.isArray(enrollmentsRes?.items) ? enrollmentsRes.items : []
+        const tenantCourses = Array.isArray(coursesRes?.items) ? coursesRes.items : []
+        const publicCourses = Array.isArray(publicCoursesRes?.items) ? publicCoursesRes.items : []
+        const payments = Array.isArray(paymentsRes?.items) ? paymentsRes.items : []
+        const notifications = Array.isArray(notificationsRes?.items) ? notificationsRes.items : []
+
+        const courseById = new Map()
+        ;[...tenantCourses, ...publicCourses].forEach((course) => {
+          const id = String(course?._id || course?.id || '').trim()
+          if (id && !courseById.has(id)) {
+            courseById.set(id, course)
+          }
+        })
+
+        const mapped = studentRows.map((u, idx) => {
+          const studentId = String(u?._id || '')
+          const studentEnrollments = enrollments.filter((e) => String(e?.student_id || '') === studentId)
+          const studentPayments = payments.filter((p) => String(p?.user_id || '') === studentId)
+          const studentNotes = notifications.filter((n) => String(n?.user_id || '') === studentId)
+
+          const courseTitles = studentEnrollments
+            .map((e) => courseById.get(String(e?.course_id || ''))?.title)
+            .filter(Boolean)
+
+          const totalAssignments = studentEnrollments.length
+          const completedAssignments = studentEnrollments.filter((e) => String(e?.status || '').toLowerCase() === 'completed').length
+          const overallProgress = totalAssignments > 0 ? Math.round((completedAssignments / totalAssignments) * 100) : 0
+
+          const latestPayment = [...studentPayments].sort(
+            (a, b) => new Date(b?.created_at || 0).getTime() - new Date(a?.created_at || 0).getTime(),
+          )[0]
+
+          const bills = studentPayments.map((payment) => ({
+            id: String(payment?._id || payment?.id || ''),
+            invoiceNumber: payment?.order_id || `INV-${String(payment?._id || '').slice(-6)}`,
+            date: payment?.created_at || new Date().toISOString(),
+            status: String(payment?.status || 'pending').toLowerCase(),
+            amount: Number(payment?.amount || 0),
+            items: [
+              {
+                description: payment?.enrollment_type === 'live_class' ? 'Live class enrollment' : 'Course enrollment',
+                amount: Number(payment?.amount || 0),
+              },
+            ],
+          }))
+
+          const notes = studentNotes.map((note) => ({
+            id: String(note?._id || note?.id || ''),
+            date: note?.created_at || new Date().toISOString(),
+            type: 'info',
+            content: note?.message || note?.title || 'Notification',
+          }))
+
+          return {
+            role: (u.role || 'student').toLowerCase(),
+            id: studentId || `STU${String(idx + 1).padStart(3, '0')}`,
+            name: u.full_name || 'Student',
+            email: u.email || '',
+            phone: u.phone || u.phone_number || u.mobile || '-',
+            address: u.address || '-',
+            avatar: ['#c7d2fe', '#fce7f3', '#d1fae5', '#fef3c7'][idx % 4],
+            enrollment: {
+              class: u.class || 'class-general',
+              className: courseTitles[0] || u.class_name || '-',
+              grade: u.grade || '-',
+              section: u.section || '-',
+              rollNumber: u.roll_number || '-',
+              enrollmentDate: studentEnrollments[0]?.created_at || u.created_at || new Date().toISOString(),
+              status: u.is_active ? 'active' : 'inactive',
+              paymentStatus: bills.some((b) => b.status === 'pending' || b.status === 'created') ? 'pending' : 'paid',
+            },
+            subscription: {
+              plan: latestPayment?.enrollment_type === 'live_class' ? 'Live Class' : 'Course',
+              amount: Number(latestPayment?.amount || 0),
+              billingCycle: 'one-time',
+              startDate: u.created_at || new Date().toISOString(),
+              endDate: latestPayment?.captured_at || latestPayment?.created_at || new Date().toISOString(),
+              autoRenew: false,
+              status: latestPayment?.status === 'captured' ? 'active' : 'active',
+            },
+            certificates: [],
+            bills,
+            progress: {
+              overall: overallProgress,
+              subjects: courseTitles.map((title) => ({ name: title, percentage: overallProgress })),
+              attendance: 0,
+              assignmentsCompleted: completedAssignments,
+              totalAssignments,
+              averageQuizScore: 0,
+              teacherRemarks: [],
+              performanceHistory: studentEnrollments
+                .slice(0, 6)
+                .map((e) => ({
+                  month: new Date(e?.created_at || Date.now()).toLocaleString('en-US', { month: 'short' }),
+                  score: 0,
+                })),
+            },
+            parent: {
+              name: '-',
+              relation: '-',
+              phone: '-',
+              email: '-',
+            },
+            notes,
+          }
+        })
         setStudents(mapped)
       })
       .catch(() => {})
@@ -318,6 +390,54 @@ export default function StudentManagement() {
     doc.save(`student-management-${new Date().toISOString().slice(0, 10)}.pdf`)
   }
 
+  const handleDownloadInvoice = (bill, student) => {
+    if (!bill || !student) return
+
+    const doc = new jsPDF()
+    const margin = 14
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(18)
+    doc.text('Invoice', margin, 18)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.text(`Invoice No: ${bill.invoiceNumber || '-'}`, margin, 28)
+    doc.text(`Date: ${bill.date ? new Date(bill.date).toLocaleDateString() : '-'}`, margin, 34)
+    doc.text(`Status: ${String(bill.status || '-').toUpperCase()}`, margin, 40)
+
+    doc.setFont('helvetica', 'bold')
+    doc.text('Bill To', margin, 52)
+    doc.setFont('helvetica', 'normal')
+    doc.text(student.name || '-', margin, 58)
+    doc.text(student.email || '-', margin, 64)
+    doc.text(student.phone || '-', margin, 70)
+
+    autoTable(doc, {
+      startY: 78,
+      head: [['Description', 'Amount']],
+      body: (bill.items || []).map((item) => [
+        item.description || 'Item',
+        `INR ${Number(item.amount || 0).toLocaleString()}`,
+      ]),
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [91, 61, 246], textColor: [255, 255, 255] },
+      columnStyles: {
+        0: { cellWidth: 130 },
+        1: { halign: 'right' },
+      },
+    })
+
+    const lastY = doc.lastAutoTable?.finalY || 90
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(12)
+    doc.text(`Total: INR ${Number(bill.amount || 0).toLocaleString()}`, margin, lastY + 12)
+
+    const safeInvoiceId = String(bill.invoiceNumber || bill.id || 'invoice').replace(/[^a-zA-Z0-9_-]/g, '_')
+    doc.save(`${safeInvoiceId}.pdf`)
+  }
+
   const bulkActions = [
     {
       key: 'payment-reminder',
@@ -406,7 +526,7 @@ export default function StudentManagement() {
           />
           <StatCard
             label="Avg. Progress"
-            value={`${Math.round(students.reduce((acc, s) => acc + s.progress.overall, 0) / students.length)}%`}
+            value={`${students.length ? Math.round(students.reduce((acc, s) => acc + s.progress.overall, 0) / students.length) : 0}%`}
             sub="across all students"
             subVariant="neutral"
             icon={<TrendingUp className="h-[18px] w-[18px] text-[#5b3df6]" />}
@@ -951,7 +1071,10 @@ export default function StudentManagement() {
                                 <span className="text-gray-900">₹{bill.amount.toLocaleString()}</span>
                               </div>
                               <div className="flex justify-end gap-2 mt-3">
-                                <button className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-50">
+                                <button
+                                  onClick={() => handleDownloadInvoice(bill, selectedStudent)}
+                                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-50"
+                                >
                                   <Download className="h-3 w-3 inline mr-1" />
                                   Invoice
                                 </button>

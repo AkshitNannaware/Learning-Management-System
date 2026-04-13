@@ -80,10 +80,10 @@ const getPageTitle = (pathname) => {
 
 const roleLabelMap = {
   super_admin: 'Super Admin',
-  admin: 'Institute Owner',
+  admin: 'Admin',
   sub_admin: 'Sub Admin',
-  instructor: 'Lead Instructor',
-  student: 'Learner',
+  instructor: 'Instructor',
+  student: 'Student',
 }
 
 const panelLabelMap = {

@@ -203,14 +203,19 @@ async def list_users(
     instructor_roles = {"instructor", "teacher", "faculty"}
 
     if tenant_id:
-        if role_value in instructor_roles:
-            # Instructor dropdowns should include globally created instructors too.
+        if role_value in instructor_roles or role_value == "student":
+            # Instructor and student lists should include globally created records too.
             filters.append({"$or": [{"tenant_id": tenant_id}, {"tenant_id": None}, {"tenant_id": {"$exists": False}}]})
         else:
             filters.append({"tenant_id": tenant_id})
 
     if role:
-        filters.append({"role": role})
+        if role_value == "student":
+            filters.append({"role": {"$in": ["student", "Student", "STUDENT", "learner", "Learner", "LEARNER"]}})
+        elif role_value == "sub_admin":
+            filters.append({"role": {"$in": ["sub_admin", "sub-admin", "Sub_Admin", "SUB_ADMIN", "SUB-ADMIN"]}})
+        else:
+            filters.append({"role": {"$in": [role, role.upper(), role.capitalize()]}})
 
     if q:
         filters.append({"$or": [{"full_name": {"$regex": q, "$options": "i"}}, {"email": {"$regex": q, "$options": "i"}}]})

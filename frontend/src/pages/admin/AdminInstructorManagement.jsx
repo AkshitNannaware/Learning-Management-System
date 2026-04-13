@@ -24,7 +24,6 @@ import {
   MessageSquare,
   Quote,
   Briefcase,
-  GraduationCap,
   Video,
   FileText,
   Settings,
@@ -99,162 +98,336 @@ function StatCard({ label, value, sub, subVariant, icon }) {
 }
 
 // View Instructor Modal Component
-function ViewInstructorModal({ instructor, onClose }) {
+function ViewInstructorModal({ instructor, courses = [], onClose }) {
+  const [activeTab, setActiveTab] = useState('overview')
+  const [liveCourses, setLiveCourses] = useState(Array.isArray(courses) ? courses : [])
+  const [liveClasses, setLiveClasses] = useState([])
+
+  useEffect(() => {
+    let isMounted = true
+
+    Promise.allSettled([
+      api('/lms/courses?limit=300'),
+      api('/lms/public/courses?limit=300'),
+      api('/lms/live-classes?limit=300'),
+    ])
+      .then((results) => {
+        const mergedCourses = []
+        const seenIds = new Set()
+        const liveClassesResponse = results[2]
+
+        results.forEach((result) => {
+          if (result === liveClassesResponse) {
+            return
+          }
+
+          const items = result.status === 'fulfilled'
+            ? (Array.isArray(result.value?.items)
+              ? result.value.items
+              : Array.isArray(result.value)
+                ? result.value
+                : [])
+            : []
+
+          items.forEach((course) => {
+            const courseId = String(course?._id || course?.id || '').trim()
+            if (courseId && !seenIds.has(courseId)) {
+              seenIds.add(courseId)
+              mergedCourses.push(course)
+            }
+          })
+        })
+
+        if (isMounted) {
+          setLiveCourses(mergedCourses.length > 0 ? mergedCourses : (Array.isArray(courses) ? courses : []))
+          const liveItems = liveClassesResponse.status === 'fulfilled'
+            ? (Array.isArray(liveClassesResponse.value?.items)
+              ? liveClassesResponse.value.items
+              : Array.isArray(liveClassesResponse.value)
+                ? liveClassesResponse.value
+                : [])
+            : []
+          setLiveClasses(liveItems)
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setLiveCourses(Array.isArray(courses) ? courses : [])
+          setLiveClasses([])
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [courses])
+
   if (!instructor) return null
 
-  const stats = [
-    { label: 'Total Students Taught', value: instructor.students_count || '0', change: '+12 this term', icon: Users },
-    { label: 'Active Batches', value: instructor.active_batches || '0', sub: 'hrs / week load', icon: Calendar },
-    { label: 'Average Rating', value: instructor.rating || '4.5', sub: 'Instructor rating', icon: Star },
-    { label: 'Attendance Rate', value: '98%', sub: 'Over last 30 days', icon: TrendingUp },
-  ]
-
-  const upcomingClasses = [
-    { title: 'STEM Explorers - Group A', time: 'Today, 4:00 PM (1h 30m)', students: '18 students • Grade 4-6', schedule: 'Mon, Wed' },
-    { title: 'STEM Explorers - Group B', time: 'Tomorrow, 4:00 PM (1h 30m)', students: '15 students • Grade 4-6', schedule: 'Tue, Thu' },
-  ]
-
-  const reviews = [
-    { name: 'Sara K.', daysAgo: '2 days ago', comment: '"Awesome! I wish I had this when I was in school!"', detail: '' },
-    { name: 'Michael T.', daysAgo: '1 week ago', comment: '"Very engaging classes. Clear instructions and fun projects."', detail: '' },
-  ]
-
-  const qualifications = instructor.expertise ? [instructor.expertise, 'Scratch Programming', 'Robotics Level 1 & 2'] : ['STEM Core', 'Scratch Programming', 'Robotics Level 1 & 2']
+  const tabs = ['overview', 'courses', 'live-classes', 'reviews', 'bank-details']
+  const instructorId = String(instructor._id || instructor.id || '').trim()
+  const instructorEmail = String(instructor.email || '').trim().toLowerCase()
+  const uploadedCourses = [...liveCourses]
+    .filter((course) => {
+      const createdBy = String(course?.created_by || course?.instructor_id || course?.owner_id || '').trim()
+      const createdByEmail = String(course?.created_by_email || course?.email || '').trim().toLowerCase()
+      return (instructorId && createdBy === instructorId) || (instructorEmail && createdByEmail === instructorEmail)
+    })
+    .sort((left, right) => new Date(right.created_at || right.updated_at || 0) - new Date(left.created_at || left.updated_at || 0))
+  const instructorLiveClasses = [...liveClasses]
+    .filter((session) => String(session?.instructor_id || '').trim() === instructorId && String(session?.status || '').toLowerCase() === 'live')
+    .sort((left, right) => new Date(left.start_at || 0) - new Date(right.start_at || 0))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-3 sm:p-4">
-      <div className="relative w-full max-w-[1200px] my-4 sm:my-8 mx-0 sm:mx-4 bg-white rounded-[16px] shadow-xl overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-black/[0.08] bg-white px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Avatar src={instructor.avatar} alt={instructor.full_name || instructor.email} className="h-10 w-10 rounded-full" />
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 sm:p-5">
+          <div className="flex items-center gap-4">
+            <Avatar src={instructor.avatar} alt={instructor.full_name || instructor.email} className="w-12 h-12 rounded-lg" />
             <div>
-              <h2 className="text-xl font-bold text-[#0f172a]">{instructor.full_name || instructor.email}</h2>
-              <p className="text-[13px] text-[#94a3b8]">{instructor.role || 'Instructor'}</p>
+              <h2 className="text-xl font-bold text-gray-900">{instructor.full_name || instructor.email}</h2>
+              <p className="text-sm text-gray-500">{instructor.email} • {instructor.role || 'Instructor'}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="h-5 w-5 text-[#94a3b8]" />
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100">
+            <X className="h-5 w-5 text-gray-400" />
           </button>
         </div>
 
-        <div className="max-h-[calc(100vh-120px)] overflow-y-auto p-4 sm:p-6">
-          {/* Stats Grid */}
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.map((stat, idx) => (
-              <div key={idx} className="border border-black/[0.08] rounded-[12px] p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <stat.icon className="h-5 w-5 text-[#5b3df6]" />
-                  <span className="text-[11px] text-[#94a3b8]">{stat.change || stat.sub}</span>
-                </div>
-                <div className="text-[28px] font-bold text-[#0f172a]">{stat.value}</div>
-                <div className="text-[12px] text-[#94a3b8] mt-1">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-            {/* Left Column - Upcoming Classes & Reviews */}
-            <div className="space-y-6 xl:col-span-2">
-              {/* Upcoming Classes */}
-              <div className="border border-black/[0.08] rounded-[12px] p-5">
-                <h3 className="text-[16px] font-semibold text-[#0f172a] mb-4">Upcoming Classes</h3>
-                <div className="space-y-4">
-                  {upcomingClasses.map((cls, idx) => (
-                    <div key={idx} className="flex items-start gap-3 pb-3 border-b border-black/[0.08] last:border-0">
-                      <div className="bg-[#ede7ff] rounded-[8px] p-2">
-                        <CalendarDays className="h-5 w-5 text-[#5b3df6]" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-[14px] text-[#0f172a]">{cls.title}</p>
-                        <p className="text-[12px] text-[#94a3b8] mt-1">{cls.time}</p>
-                        <div className="mt-1 flex flex-wrap gap-3 text-[11px] text-[#64748b]">
-                          <span>{cls.students}</span>
-                          <span>{cls.schedule}</span>
-                        </div>
-                      </div>
-                      <button className="text-[11px] font-medium text-[#5b3df6] hover:underline">Join</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recent Reviews */}
-              <div className="border border-black/[0.08] rounded-[12px] p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[16px] font-semibold text-[#0f172a]">Recent Reviews</h3>
-                  <button className="text-[12px] text-[#5b3df6] font-medium">View all</button>
-                </div>
-                <div className="space-y-4">
-                  {reviews.map((review, idx) => (
-                    <div key={idx} className="pb-3 border-b border-black/[0.08] last:border-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="bg-[#e8f5ff] rounded-full h-8 w-8 flex items-center justify-center">
-                          <span className="text-[12px] font-bold text-[#5b3df6]">{review.name[0]}</span>
-                        </div>
-                        <div>
-                          <p className="text-[13px] font-semibold text-[#0f172a]">{review.name}</p>
-                          <p className="text-[10px] text-[#94a3b8]">{review.daysAgo}</p>
-                        </div>
-                      </div>
-                      <p className="text-[13px] text-[#334155] italic">{review.comment}</p>
-                      {review.detail && <p className="text-[12px] text-[#64748b] mt-1">{review.detail}</p>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column - Qualifications & Institute Growth */}
-            <div className="space-y-6">
-              {/* Qualifications & Course Mapping */}
-              <div className="border border-black/[0.08] rounded-[12px] p-5">
-                <h3 className="text-[16px] font-semibold text-[#0f172a] mb-3">Qualifications & Course Mapping</h3>
-                <div className="space-y-2">
-                  {qualifications.map((qual, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <GraduationCap className="h-4 w-4 text-[#5b3df6]" />
-                      <span className="text-[13px] text-[#334155]">{qual}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Institute Growth */}
-              <div className="border border-black/[0.08] rounded-[12px] p-5">
-                <h3 className="text-[16px] font-semibold text-[#0f172a] mb-3">Institute growth</h3>
-                <p className="text-[12px] text-[#94a3b8] mb-2">Enrollment target progress for this month</p>
-                <div className="mb-2">
-                  <div className="flex justify-between text-[12px] text-[#334155] mb-1">
-                    <span>76% of monthly goal achieved</span>
-                    <span className="font-semibold text-[#5b3df6]">76%</span>
-                  </div>
-                  <div className="h-2 bg-[#e2e8f0] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#5b3df6] rounded-full" style={{ width: '76%' }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Job Postings / Notes */}
-              <div className="border border-black/[0.08] rounded-[12px] p-5 bg-[#fafcff]">
-                <div className="flex items-start gap-2">
-                  <Quote className="h-4 w-4 text-[#94a3b8] mt-0.5" />
-                  <p className="text-[12px] text-[#64748b] italic">
-                    "Excellent subject knowledge and classroom management. Students love the hands-on projects."
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Tabs */}
+        <div className="flex overflow-x-auto border-b border-gray-100 px-4 sm:px-5">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-3 text-sm font-medium capitalize transition-colors border-b-2 ${
+                activeTab === tab
+                  ? 'border-[#5b3df6] text-[#5b3df6]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
-        {/* Footer Actions */}
-        <div className="border-t border-black/[0.08] bg-[#fafcff] px-4 py-4 flex flex-col gap-3 sm:px-6 sm:flex-row sm:justify-end">
-          <button onClick={onClose} className="px-4 py-2 border border-black/[0.08] rounded-[6px] text-[13px] text-[#64748b] hover:bg-gray-50">
+        {/* Content */}
+        <div className="overflow-y-auto p-4 max-h-[calc(90vh-140px)] sm:p-5">
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Personal Information</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Mail className="h-4 w-4" />
+                      <span>{instructor.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Phone className="h-4 w-4" />
+                      <span>{instructor.phone || '-'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Briefcase className="h-4 w-4" />
+                      <span>{instructor.expertise || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Teaching Profile</h3>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-gray-600">Status: <span className="font-medium text-gray-900">{instructor.status}</span></p>
+                    <p className="text-gray-600">Teaching Load: <span className="font-medium text-gray-900">{instructor.load}</span></p>
+                    <p className="text-gray-600">Course: <span className="font-medium text-gray-900">{instructor.course || '-'}</span></p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4">
+                <h3 className="font-semibold text-gray-900 mb-3">Teaching Stats</h3>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500">Total Students Taught</p>
+                    <p className="text-sm font-medium mt-1">{instructor.students_count ?? '-'}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500">Active Batches</p>
+                    <p className="text-sm font-medium mt-1">{instructor.active_batches ?? '-'}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500">Average Rating</p>
+                    <p className="text-sm font-medium mt-1">{instructor.rating ?? '-'}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500">Status</p>
+                    <div className="mt-1"><Pill variant={instructor.statusVariant}>{instructor.status}</Pill></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'courses' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-semibold text-gray-900">Uploaded Courses</h3>
+                <span className="rounded-full bg-[#f0f4f8] px-3 py-1 text-[11px] font-medium text-[#64748b]">
+                  {uploadedCourses.length} total
+                </span>
+              </div>
+              {uploadedCourses.length === 0 ? (
+                <div className="text-center py-8">
+                  <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-400">No uploaded courses found</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {uploadedCourses.map((course) => (
+                    <div key={course._id || course.id} className="rounded-lg border border-gray-200 p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-900">{course.title || 'Untitled course'}</p>
+                          <p className="mt-1 text-sm text-gray-500">
+                            {course.description || 'No description available'}
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-gray-600">
+                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1">
+                              {course.course_type || 'course'}
+                            </span>
+                            <span className="inline-flex items-center rounded-full bg-[#e8f5ff] px-2.5 py-1 text-[#2563eb]">
+                              {course.students_count || 0} students enrolled
+                            </span>
+                            <span className="inline-flex items-center rounded-full bg-[#ede7ff] px-2.5 py-1 text-[#5b3df6]">
+                              {course.price ? `₹${Number(course.price).toLocaleString()}` : 'Free'}
+                            </span>
+                          </div>
+                        </div>
+                        {course.youtube_url && (
+                          <a
+                            href={course.youtube_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-50"
+                          >
+                            View source
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'live-classes' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-semibold text-gray-900">Active Live Classes</h3>
+                <span className="rounded-full bg-[#f0f4f8] px-3 py-1 text-[11px] font-medium text-[#64748b]">
+                  {instructorLiveClasses.length} total
+                </span>
+              </div>
+              {instructorLiveClasses.length === 0 ? (
+                <div className="text-center py-8">
+                  <Video className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-400">No live classes found for this instructor</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {instructorLiveClasses.map((session) => {
+                    const startLabel = session.start_at ? new Date(session.start_at).toLocaleString() : 'No schedule'
+                    const status = String(session.status || 'upcoming').toLowerCase()
+                    const attendees = Array.isArray(session.attendee_ids) ? session.attendee_ids.length : 0
+
+                    return (
+                      <div key={session._id || session.id} className="rounded-lg border border-gray-200 p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-gray-900">{session.title || 'Untitled live class'}</p>
+                            <p className="mt-1 text-sm text-gray-500">{session.description || 'No description available'}</p>
+                            <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-gray-600">
+                              <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1">
+                                {startLabel}
+                              </span>
+                              <span className="inline-flex items-center rounded-full bg-[#e8f5ff] px-2.5 py-1 text-[#2563eb]">
+                                {session.duration_minutes || 60} mins
+                              </span>
+                              <span className="inline-flex items-center rounded-full bg-[#ede7ff] px-2.5 py-1 text-[#5b3df6]">
+                                {attendees} attendees
+                              </span>
+                              <span className="inline-flex items-center rounded-full bg-[#f0f4f8] px-2.5 py-1 text-[#64748b]">
+                                {status}
+                              </span>
+                            </div>
+                          </div>
+                          {session.join_url && (
+                            <a
+                              href={session.join_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-50"
+                            >
+                              Join
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'reviews' && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-900">Student Reviews</h3>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
+                <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">No real review data is available yet for this instructor.</p>
+                <p className="mt-1 text-xs text-gray-400">Reviews will appear here once the backend starts storing student feedback.</p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'bank-details' && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-900">Bank Details</h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border border-gray-200 p-3">
+                  <p className="text-xs text-gray-500">Account holder name</p>
+                  <p className="mt-1 text-sm font-medium text-gray-900">{instructor.bank_account_holder || '-'}</p>
+                </div>
+                <div className="rounded-lg border border-gray-200 p-3">
+                  <p className="text-xs text-gray-500">Bank name</p>
+                  <p className="mt-1 text-sm font-medium text-gray-900">{instructor.bank_name || '-'}</p>
+                </div>
+                <div className="rounded-lg border border-gray-200 p-3">
+                  <p className="text-xs text-gray-500">Account number</p>
+                  <p className="mt-1 text-sm font-medium text-gray-900">{instructor.bank_account_number || '-'}</p>
+                </div>
+                <div className="rounded-lg border border-gray-200 p-3">
+                  <p className="text-xs text-gray-500">IFSC</p>
+                  <p className="mt-1 text-sm font-medium text-gray-900">{instructor.bank_ifsc || '-'}</p>
+                </div>
+                <div className="rounded-lg border border-gray-200 p-3 sm:col-span-2">
+                  <p className="text-xs text-gray-500">UPI ID</p>
+                  <p className="mt-1 text-sm font-medium text-gray-900">{instructor.bank_upi_id || '-'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-100 bg-gray-50 px-4 py-3 flex flex-col gap-3 sm:px-5 sm:flex-row sm:justify-end">
+          <button onClick={onClose} className="px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">
             Close
           </button>
-          <button className="px-4 py-2 bg-[#5b3df6] text-white text-[13px] font-semibold rounded-[6px] hover:bg-[#4a2ed8]">
-            Schedule Meeting
+          <button className="px-4 py-2 bg-[#5b3df6] text-white text-sm font-medium rounded-lg hover:bg-[#4a2ed8]">
+            Send Message
           </button>
         </div>
       </div>
@@ -268,7 +441,7 @@ function AssignCourseModal({ instructor, onClose, onAssign, availableCourses }) 
   const [selectedBatch, setSelectedBatch] = useState('')
   const [teachingRole, setTeachingRole] = useState('primary')
   const [note, setNote] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading] = useState(false)
 
   const courses = availableCourses || [
     { id: 1, name: 'Creative English Level 1', hours: 4.5, level: 'Beginner', learners: 58 },
@@ -859,6 +1032,7 @@ function CreateInstructorModal({ onClose, onCreate }) {
 
 export default function AdminInstructorManagement() {
   const [instructors, setInstructors] = useState([])
+  const [courses, setCourses] = useState([])
   const [activeFilter, setActiveFilter] = useState('All instructors')
   const [directorySearch, setDirectorySearch] = useState('')
   const [selectedAssignInstructor, setSelectedAssignInstructor] = useState(null)
@@ -876,8 +1050,12 @@ export default function AdminInstructorManagement() {
     try {
       setLoading(true)
       setError('')
-      const response = await api('/lms/users?role=instructor&limit=200')
-      const users = response.items || []
+      const [userResponse, courseResponse] = await Promise.all([
+        api('/lms/users?role=instructor&limit=200'),
+        api('/lms/courses?limit=300'),
+      ])
+      const users = userResponse.items || []
+      const allCourses = courseResponse.items || []
       
       // Transform API data to match UI format
       const formattedInstructors = users.map(user => ({
@@ -887,23 +1065,30 @@ export default function AdminInstructorManagement() {
         email: user.email,
         is_active: user.is_active,
         role: 'Instructor',
-        course: user.assigned_course || 'Not assigned',
-        courseSub: user.expertise || 'Ready for assignment',
+        course: user.assigned_course || '',
+        courseSub: user.expertise || '',
         load: user.weekly_load ? `${user.weekly_load} hrs / week` : '0 hrs / week',
         capacity: user.capacity || 'Capacity open',
         status: user.is_active ? 'Active' : 'Inactive',
         statusVariant: user.is_active ? 'success' : 'secondary',
         avatar: user.avatar_url,
         expertise: user.expertise,
+        bank_account_holder: user.bank_account_holder || '',
+        bank_name: user.bank_name || '',
+        bank_account_number: user.bank_account_number || '',
+        bank_ifsc: user.bank_ifsc || '',
+        bank_upi_id: user.bank_upi_id || '',
         students_count: user.students_count || 0,
         active_batches: user.active_batches || 0,
-        rating: user.rating || '4.5',
+        rating: user.rating ?? null,
       }))
       
       setInstructors(formattedInstructors)
+      setCourses(allCourses)
     } catch (err) {
       setError(err?.message || 'Unable to load instructors.')
       setInstructors([])
+      setCourses([])
     } finally {
       setLoading(false)
     }
@@ -1199,7 +1384,6 @@ export default function AdminInstructorManagement() {
                             className="inline-flex h-9 items-center gap-2 rounded-[6px] border border-black/[0.08] bg-white px-3 text-[12px] font-medium text-[#0f172a] hover:bg-gray-50"
                           >
                             <Eye className="h-4 w-4" />
-                            View
                           </button>
                           <button
                             type="button"
@@ -1251,6 +1435,7 @@ export default function AdminInstructorManagement() {
     {showViewModal && selectedViewInstructor && (
       <ViewInstructorModal
         instructor={selectedViewInstructor}
+        courses={courses}
         onClose={() => {
           setShowViewModal(false)
           setSelectedViewInstructor(null)

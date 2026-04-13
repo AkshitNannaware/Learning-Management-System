@@ -26,6 +26,11 @@ class ProfileUpdateIn(BaseModel):
     mobile: str | None = None
     phone_number: str | None = None
     profile_image_url: str | None = None
+    bank_account_holder: str | None = None
+    bank_name: str | None = None
+    bank_account_number: str | None = None
+    bank_ifsc: str | None = None
+    bank_upi_id: str | None = None
 
 
 def email_match_query(email: str) -> dict:
