@@ -59,13 +59,13 @@ export default function Notification() {
             <div className="max-w-[760px]">
               <span className="inline-flex items-center gap-1.5 rounded-[999px] border border-[#e7e1ff] bg-[#f6f2ff] px-3 py-1 text-[11px] font-semibold text-[#5b3df6]">
                 <Sparkles className="h-3.5 w-3.5" />
-                Admin notifications
+                Platform notifications
               </span>
               <h2 className="mt-3 max-w-[760px] text-[34px] font-black leading-[1.02] tracking-[-0.04em] text-[#0f172a] sm:text-[42px] lg:text-[48px]">
-                Track tenant updates, approvals, and school operations in one place.
+                Monitor tenants, admins, and platform-wide events from one feed.
               </h2>
               <p className="mt-3 max-w-[860px] text-[13px] leading-6 text-[#64748b] sm:text-[14px]">
-                Review operational alerts, student activity, course events, and payment updates for your institute.
+                Use this inbox for system alerts, tenant activity, revenue events, and operational notices.
               </p>
             </div>
 

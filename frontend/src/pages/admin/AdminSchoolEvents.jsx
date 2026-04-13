@@ -19,7 +19,7 @@ function Pill({ children, variant = 'neutral' }) {
 function parseEventMeta(event) {
   const description = String(event?.description || '')
   const pick = (label) => {
-    const match = description.match(new RegExp(`${label}:\s*(.+)`, 'i'))
+    const match = description.match(new RegExp(`${label}:\\s*(.+)`, 'i'))
     return match?.[1]?.split('\n')?.[0]?.trim() || ''
   }
 
@@ -45,6 +45,7 @@ function formatEventDate(event) {
 export default function AdminSchoolEvents() {
   const tenantId = localStorage.getItem('lms_tenant_id')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState(null)
   const [loading, setLoading] = useState(false)
   const [createBusy, setCreateBusy] = useState(false)
   const [error, setError] = useState('')
@@ -167,6 +168,10 @@ export default function AdminSchoolEvents() {
     }
   }
 
+  const handleViewEvent = (event) => {
+    setSelectedEvent(event || null)
+  }
+
   return (
     <div className="min-h-full bg-[#F7FAFD]">
       <div className="bg-gradient-to-b flex h-full flex-col gap-[24px] from-[#f6f8fa] p-4 to-[#f7fcff] sm:p-6 lg:p-7">
@@ -286,7 +291,10 @@ export default function AdminSchoolEvents() {
                       </div>
                       <div className="flex-shrink-0 sm:ml-4 flex gap-2">
                         <Pill variant="accent">{meta.category}</Pill>
-                        <button className="inline-flex items-center h-[36px] px-[12px] rounded-[6px] text-[13px] font-medium bg-white text-[#0f172a] border border-black/[0.08] hover:bg-[#f1f5f9] transition-colors cursor-pointer whitespace-nowrap">
+                        <button
+                          onClick={() => handleViewEvent(event)}
+                          className="inline-flex items-center h-[36px] px-[12px] rounded-[6px] text-[13px] font-medium bg-white text-[#0f172a] border border-black/[0.08] hover:bg-[#f1f5f9] transition-colors cursor-pointer whitespace-nowrap"
+                        >
                           View
                         </button>
                       </div>
@@ -508,6 +516,74 @@ export default function AdminSchoolEvents() {
               >
                 {createBusy ? 'Creating...' : 'Create Event'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-[640px] max-h-[90vh] overflow-y-auto rounded-[10px] bg-white shadow-xl">
+            <div className="sticky top-0 z-10 flex items-start justify-between border-b border-black/[0.08] bg-white p-5">
+              <div>
+                <h2 className="text-[22px] font-bold text-[#0f172a]">{selectedEvent.title || 'Event details'}</h2>
+                <p className="mt-1 text-[12px] text-[#94a3b8]">Review complete event information</p>
+              </div>
+              <button
+                onClick={() => setSelectedEvent(null)}
+                className="rounded-md p-1 text-[#94a3b8] hover:bg-[#f8fafc]"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 p-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill variant="accent">{parseEventMeta(selectedEvent).category}</Pill>
+                <Pill variant="success">{formatEventDate(selectedEvent).dateLabel}</Pill>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="rounded-[8px] border border-black/[0.08] p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">Time</div>
+                  <div className="mt-1 flex items-center gap-2 text-[14px] text-[#0f172a]">
+                    <Clock className="h-4 w-4 text-[#5b3df6]" />
+                    {formatEventDate(selectedEvent).timeLabel}
+                  </div>
+                </div>
+                <div className="rounded-[8px] border border-black/[0.08] p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">Venue</div>
+                  <div className="mt-1 flex items-center gap-2 text-[14px] text-[#0f172a]">
+                    <MapPin className="h-4 w-4 text-[#5b3df6]" />
+                    {parseEventMeta(selectedEvent).venue}
+                  </div>
+                </div>
+                <div className="rounded-[8px] border border-black/[0.08] p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">Coordinator</div>
+                  <div className="mt-1 flex items-center gap-2 text-[14px] text-[#0f172a]">
+                    <CheckCircle className="h-4 w-4 text-[#2dd4bf]" />
+                    {parseEventMeta(selectedEvent).coordinator}
+                  </div>
+                </div>
+                <div className="rounded-[8px] border border-black/[0.08] p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">Expected attendees</div>
+                  <div className="mt-1 flex items-center gap-2 text-[14px] text-[#0f172a]">
+                    <Users className="h-4 w-4 text-[#5b3df6]" />
+                    {parseEventMeta(selectedEvent).expectedAttendees || 'TBA'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[8px] border border-black/[0.08] p-4">
+                <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">
+                  <FileText className="h-4 w-4" />
+                  Event description
+                </div>
+                <p className="whitespace-pre-line text-[13px] text-[#334155]">
+                  {selectedEvent.description || 'No description available for this event.'}
+                </p>
+              </div>
             </div>
           </div>
         </div>

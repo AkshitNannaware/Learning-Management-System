@@ -38,6 +38,7 @@ const getPageTitle = (pathname) => {
   if (pathname === '/superadmin/reports') return 'Reports'
   if (pathname === '/superadmin/plans-billing') return 'Plans & Billing'
   if (pathname === '/superadmin/platform-settings') return 'Platform Settings'
+  if (pathname === '/superadmin/notifications') return 'Notifications'
   if (pathname === '/superadmin/profile') return 'Super Admin Profile'
 
   // Admin routes
@@ -50,7 +51,7 @@ const getPageTitle = (pathname) => {
   if (pathname === '/admin/e-library') return 'E-Library'
   if (pathname === '/admin/subscription') return 'Subscriptions'
   if (pathname === '/admin/analytics') return 'Analytics'
-  if (pathname === '/admin/notification') return 'Notifications'
+  if (pathname === '/admin/notifications') return 'Notifications'
   if (pathname === '/admin/profile') return 'Admin Profile'
 
   // Instructor routes
@@ -61,6 +62,7 @@ const getPageTitle = (pathname) => {
   if (pathname === '/instructor/school-events') return 'School Events'
   if (pathname === '/instructor/student-insights') return 'Student Insights'
   if (pathname === '/instructor/analytics') return 'Analytics'
+  if (pathname === '/instructor/notifications') return 'Notifications'
   if (pathname === '/instructor/profile') return 'Instructor Profile'
 
   // Student routes
@@ -73,6 +75,7 @@ const getPageTitle = (pathname) => {
   if (pathname === '/student-panel/e-library') return 'E-Library'
   if (pathname === '/student-panel/live-classes') return 'Live Classes'
   if (pathname === '/student-panel/certificates') return 'Certificates'
+  if (pathname === '/student-panel/notifications') return 'Notifications'
 
   // Default fallback
   return 'Dashboard'
@@ -131,14 +134,19 @@ export default function HeaderPanel({ onMenuToggle }) {
 
   let profilePath = '/profile'
   let notificationPath = ''
-  if (resolvedRole === 'super_admin') profilePath = '/superadmin/profile'
+  if (resolvedRole === 'super_admin') {
+    profilePath = '/superadmin/profile'
+    notificationPath = '/superadmin/notifications'
+  }
   else if (resolvedRole === 'admin' || resolvedRole === 'sub_admin') {
     profilePath = '/admin/profile'
-    notificationPath = '/admin/notification'
+    notificationPath = '/admin/notifications'
   } else if (resolvedRole === 'instructor') {
     profilePath = '/instructor/profile'
+    notificationPath = '/instructor/notifications'
   } else if (resolvedRole === 'student') {
     profilePath = '/student-panel/profile'
+    notificationPath = '/student-panel/notifications'
   }
 
   useEffect(() => {
@@ -155,8 +163,6 @@ export default function HeaderPanel({ onMenuToggle }) {
 
     if (localStorage.getItem('lms_token')) {
       loadCurrentUser()
-    } else {
-      setCurrentUser(null)
     }
 
     return () => {

@@ -25,6 +25,7 @@ import SuperAdminReports from './pages/super admin/SuperAdminReports'
 import SuperAdminPlansBilling from './pages/super admin/SuperAdminPlansBilling'
 import SuperAdminSettings from './pages/super admin/SuperAdminSettings'
 import SuperAdminProfile from './pages/super admin/SuperAdminProfile'
+import SuperAdminNotification from './pages/super admin/SuperAdminNotification'
 import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminCourseManagement from './pages/admin/AdminCourseManagement'
@@ -45,6 +46,7 @@ import InstructorOnlineClasses from './pages/instructor/InstructorOnlineClasses'
 import InstructorWeeklyTest from './pages/instructor/InstructorWeeklyTest'
 import InstructorStudentInsights from './pages/instructor/InstructorStudentInsights'
 import InstructorProfile from './pages/instructor/InstructorProfile'
+import InstructorNotification from './pages/instructor/InstructorNotification'
 import StudentLayout from './components/student/StudentLayout'
 import StudentDashboard from './pages/student panel/StudentDashboard'
 import StudentContinueLearning from './pages/student panel/StudentContinueLearning'
@@ -54,6 +56,7 @@ import StudentELibrary from './pages/student panel/StudentELibrary'
 import StudentLiveClasses from './pages/student panel/StudentLiveClasses'
 import StudentCertificates from './pages/student panel/StudentCertificates'
 import StudentProfile from './pages/student panel/StudentProfile'
+import StudentNotification from './pages/student panel/StudentNotification'
 
 function ProtectedPanel({ children, allowedRoles = [] }) {
   const token = localStorage.getItem('lms_token')
@@ -100,6 +103,7 @@ function App() {
           <Route path="reports" element={<SuperAdminReports />} />
           <Route path="plans-billing" element={<SuperAdminPlansBilling />} />
           <Route path="platform-settings" element={<SuperAdminSettings />} />
+          <Route path="notifications" element={<SuperAdminNotification />} />
           <Route path="profile" element={<SuperAdminProfile />} />
         </Route>
         <Route path="/admin" element={<ProtectedPanel allowedRoles={['admin', 'sub_admin']}><AdminLayout /></ProtectedPanel>}>
@@ -114,7 +118,8 @@ function App() {
           <Route path="e-library" element={<AdminELibrary />} />
           <Route path="subscription" element={<AdminSubscription />} />
           <Route path="analytics" element={<AdminAnalytics />} />
-          <Route path="notification" element={<AdminNotification />} />
+          <Route path="notification" element={<Navigate to="notifications" replace />} />
+          <Route path="notifications" element={<AdminNotification />} />
           <Route path="profile" element={<AdminProfile />} />
         </Route>
         <Route path="/instructor" element={<ProtectedPanel allowedRoles={['instructor']}><InstructorLayout /></ProtectedPanel>}>
@@ -124,6 +129,7 @@ function App() {
           <Route path="online-classes" element={<InstructorOnlineClasses />} />
           <Route path="weekly-tests" element={<InstructorWeeklyTest />} />
           <Route path="student-insights" element={<InstructorStudentInsights />} />
+          <Route path="notifications" element={<InstructorNotification />} />
           <Route path="profile" element={<InstructorProfile />} />
         </Route>
         <Route path="/student-panel" element={<ProtectedPanel allowedRoles={['student']}><StudentLayout /></ProtectedPanel>}>
@@ -135,6 +141,7 @@ function App() {
           <Route path="e-library" element={<StudentELibrary />} />
           <Route path="live-classes" element={<StudentLiveClasses />} />
           <Route path="certificates" element={<StudentCertificates />} />
+          <Route path="notifications" element={<StudentNotification />} />
           <Route path="profile" element={<StudentProfile />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
