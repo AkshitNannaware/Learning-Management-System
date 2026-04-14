@@ -27,8 +27,8 @@ const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000
 
 const LIVE_SUBSCRIPTION_TEMPLATES = [
   { key: 'demo', name: 'Demo', period: 'Demo', defaultFactor: 0.1 },
-  { key: 'half', name: 'Half', period: 'Half (half course complete hone tak)', defaultFactor: 0.5 },
-  { key: 'full', name: 'Full', period: 'Full (full course complete hone tak)', defaultFactor: 1 },
+  { key: 'half', name: 'Half', period: 'Half (until half of the course is completed)', defaultFactor: 0.5 },
+  { key: 'full', name: 'Full', period: 'Full (until the full course is completed)', defaultFactor: 1 },
 ]
 
 function normalizePlanKey(name) {
@@ -38,6 +38,28 @@ function normalizePlanKey(name) {
   if (normalized.includes('half')) return 'half'
   if (normalized.includes('full')) return 'full'
   return ''
+}
+
+function normalizePlanPeriodText(value, key, fallback) {
+  const raw = String(value || '').trim()
+  if (!raw) return fallback
+
+  const lower = raw.toLowerCase()
+  if (lower.includes('half course complete hone tak')) {
+    return 'Half (until half of the course is completed)'
+  }
+  if (lower.includes('full course complete hone tak')) {
+    return 'Full (until the full course is completed)'
+  }
+
+  if (key === 'half' && lower === 'half') {
+    return 'Half (until half of the course is completed)'
+  }
+  if (key === 'full' && lower === 'full') {
+    return 'Full (until the full course is completed)'
+  }
+
+  return raw
 }
 
 function buildLiveSubscriptionPlans(rawPlans, classAmountValue) {
@@ -64,7 +86,7 @@ function buildLiveSubscriptionPlans(rawPlans, classAmountValue) {
       id: source?.id || source?._id || template.key,
       key: template.key,
       name: source?.name || template.name,
-      period: source?.period || source?.billing_period || template.period,
+      period: normalizePlanPeriodText(source?.period || source?.billing_period, template.key, template.period),
       price: computedAmount,
       factor,
     }
@@ -325,7 +347,7 @@ function EnrollmentModal({ session, plans, me, onClose, onSuccess }) {
 
               {/* What you get */}
               <div>
-                <p className="text-[12px] font-semibold text-[#0f172a] mb-2">Is class mein kya milega:</p>
+                <p className="text-[12px] font-semibold text-[#0f172a] mb-2">What will You get in this class ?</p>
                 <div className="space-y-1.5">
                   {[
                     'Live interactive session with instructor',
@@ -1037,4 +1059,3 @@ export default function StudentLiveClasses() {
     </div>
   )
 }
-
