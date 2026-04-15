@@ -28,6 +28,7 @@ const nav = [
   { to: '/admin/e-library', label: 'E-Library', icon: Library },
   { to: '/admin/subscription', label: 'Subscriptions', icon: BadgePercent },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+  { to: '/admin/inquire', label: 'Inquire', icon: Users },
 ]
 
 export default function AdminLayout() {

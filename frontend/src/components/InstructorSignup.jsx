@@ -12,6 +12,7 @@ export default function InstructorSignup() {
     fullName: '',
     email: '',
     expertise: '',
+    phone: '',
     password: '',
     confirmPassword: '',
     agreeToTerms: false,
@@ -80,7 +81,7 @@ export default function InstructorSignup() {
         }
       }
       setAuthSession(data.access_token, data.role, data.tenant_id)
-      navigate(getDashboardPathByRole(data.role))
+      navigate('/login')
     } catch (err) {
       setError(err.message || 'Instructor signup failed')
     } finally {

@@ -76,6 +76,7 @@ export default function AdminSignup() {
             password: formData.password,
             role: 'admin',
             tenant_id: buildTenantId(formData.instituteName),
+            phone,
           }),
         })
       } catch (registerErr) {
@@ -92,7 +93,7 @@ export default function AdminSignup() {
         }
       }
       setAuthSession(data.access_token, data.role, data.tenant_id)
-      navigate(getDashboardPathByRole(data.role))
+      navigate('/login')
     } catch (err) {
       setError(err.message || 'Admin signup failed')
     } finally {

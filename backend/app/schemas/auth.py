@@ -13,6 +13,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=8, max_length=72)
     role: Role
     tenant_id: str | None = None
+    phone: str | None = None
 
 
 class TokenResponse(BaseModel):

@@ -10,7 +10,7 @@ from app.db.mongo import connect_db, close_db, ensure_indexes
 from app.routers.auth import router as auth_router
 from app.routers.lms import router as lms_router
 from app.routers.ws import router as ws_router
-from app.routers import instructor, admin as admin_router
+from app.routers import instructor, admin as admin_router, inquire as inquire_router
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -65,3 +65,4 @@ app.include_router(lms_router, prefix=settings.api_prefix)
 app.include_router(ws_router)
 app.include_router(instructor.router, prefix=settings.api_prefix)
 app.include_router(admin_router.router, prefix=settings.api_prefix)
+app.include_router(inquire_router.router, prefix=settings.api_prefix)

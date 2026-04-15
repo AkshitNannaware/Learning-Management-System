@@ -72,7 +72,7 @@ export default function SuperAdminSignup() {
         }),
       })
       setAuthSession(data.access_token, data.role, data.tenant_id)
-      navigate(getDashboardPathByRole(data.role))
+      navigate('/login')
     } catch (err) {
       if (isDuplicateEmailError(err)) {
         setError('An account already exists for this email. Please sign in instead.')

@@ -147,7 +147,7 @@ export default (props) => {
         },
     };
 
-    const handleNewsletterSubmit = (e) => {
+    const handleNewsletterSubmit = async (e) => {
         e.preventDefault();
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(newsletterEmail)) {
@@ -155,9 +155,24 @@ export default (props) => {
             return;
         }
         setNewsletterSubmitted(true);
-        setNewsletterMessage("Thank you for subscribing! You'll receive updates soon.");
-        console.log("Newsletter subscribed:", newsletterEmail);
-        setNewsletterEmail("");
+        try {
+            const res = await fetch(
+                `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/inquire/newsletter`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: newsletterEmail }),
+                }
+            );
+            if (res.ok) {
+                setNewsletterMessage("Thank you for subscribing! You'll receive updates soon.");
+                setNewsletterEmail("");
+            } else {
+                setNewsletterMessage("Failed to subscribe. Please try again later.");
+            }
+        } catch (err) {
+            setNewsletterMessage("Failed to subscribe. Please try again later.");
+        }
         setTimeout(() => {
             setNewsletterMessage("");
             setNewsletterSubmitted(false);

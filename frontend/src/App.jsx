@@ -58,6 +58,7 @@ import StudentLiveClasses from './pages/student panel/StudentLiveClasses'
 import StudentCertificates from './pages/student panel/StudentCertificates'
 import StudentProfile from './pages/student panel/StudentProfile'
 import StudentNotification from './pages/student panel/StudentNotification'
+import Inquire from './pages/admin/AdminInquire'
 
 function ProtectedPanel({ children, allowedRoles = [] }) {
   const token = localStorage.getItem('lms_token')
@@ -91,8 +92,7 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/terms-and-conditions" element={<TermsAndCondition />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/refund-policy" element={<RefundPolicy />} />
-        </Route>
+          <Route path="/refund-policy" element={<RefundPolicy />} />        </Route>
         <Route path="/superadmin-signup" element={<SuperAdminSignup />} />
         <Route path="/admin-signup" element={<AdminSignup />} />
         <Route path="/instructor-signup" element={<InstructorSignup />} />
@@ -123,6 +123,7 @@ function App() {
           <Route path="notification" element={<Navigate to="notifications" replace />} />
           <Route path="notifications" element={<AdminNotification />} />
           <Route path="profile" element={<AdminProfile />} />
+          <Route path="inquire" element={<Inquire />} />
         </Route>
         <Route path="/instructor" element={<ProtectedPanel allowedRoles={['instructor']}><InstructorLayout /></ProtectedPanel>}>
           <Route index element={<InstructorDashboard />} />

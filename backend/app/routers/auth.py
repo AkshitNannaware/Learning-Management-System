@@ -56,6 +56,8 @@ async def register(payload: RegisterRequest):
         "is_active": True,
         "created_at": datetime.now(timezone.utc),
     }
+    if getattr(payload, "phone", None):
+        user["phone"] = payload.phone
     res = await mongo.db.users.insert_one(user)
     token = create_access_token(
         {"sub": str(res.inserted_id), "role": payload.role.value, "tenant_id": payload.tenant_id}

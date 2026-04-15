@@ -42,27 +42,41 @@ export default (props) => {
                       isClassValid && isSubjectValid && isBoardValid && isAddressValid && 
                       isPincodeValid && isParentsMobileValid && isMessageValid;
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     setSubmitted(true);
     if (isFormValid) {
-      console.log('Contact form submitted:', formData);
-      alert('Thank you for contacting us! We will get back to you soon.');
-      // Reset form after successful submission
-      setFormData({
-        fullName: '',
-        email: '',
-        phone: '',
-        schoolName: '',
-        class: '',
-        subject: '',
-        board: '',
-        address: '',
-        pincode: '',
-        parentsMobile: '',
-        message: ''
-      });
-      setSubmitted(false);
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/inquire/contact`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+          }
+        );
+        if (res.ok) {
+          alert('Thank you for contacting us! We will get back to you soon.');
+          setFormData({
+            fullName: '',
+            email: '',
+            phone: '',
+            schoolName: '',
+            class: '',
+            subject: '',
+            board: '',
+            address: '',
+            pincode: '',
+            parentsMobile: '',
+            message: ''
+          });
+          setSubmitted(false);
+        } else {
+          alert('Failed to submit inquiry. Please try again later.');
+        }
+      } catch (err) {
+        alert('Failed to submit inquiry. Please try again later.');
+      }
     }
   };
 

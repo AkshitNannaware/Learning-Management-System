@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { api, getDashboardPathByRole, setAuthSession } from '../lib/api'
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
@@ -10,12 +11,13 @@ export default function SignUp() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  const [institutionCode, setInstitutionCode] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const isEmailValid = EMAIL_REGEX.test(email)
   const isPhoneValid = PHONE_REGEX.test(phone)
@@ -35,11 +37,11 @@ export default function SignUp() {
           email,
           password,
           role: 'student',
-          ...(institutionCode.trim() ? { tenant_id: institutionCode.trim() } : {}),
+          phone,
         }),
       })
-      setAuthSession(data.access_token, data.role, data.tenant_id)
-      navigate(getDashboardPathByRole(data.role))
+      // setAuthSession(data.access_token, data.role, data.tenant_id)
+      navigate('/login')
     } catch (err) {
       setError(err.message || 'Signup failed')
     } finally {
@@ -141,40 +143,50 @@ export default function SignUp() {
                   )}
                 </label>
 
-                <label className="flex flex-col gap-2">
-                  <span className="text-[#111b2f] text-sm font-semibold">
-                    Institution Code <span className="text-slate-500 font-normal">(optional)</span>
-                  </span>
-                  <input 
-                    value={institutionCode}
-                    onChange={(event) => setInstitutionCode(event.target.value)}
-                    className="border border-gray-200 rounded-md p-3.5 text-sm text-[#111b2f] outline-none transition-all focus:border-[#0b8276] focus:ring-2 focus:ring-[#0b8276]/20" 
-                    type="text" 
-                    placeholder="e.g., academy-901630" 
-                  />
-                  <p className="text-xs text-slate-500">Leave this blank if you want to create a direct student account first and enroll later.</p>
-                </label>
+                {/* Institution Code field removed */}
 
                 <label className="flex flex-col gap-2">
                   <span className="text-[#111b2f] text-sm font-semibold">Password</span>
-                  <input
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    className="border border-gray-200 rounded-md p-3.5 text-sm text-[#111b2f] outline-none transition-all focus:border-[#0b8276] focus:ring-2 focus:ring-[#0b8276]/20" 
-                    type="password" 
-                    placeholder="••••••••••" 
-                  />
+                  <div className="relative">
+                    <input
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      className="border border-gray-200 rounded-md p-3.5 text-sm text-[#111b2f] outline-none transition-all focus:border-[#0b8276] focus:ring-2 focus:ring-[#0b8276]/20 w-full pr-10" 
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••••" 
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#0b8276]"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                 </label>
 
                 <label className="flex flex-col gap-2">
                   <span className="text-[#111b2f] text-sm font-semibold">Confirm Password</span>
-                  <input
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    className="border border-gray-200 rounded-md p-3.5 text-sm text-[#111b2f] outline-none transition-all focus:border-[#0b8276] focus:ring-2 focus:ring-[#0b8276]/20" 
-                    type="password" 
-                    placeholder="••••••••••" 
-                  />
+                  <div className="relative">
+                    <input
+                      value={confirmPassword}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
+                      className="border border-gray-200 rounded-md p-3.5 text-sm text-[#111b2f] outline-none transition-all focus:border-[#0b8276] focus:ring-2 focus:ring-[#0b8276]/20 w-full pr-10" 
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="••••••••••" 
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#0b8276]"
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                   {submitted && password !== confirmPassword && (
                     <span className="text-xs font-medium text-red-500">Passwords do not match.</span>
                   )}
