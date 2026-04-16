@@ -531,9 +531,9 @@ export default function StudentBrowseCourse() {
               Browse courses from your tenant data.
             </div>
             <div className="text-[14px] text-[#94a3b8] leading-relaxed">
-              Course cards, price, type, and enrollment state are loaded from backend APIs.
+              All data — including course cards, price, type, and enrollment state comes from LMS.
             </div>
-          </div>
+          </div> 
           <div className="mt-4 flex items-center gap-[12px] flex-wrap">
             <div className="bg-white border border-black/[0.08] flex items-center h-[36px] justify-center px-[16px] rounded-[12px] shrink-0">
               <div className="flex flex-col font-medium h-[17px] justify-center leading-[0] text-[#0f172a] text-[12px]">

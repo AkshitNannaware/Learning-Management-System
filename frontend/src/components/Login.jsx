@@ -3,6 +3,13 @@ import { useState } from 'react'
 import { CheckCircle2, Eye, EyeOff, Sparkles } from 'lucide-react'
 import { api, getDashboardPathByRole, setAuthSession } from '../lib/api'
 
+// Simple toast notification (replace with a library like react-toastify for production)
+function showToast(message) {
+  if (window && window.alert) {
+    window.alert(message)
+  }
+}
+
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const BENEFITS = ['Multi-Tenant LMS System', 'Live & Recorded Learning', 'Secure Payments Integration']
 
@@ -33,7 +40,15 @@ export default function Login() {
       setAuthSession(data.access_token, data.role, data.tenant_id)
       navigate(getDashboardPathByRole(data.role))
     } catch (err) {
-      setError(err.message || 'Login failed')
+      // Custom error message based on backend response
+      let msg = err.message || 'Login failed'
+      if (msg.toLowerCase().includes('email')) {
+        msg = 'Email is incorrect'
+      } else if (msg.toLowerCase().includes('password')) {
+        msg = 'Password is incorrect'
+      }
+      setError(msg)
+      showToast(msg)
     } finally {
       setLoading(false)
     }

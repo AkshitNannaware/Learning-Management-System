@@ -127,7 +127,7 @@ export default function StudentELibrary() {
                 Read, save, and revisit your learning resources in one library.
               </h1>
               <p className="text-[14px] text-[#94a3b8]">
-                This section shows only uploaded resources from backend.
+                This section contains only resources uploaded.
               </p>
               <div className="mt-4 flex flex-wrap gap-[12px]">
                 <div className="bg-white border border-black/[0.08] flex items-center h-[36px] justify-center px-[16px] rounded-[12px] shrink-0">
@@ -164,10 +164,6 @@ export default function StudentELibrary() {
               <h2 className="font-bold text-[18px] text-[#0f172a]">Explore the library</h2>
               <p className="text-[13px] text-[#94a3b8] mt-[4px]">Browse by title, class, format, or uploader ID.</p>
             </div>
-            <button className="border border-black/[0.08] flex h-[40px] w-full items-center justify-center gap-[8px] px-[17px] py-[0.25px] rounded-[6px] bg-white sm:w-auto">
-              <Bookmark className="h-[18px] w-[18px] text-[#5b3df6]" />
-              <div className="flex flex-col font-medium h-[17px] justify-center leading-[0] text-[#0f172a] text-[14px]">Uploaded shelf</div>
-            </button>
           </div>
           <div className="flex flex-wrap items-center gap-[12px] w-full">
             <div className="flex-1 min-w-0 sm:min-w-[240px] bg-white border border-black/[0.08] flex items-center gap-[10px] h-[40px] px-[15px] py-[0.25px] relative rounded-[6px]">

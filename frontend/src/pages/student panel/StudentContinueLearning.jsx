@@ -124,9 +124,9 @@ export default function StudentContinueLearning() {
         </span>
         <h1 className="mt-3 text-[24px] font-bold text-[#0f172a] sm:text-[30px]">Your real enrolled courses</h1>
         <p className="mt-2 max-w-[740px] text-[14px] text-[#64748b]">
-          This page is powered by live enrollment and course data from your LMS backend.
+          This page is dynamically driven by live enrollment and course data pulled from your LMS.
         </p>
-      </section>
+      </section> 
 
       <section className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[340px_1fr]">
         <div className="rounded-[8px] border border-black/[0.08] bg-white p-4">

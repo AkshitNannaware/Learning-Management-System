@@ -7,7 +7,16 @@ const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const PHONE_REGEX = /^\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}$/
 
 function isDuplicateEmailError(error) {
+// Simple toast notification (replace with a library like react-toastify for production)
+function showToast(message) {
+  if (window && window.alert) {
+    window.alert(message)
+  }
+}
+
+function isDuplicateEmailError(error) {
   return (error?.message || '').toLowerCase().includes('email already exists')
+}
 }
 
 export default function SuperAdminSignup() {
@@ -58,7 +67,12 @@ export default function SuperAdminSignup() {
     e.preventDefault()
     setSubmitted(true)
     setError('')
-    if (!isFormValid) return
+    if (!isFormValid) {
+      if (formData.password !== formData.confirmPassword) {
+        showToast('Password and Confirm Password do not match')
+      }
+      return
+    }
     try {
       setLoading(true)
       const data = await api('/auth/register', {
@@ -74,10 +88,16 @@ export default function SuperAdminSignup() {
       setAuthSession(data.access_token, data.role, data.tenant_id)
       navigate('/login')
     } catch (err) {
-      if (isDuplicateEmailError(err)) {
-        setError('An account already exists for this email. Please sign in instead.')
-        return
+      let msg = err.message || 'Super admin signup failed'
+      if (msg.toLowerCase().includes('email')) {
+        msg = 'Email already exists'
+      } else if (msg.toLowerCase().includes('phone')) {
+        msg = 'Phone number already exists'
+      } else if (msg.toLowerCase().includes('password') && formData.password !== formData.confirmPassword) {
+        msg = 'Password and Confirm Password do not match'
       }
+      setError(msg)
+      showToast(msg)
       setError(err.message || 'Super admin signup failed')
     } finally {
       setLoading(false)

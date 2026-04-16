@@ -118,8 +118,8 @@ export default function StudentMyCourses() {
 						Student Dashboard
 					</span>
 					<h1 className="mt-3 text-[24px] font-bold leading-tight text-[#0f172a] sm:text-[30px]">My Courses</h1>
-					<p className="mt-2 max-w-[760px] text-[14px] text-[#64748b]">
-						Yahan aapke saare enrolled courses cards me dikh rahe hain. Checkout successful hone ke baad course automatically yahin add ho jayega.
+					<p className="mt-2 max-w-[800px] text-[14px] text-[#64748b]">
+						Here are all your enrolled courses displayed as cards. After a successful checkout, the course will automatically be added here.
 					</p>
 					<div className="mt-4 inline-flex h-[36px] items-center rounded-[12px] border border-black/[0.08] bg-white px-[16px] text-[12px] font-medium text-[#0f172a]">
 						Total enrolled courses: {courses.length}

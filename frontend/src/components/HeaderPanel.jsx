@@ -247,7 +247,7 @@ export default function HeaderPanel({ onMenuToggle }) {
           onClick={() => navigate(profilePath)}
           className="flex items-center gap-2 rounded-[6px] border border-black/[0.08] bg-white px-2.5 py-2 transition-colors hover:bg-[#f8fafc] sm:gap-3 sm:px-[11px] sm:py-[9px]"
         >
-          <Avatar src={currentUser?.avatar_url || ''} alt={userName} name={currentUser?.full_name || currentUser?.email || ''} />
+          <Avatar src={currentUser?.profile_image_url || currentUser?.avatar_url || currentUser?.image_url || ''} alt={userName} name={currentUser?.full_name || currentUser?.email || ''} />
           <div className="hidden items-start gap-[0.01px] sm:flex sm:flex-col">
             <div className="flex flex-col font-semibold h-[17px] justify-center leading-[0] text-[#0f172a] text-[14px]">
               {userName}

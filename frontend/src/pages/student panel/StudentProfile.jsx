@@ -264,7 +264,6 @@ export default function StudentProfile() {
                 <DetailField label="Email address" value={me?.email} />
                 <DetailField label="Phone number" value={phoneValue} />
                 <DetailField label="Role" value={displayRole} />
-                <DetailField label="Tenant ID" value={me?.tenant_id} />
                 <DetailField label="Account status" value={me?.is_active ? 'Active' : 'Inactive'} />
               </div>
             </section>

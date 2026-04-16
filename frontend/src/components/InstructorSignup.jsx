@@ -6,6 +6,13 @@ import { api, getDashboardPathByRole, setAuthSession } from '../lib/api'
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const PHONE_REGEX = /^\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}$/
 
+// Simple toast notification (replace with a library like react-toastify for production)
+function showToast(message) {
+  if (window && window.alert) {
+    window.alert(message)
+  }
+}
+
 export default function InstructorSignup() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
@@ -55,7 +62,12 @@ export default function InstructorSignup() {
     e.preventDefault()
     setSubmitted(true)
     setError('')
-    if (!isFormValid) return
+    if (!isFormValid) {
+      if (formData.password !== formData.confirmPassword) {
+        showToast('Password and Confirm Password do not match')
+      }
+      return
+    }
     try {
       setLoading(true)
       let data
@@ -76,6 +88,9 @@ export default function InstructorSignup() {
             method: 'POST',
             body: JSON.stringify({ email: formData.email, password: formData.password }),
           })
+        } else if ((registerErr?.message || '').toLowerCase().includes('phone')) {
+          showToast('Phone number already exists')
+          throw registerErr
         } else {
           throw registerErr
         }
@@ -83,7 +98,16 @@ export default function InstructorSignup() {
       setAuthSession(data.access_token, data.role, data.tenant_id)
       navigate('/login')
     } catch (err) {
-      setError(err.message || 'Instructor signup failed')
+      let msg = err.message || 'Instructor signup failed'
+      if (msg.toLowerCase().includes('email')) {
+        msg = 'Email already exists'
+      } else if (msg.toLowerCase().includes('phone')) {
+        msg = 'Phone number already exists'
+      } else if (msg.toLowerCase().includes('password') && formData.password !== formData.confirmPassword) {
+        msg = 'Password and Confirm Password do not match'
+      }
+      setError(msg)
+      showToast(msg)
     } finally {
       setLoading(false)
     }

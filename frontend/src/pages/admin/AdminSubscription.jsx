@@ -176,7 +176,7 @@ export default function AdminSubscription() {
       <section className="rounded-[8px] border border-black/[0.08] bg-gradient-to-br from-white to-[#e8f5ff] p-5 sm:p-6">
         <h2 className="text-[26px] font-bold text-[#0f172a] sm:text-[30px]">Course Subscription Management</h2>
         <p className="mt-2 text-[14px] text-[#64748b]">
-          Yahan se admin jo plans upload karega wahi student enrollment flow me show honge.
+          The plans that the admin uploads from here will appear in the student enrollment flow.
         </p>
       </section>
 

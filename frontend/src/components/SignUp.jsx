@@ -3,6 +3,13 @@ import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { api, getDashboardPathByRole, setAuthSession } from '../lib/api'
 
+// Simple toast notification (replace with a library like react-toastify for production)
+function showToast(message) {
+  if (window && window.alert) {
+    window.alert(message)
+  }
+}
+
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const PHONE_REGEX = /^\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}$/
 
@@ -43,7 +50,16 @@ export default function SignUp() {
       // setAuthSession(data.access_token, data.role, data.tenant_id)
       navigate('/login')
     } catch (err) {
-      setError(err.message || 'Signup failed')
+      let msg = err.message || 'Signup failed'
+      if (msg.toLowerCase().includes('email')) {
+        msg = 'Email already exists'
+      } else if (msg.toLowerCase().includes('phone')) {
+        msg = 'Phone number already exists'
+      } else if (msg.toLowerCase().includes('password') && password !== confirmPassword) {
+        msg = 'Password and Confirm Password do not match'
+      }
+      setError(msg)
+      showToast(msg)
     } finally {
       setLoading(false)
     }
@@ -190,6 +206,7 @@ export default function SignUp() {
                   {submitted && password !== confirmPassword && (
                     <span className="text-xs font-medium text-red-500">Passwords do not match.</span>
                   )}
+                  {submitted && password !== confirmPassword && showToast('Password and Confirm Password do not match')}
                   {password && confirmPassword && password === confirmPassword && (
                     <span className="mt-1.5 text-[#0b8276] text-xs font-medium">✓ Passwords match</span>
                   )}

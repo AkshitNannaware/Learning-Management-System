@@ -29,7 +29,10 @@ export default function AdminSignup() {
     if (value.length >= 8) score += 1
     if (/[A-Z]/.test(value)) score += 1
     if (/[0-9]/.test(value)) score += 1
-    if (/[^A-Za-z0-9]/.test(value)) score += 1
+      if (formData.password !== formData.confirmPassword) {
+        showToast('Password and Confirm Password do not match')
+      }
+      return
     return score
   }, [formData.password])
 
