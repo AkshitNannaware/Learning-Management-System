@@ -23,6 +23,16 @@ def instructor_required(user):
     return user
 
 
+def weekly_tests_admin_required(user):
+    """
+    Allow instructors and institute admins (admin/sub_admin) to manage weekly tests.
+    This is intentionally narrower than full instructor access.
+    """
+    if user["role"] not in {"instructor", "admin", "sub_admin"}:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return user
+
+
 def get_user_id(user: dict) -> str:
     # JWT payload uses "sub" as user id; keep "id" fallback for compatibility.
     user_id = user.get("sub") or user.get("id")
@@ -96,7 +106,7 @@ async def create_test(
     db=Depends(get_database),
     user=Depends(get_current_user)
 ):
-    instructor_required(user)
+    weekly_tests_admin_required(user)
     return await service.create_test(db, data, get_user_id(user))
 
 
@@ -106,7 +116,7 @@ async def get_tests(
     db=Depends(get_database),
     user=Depends(get_current_user)
 ):
-    instructor_required(user)
+    weekly_tests_admin_required(user)
     return await service.get_tests(db, get_user_id(user))
 
 
@@ -116,7 +126,7 @@ async def get_test_by_id(
     db=Depends(get_database),
     user=Depends(get_current_user)
 ):
-    instructor_required(user)
+    weekly_tests_admin_required(user)
     return await service.get_test_by_id(db, test_id, get_user_id(user))
 
 
@@ -128,7 +138,7 @@ async def update_test(
     db=Depends(get_database),
     user=Depends(get_current_user)
 ):
-    instructor_required(user)
+    weekly_tests_admin_required(user)
     return await service.update_test(db, test_id, data, get_user_id(user))
 
 
@@ -138,7 +148,7 @@ async def delete_test(
     db=Depends(get_database),
     user=Depends(get_current_user)
 ):
-    instructor_required(user)
+    weekly_tests_admin_required(user)
     return await service.delete_test(db, test_id, get_user_id(user))
 
 # ADD QUESTION
@@ -148,8 +158,9 @@ async def add_question(
     db=Depends(get_database),
     user=Depends(get_current_user)
 ):
-    instructor_required(user)
-    return await service.add_question(db, data, get_user_id(user))
+    weekly_tests_admin_required(user)
+    # service.add_question expects only (db, data)
+    return await service.add_question(db, data)
 
 
 @router.patch("/questions/{question_id}")
@@ -159,7 +170,7 @@ async def update_question(
     db=Depends(get_database),
     user=Depends(get_current_user)
 ):
-    instructor_required(user)
+    weekly_tests_admin_required(user)
     return await service.update_question(db, question_id, data, get_user_id(user))
 
 
@@ -169,7 +180,7 @@ async def delete_question(
     db=Depends(get_database),
     user=Depends(get_current_user)
 ):
-    instructor_required(user)
+    weekly_tests_admin_required(user)
     return await service.delete_question(db, question_id, get_user_id(user))
 
 
@@ -180,7 +191,7 @@ async def get_questions(
     db=Depends(get_database),
     user=Depends(get_current_user)
 ):
-    instructor_required(user)
+    weekly_tests_admin_required(user)
     return await service.get_questions(db, test_id)
 
 @router.post("/tests/submit")
@@ -207,7 +218,7 @@ async def weekly_test_overview(
     db=Depends(get_database),
     user=Depends(get_current_user)
 ):
-    instructor_required(user)
+    weekly_tests_admin_required(user)
     return await service.get_weekly_test_overview(db, get_user_id(user))
 
 @router.get("/dashboard")

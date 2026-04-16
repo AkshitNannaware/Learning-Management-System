@@ -59,6 +59,8 @@ class LiveClassIn(BaseModel):
     amount: float = 0
     image_url: str = ""
     repeat_daily: bool = False
+    class_name: str = ""
+    subject: str = ""
 
 
 class LiveClassUpdateIn(BaseModel):
@@ -69,6 +71,8 @@ class LiveClassUpdateIn(BaseModel):
     amount: float | None = None
     image_url: str | None = None
     status: str | None = None
+    class_name: str | None = None
+    subject: str | None = None
 
 
 class EnrollmentIn(BaseModel):

@@ -105,24 +105,23 @@ function formatTimeInIst(value) {
 }
 
 function getSessionStatus(rawStatus, startAtValue, durationMinutes) {
-  const status = String(rawStatus || '').toLowerCase()
-  if (status === 'cancelled') return 'cancelled'
-  if (status === 'recent' || status === 'completed') return 'recent'
+  const status = String(rawStatus || '').toLowerCase();
+  if (status === 'cancelled') return 'cancelled';
+  // Always use time-based logic for live/completed
+  const startAt = parseServerDateAsUtc(startAtValue);
+  const startMs = startAt ? startAt.getTime() : null;
+  const durationMs = Math.max(1, Number(durationMinutes || 60)) * 60 * 1000;
+  const endMs = startMs ? startMs + durationMs : null;
+  const now = Date.now();
 
-  const startAt = parseServerDateAsUtc(startAtValue)
-  const startMs = startAt ? startAt.getTime() : null
-  if (!startMs) return status === 'live' ? 'live' : 'upcoming'
+  if (!startMs) return status === 'live' ? 'live' : 'upcoming';
 
-  const durationMs = Math.max(1, Number(durationMinutes || 60)) * 60 * 1000
-  const endMs = startMs + durationMs
-  const now = Date.now()
-
-  if (status === 'live') {
-    return now <= endMs ? 'live' : 'recent'
-  }
-
-  if (now > endMs) return 'recent'
-  return 'upcoming'
+  // If now is between start and end, always show as live
+  if (now >= startMs && now <= endMs) return 'live';
+  // If now is after end, show as recent/completed
+  if (now > endMs) return 'recent';
+  // If now is before start, show as upcoming
+  return 'upcoming';
 }
 
 function StatusBadge({ status }) {
@@ -169,6 +168,15 @@ function ClassDetailModal({ session, attendeeUsers, onClose, onCancel, onRegener
         </div>
 
         <div className="p-5 sm:p-6 space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Class</label>
+                  <input
+                    value={form.class_name || ''}
+                    onChange={(e) => handleFormChange('class_name', e.target.value)}
+                    className="h-11 w-full rounded-[8px] border border-black/[0.08] bg-white px-3 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
+                    placeholder="Enter class (e.g. 10th, 12th, etc.)"
+                  />
+                </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[
               { label: 'Course', value: session.course, icon: BookOpen },
@@ -347,6 +355,9 @@ function SessionCard({ session, onClick, onDelete, onRegenerate, onReassign, reg
           </div>
           <div>
             <p className="text-[14px] font-bold text-[#0f172a] leading-tight">{session.title}</p>
+            {session.class_name && (
+              <p className="text-[11px] text-[#5b3df6]">{session.class_name}</p>
+            )}
             <p className="text-[11px] text-[#64748b]">{session.course}</p>
           </div>
         </div>
@@ -445,6 +456,7 @@ export default function AdminLiveClasses() {
 
   const [form, setForm] = useState({
     title: '',
+    class_name: '',
     course_id: '',
     instructor_id: '',
     start_date: '',
@@ -538,6 +550,7 @@ export default function AdminLiveClasses() {
       return {
         id: c._id,
         title: c.title || 'Live Class',
+        class_name: c.class_name || '',
         course: course?.title || c.course_id || 'Course',
         instructorId: c.instructor_id || '',
         instructor: instructor?.full_name || instructor?.email || c.instructor_id || 'Instructor',
@@ -641,6 +654,7 @@ export default function AdminLiveClasses() {
         method: 'POST',
         body: JSON.stringify({
           title,
+          class_name: form.class_name,
           course_id: courseId,
           instructor_id: instructorId,
           attendee_ids: form.attendee_ids,
@@ -802,6 +816,15 @@ export default function AdminLiveClasses() {
                     onChange={(e) => handleFormChange('title', e.target.value)}
                     className="h-11 w-full rounded-[8px] border border-black/[0.08] bg-white px-3 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
                     placeholder="e.g. Math Mastery Live - Chapter 5"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold text-[#334155]">Class</label>
+                  <input
+                    value={form.class_name || ''}
+                    onChange={(e) => handleFormChange('class_name', e.target.value)}
+                    className="h-11 w-full rounded-[8px] border border-black/[0.08] bg-white px-3 text-[13px] text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]/30"
+                    placeholder="Enter class (e.g. 10th, 12th, etc.)"
                   />
                 </div>
                 <div>

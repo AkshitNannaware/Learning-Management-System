@@ -28,7 +28,7 @@ async def get_student_courses(student_id: str = Query(...), user=Depends(get_cur
     return courses
 
 def admin_required(user):
-    if user["role"] != "admin":
+    if user["role"] not in {"admin", "sub_admin"}:
         raise HTTPException(status_code=403, detail="Forbidden")
     return user
 

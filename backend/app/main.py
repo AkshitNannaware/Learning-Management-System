@@ -60,9 +60,13 @@ async def health():
     return {"ok": True}
 
 
+
+from app.routers import student as student_router
+
 app.include_router(auth_router, prefix=settings.api_prefix)
 app.include_router(lms_router, prefix=settings.api_prefix)
 app.include_router(ws_router)
 app.include_router(instructor.router, prefix=settings.api_prefix)
 app.include_router(admin_router.router, prefix=settings.api_prefix)
 app.include_router(inquire_router.router, prefix=settings.api_prefix)
+app.include_router(student_router.router, prefix=settings.api_prefix)

@@ -86,15 +86,25 @@ async def get_classes(db, instructor_id, status=None):
 
 # CREATE TEST
 async def create_test(db, data, instructor_id):
+    # NOTE: Student app relies on `is_published: True` to list tests.
+    # The previous implementation hardcoded `is_published` to False, so
+    # newly created tests were never visible on the student tests page.
     test = {
         "title": data.title,
         "course_id": data.course_id,
         "duration": data.duration,
         "total_questions": data.total_questions,
         "scheduled_at": data.scheduled_at,
-        "is_published": False,
+        "description": data.description,
+        "class_name": data.class_name,
+        "subject": data.subject,
+        "deadline_at": data.deadline_at,
+        "attempts_allowed": data.attempts_allowed,
+        "shuffle_questions": data.shuffle_questions,
+        "show_results_instantly": data.show_results_instantly,
+        "is_published": bool(data.is_published),
         "created_by": str(instructor_id),
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
     }
 
     result = await db["tests"].insert_one(test)

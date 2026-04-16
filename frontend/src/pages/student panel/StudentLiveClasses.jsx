@@ -789,6 +789,13 @@ export default function StudentLiveClasses() {
       const courseMap = new Map((coursesRes.items || []).map((c) => [c._id, c]))
       const currentStudentId = String(me?._id || me?.sub || '').trim()
       const enrolledSet = new Set()
+      // --- Frontend fix: Also consider enrollments for enrolledSessionIds ---
+      // Fetch enrollments for this student
+      let enrollmentsRes = { items: [] }
+      try {
+        enrollmentsRes = await api('/lms/enrollments?limit=500').catch(() => ({ items: [] }))
+      } catch {}
+      const enrolledCourseIds = new Set((enrollmentsRes.items || []).map(e => String(e.course_id)))
 
       const rows = classesRes.items || []
       const mapped = rows.map((r, idx) => {
@@ -796,7 +803,11 @@ export default function StudentLiveClasses() {
         const startAt = parseServerDateAsUtc(r.start_at)
         const hasValidStart = !!startAt
         const attendeeIds = (r.attendee_ids || []).map((id) => String(id))
-        if (currentStudentId && attendeeIds.includes(currentStudentId)) {
+        // Mark as enrolled if student is in attendee_ids OR has an enrollment for this course
+        if (
+          (currentStudentId && attendeeIds.includes(currentStudentId)) ||
+          enrolledCourseIds.has(String(r.course_id))
+        ) {
           enrolledSet.add(String(r._id))
         }
         const numericPrice = Number(r.amount ?? course.price ?? 0)

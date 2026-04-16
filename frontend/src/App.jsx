@@ -38,6 +38,7 @@ import AdminLiveClasses from './pages/admin/AdminLiveClasses'
 import AdminELibrary from './pages/admin/AdminELibrary'
 import AdminSubscription from './pages/admin/AdminSubscription'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
+import AdminWeeklyTest from './pages/admin/AdminWeeklyTest'
 import AdminProfile from './pages/admin/AdminProfile'
 import AdminNotification from './pages/admin/AdminNotification'
 import InstructorLayout from './components/Instructor/InstructorLayout'
@@ -55,6 +56,7 @@ import StudentMyCourses from './pages/student panel/StudentMyCourses'
 import StudentBrowseCourses from './pages/student panel/StudentBrowseCourse'
 import StudentELibrary from './pages/student panel/StudentELibrary'
 import StudentLiveClasses from './pages/student panel/StudentLiveClasses'
+import StudentTests from './pages/student panel/StudentTests'
 import StudentCertificates from './pages/student panel/StudentCertificates'
 import StudentProfile from './pages/student panel/StudentProfile'
 import StudentNotification from './pages/student panel/StudentNotification'
@@ -120,6 +122,7 @@ function App() {
           <Route path="e-library" element={<AdminELibrary />} />
           <Route path="subscription" element={<AdminSubscription />} />
           <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="weekly-tests" element={<AdminWeeklyTest />} />
           <Route path="notification" element={<Navigate to="notifications" replace />} />
           <Route path="notifications" element={<AdminNotification />} />
           <Route path="profile" element={<AdminProfile />} />
@@ -143,6 +146,7 @@ function App() {
           <Route path="browse-courses" element={<StudentBrowseCourses />} />
           <Route path="e-library" element={<StudentELibrary />} />
           <Route path="live-classes" element={<StudentLiveClasses />} />
+          <Route path="tests" element={<StudentTests />} />
           <Route path="certificates" element={<StudentCertificates />} />
           <Route path="notifications" element={<StudentNotification />} />
           <Route path="profile" element={<StudentProfile />} />

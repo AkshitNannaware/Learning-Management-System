@@ -1,3 +1,101 @@
+
+
+import asyncio
+from datetime import datetime, timezone
+from bson import ObjectId
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from app.core.config import settings
+from app.db import mongo
+from app.deps.auth import get_current_user, get_tenant_id, require_roles
+from app.models.enums import Role
+from app.schemas.lms import (
+    CouponIn,
+    CourseUpdateIn,
+    CourseIn,
+    EnrollmentIn,
+    EventIn,
+    LiveClassIn,
+    LiveClassUpdateIn,
+    NotificationIn,
+    PlanIn,
+    PlatformSettingsIn,
+    LibraryResourceIn,
+    RatingIn,
+    ReportGenerateIn,
+    RazorpayOrderIn,
+    ResetPasswordIn,
+    RazorpayVerifyIn,
+    TenantIn,
+    TenantUpdateIn,
+    UserIn,
+    UserUpdateIn,
+)
+from app.schemas.instructor import CertificateUploadIn
+from app.services.payments import verify_razorpay_signature, verify_webhook_signature
+from app.services.email import send_transactional_email
+from app.services.realtime import ws_manager
+from app.services.zoom import create_zoom_meeting
+from app.utils.security import hash_password
+
+router = APIRouter(prefix="/lms", tags=["lms"])
+
+# ...existing code...
+
+# Student tests endpoint: fetch tests for enrolled courses/subjects
+@router.get("/student/tests")
+async def student_tests(
+    user=Depends(require_roles(Role.STUDENT)),
+    tenant_id: str = Depends(get_tenant_id),
+    skip: int = 0,
+    limit: int = 100,
+):
+    student_id = user.get("sub")
+    # Get all enrollments for this student
+    enrollments = await db.enrollments.find({"student_id": student_id}).to_list(None)
+    # Collect all possible course_ids and subjects
+    enrolled_course_ids = set()
+    enrolled_subjects = set()
+    enrolled_class_names = set()
+    subject_names_for_mapping = set()
+
+    for e in enrollments:
+        if e.get("course_id"):
+            cid = str(e["course_id"])
+            # If course_id looks like a subject name (not ObjectId), collect for mapping
+            if len(cid) < 24:
+                subject_names_for_mapping.add(cid)
+            else:
+                enrolled_course_ids.add(cid)
+        if e.get("subject"):
+            enrolled_subjects.add(str(e["subject"]))
+        if e.get("class_name"):
+            enrolled_class_names.add(str(e["class_name"]))
+
+    # Map subject names to course ObjectIds
+    if subject_names_for_mapping:
+        courses = await db.courses.find({"subject": {"$in": list(subject_names_for_mapping)}}).to_list(None)
+        for c in courses:
+            enrolled_course_ids.add(str(c["_id"]))
+
+    # Build query: match tests where course_id OR subject OR class_name matches
+    test_query = {"is_published": True}
+    or_clauses = []
+    if enrolled_course_ids:
+        or_clauses.append({"course_id": {"$in": list(enrolled_course_ids)}})
+    if enrolled_subjects:
+        or_clauses.append({"subject": {"$in": list(enrolled_subjects)}})
+    if enrolled_class_names:
+        or_clauses.append({"class_name": {"$in": list(enrolled_class_names)}})
+    if or_clauses:
+        test_query["$or"] = or_clauses
+    else:
+        # No enrollments, return empty
+        return {"items": [], "total": 0, "skip": skip, "limit": limit}
+
+    total = await db.tests.count_documents(test_query)
+    items = [as_dict(x) async for x in db.tests.find(test_query).sort("created_at", -1).skip(skip).limit(limit)]
+    return {"items": items, "total": total, "skip": skip, "limit": limit}
+
 import asyncio
 from datetime import datetime, timezone
 from bson import ObjectId
@@ -658,6 +756,12 @@ async def create_enrollment(payload: EnrollmentIn, tenant_id: str = Depends(get_
     now = datetime.now(timezone.utc)
     data = payload.model_dump() | {"tenant_id": tenant_id, "created_at": now, "updated_at": now}
     res = await db.enrollments.insert_one(data)
+    # --- Backend fix: Also add student_id to attendee_ids of the corresponding live class ---
+    # Try to update all live classes with this course_id to add the student to attendee_ids
+    await db.live_classes.update_many(
+        {"course_id": payload.course_id},
+        {"$addToSet": {"attendee_ids": payload.student_id}}
+    )
     await ws_manager.broadcast(f"tenant:{tenant_id}", {"type": "enrollment.created", "data": data})
     admin_ids = await _tenant_user_ids(
         tenant_id,

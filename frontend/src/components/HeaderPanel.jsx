@@ -48,6 +48,7 @@ const getPageTitle = (pathname) => {
   if (pathname === '/admin/instructor-management') return 'Instructor Management'
   if (pathname === '/admin/student-management') return 'Student Management'
   if (pathname === '/admin/student-insights') return 'Student Insights'
+  if (pathname === '/admin/weekly-tests') return 'Weekly Tests'
   if (pathname === '/admin/payments-coupons') return 'Payments & Coupons'
   if (pathname === '/admin/live-classes') return 'Live Classes'
   if (pathname === '/admin/e-library') return 'E-Library'
