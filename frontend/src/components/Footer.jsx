@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { FaFacebook, FaInstagram, FaLinkedin } from "react-icons/fa";
 
 const Footer = () => {
   return (
@@ -73,10 +74,16 @@ const Footer = () => {
             <div>
               <h3 className="mb-4 text-lg font-semibold text-white">Follow Us</h3>
               <div className="flex flex-wrap gap-4">
-                <span className="cursor-pointer text-sm text-white/80 transition-colors hover:text-white">Facebook</span>
-                <span className="cursor-pointer text-sm text-white/80 transition-colors hover:text-white">Instagram</span>
-                <span className="cursor-pointer text-sm text-white/80 transition-colors hover:text-white">LinkedIn</span>
-              </div>
+                  <a href="https://www.facebook.com/profile.php?id=61587711429879" target="_blank" rel="noopener noreferrer" className="cursor-pointer text-white/80 hover:text-white transition-colors">
+                    <FaFacebook size={22} />
+                  </a>
+                  <a href="https://www.instagram.com/karom_edumart" target="_blank" rel="noopener noreferrer" className="cursor-pointer text-white/80 hover:text-white transition-colors">
+                    <FaInstagram size={22} />
+                  </a>
+                  <a href="https://www.linkedin.com/company/karom-edumart" target="_blank" rel="noopener noreferrer" className="cursor-pointer text-white/80 hover:text-white transition-colors">
+                    <FaLinkedin size={22} />
+                  </a>
+                </div>
             </div>
           </div>
         </div>
