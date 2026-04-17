@@ -71,16 +71,18 @@ export default function InstructorWeeklyTest() {
   })
   const [tests, setTests] = useState([])
   const [courses, setCourses] = useState([])
+  const [liveClasses, setLiveClasses] = useState([])
 
   const loadData = async () => {
     try {
       setLoading(true)
       setError('')
 
-      const [overviewRes, testsRes, coursesRes] = await Promise.all([
+      const [overviewRes, testsRes, coursesRes, liveClassesRes] = await Promise.all([
         api('/instructor/weekly-tests/overview'),
         api('/instructor/tests'),
-        api('/instructor/courses'),
+        api('/instructor/courses').catch(() => api('/admin/courses')),
+        api('/lms/live-classes?limit=300'),
       ])
 
       setOverview(overviewRes || {
@@ -97,6 +99,7 @@ export default function InstructorWeeklyTest() {
       if (!courseId && loadedCourses.length > 0) {
         setCourseId(loadedCourses[0]._id)
       }
+      setLiveClasses(Array.isArray(liveClassesRes?.items) ? liveClassesRes.items : [])
     } catch (err) {
       setError(err?.message || 'Failed to load weekly test data')
       setOverview({
@@ -108,6 +111,7 @@ export default function InstructorWeeklyTest() {
       })
       setTests([])
       setCourses([])
+      setLiveClasses([])
     } finally {
       setLoading(false)
     }
@@ -475,21 +479,36 @@ export default function InstructorWeeklyTest() {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="block text-[13px] font-semibold text-[#0f172a] mb-1.5">Class</label>
-                      <input
-                        type="text"
+                      <select
                         value={testClass}
                         onChange={(e) => setTestClass(e.target.value)}
                         className="w-full rounded-[6px] border border-black/[0.08] px-3 py-2.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]"
-                      />
+                      >
+                        <option value="">Select class</option>
+                        {liveClasses
+                          .filter((cls) => cls.status === 'live' || cls.status === 'upcoming')
+                          .map((cls) => (
+                            <option key={cls._id} value={cls.class_name}>
+                              {cls.class_name} {cls.title ? `(${cls.title})` : ''}
+                            </option>
+                          ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-[13px] font-semibold text-[#0f172a] mb-1.5">Subject</label>
-                      <input
-                        type="text"
+                      <select
                         value={testSubject}
                         onChange={(e) => setTestSubject(e.target.value)}
                         className="w-full rounded-[6px] border border-black/[0.08] px-3 py-2.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#5b3df6]"
-                      />
+                      >
+                        <option value="">Select subject</option>
+                        {Array.from(new Set(liveClasses
+                          .filter((cls) => (cls.status === 'live' || cls.status === 'upcoming'))
+                          .map((cls) => cls.subject && cls.subject.trim() ? cls.subject : cls.course_id)
+                        )).map((subject) => (
+                          <option key={subject} value={subject}>{subject}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
