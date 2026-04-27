@@ -187,7 +187,7 @@ export default (props) => {
                     {/* Left panel — cream/beige */}
                     <div className="flex flex-1 flex-col justify-center bg-[#FEF6EE] pl-51 pr-40 py-16 gap-5 relative overflow-hidden">
                         {/* Squiggle top-right */}
-                        <svg className="absolute top-10 right-55 opacity-60" width="70" height="60" viewBox="0 0 70 60" fill="none">
+                        <svg className="absolute top-1 right-55 opacity-60" width="70" height="60" viewBox="0 0 70 60" fill="none">
                             <path d="M8 50 Q18 8 38 28 Q55 48 62 12" stroke="#FF8A33" strokeWidth="2.5" fill="none" strokeLinecap="round" />
                             <path d="M44 52 Q56 34 60 18" stroke="#FF8A33" strokeWidth="2" fill="none" strokeLinecap="round" />
                         </svg>
@@ -199,7 +199,7 @@ export default (props) => {
                         </svg>
 
                         {/* Headline */}
-                        <div>
+                        <div className="mb-1">
                             <div className="text-[#1a5c3a] text-[50px] font-extrabold leading-[1.1]">Learn Smarter.</div>
                             <div className="flex items-center gap-3 flex-wrap leading-[1.1] mt-1">
                                 <span className="text-[#1a5c3a] text-[50px] font-extrabold">Grow Faster.</span>
@@ -256,7 +256,7 @@ export default (props) => {
                         {/* Top-right cloud outline */}
                         <svg
                             className="absolute"
-                            style={{ top: 70, right: 30, opacity: 0.58 }}
+                            style={{ top: 10, right: -10, opacity: 0.58 }}
                             width="1200"
                             height="80"
                             viewBox="0 0 120 78"
@@ -287,30 +287,18 @@ export default (props) => {
                             fill="none"
                         >
                             <defs>
-                                <clipPath id="heroStripeCircle">
-                                    <circle cx="85" cy="85" r="70" />
-                                </clipPath>
+                                <pattern id="heroStripes" patternUnits="userSpaceOnUse" width="16" height="16" patternTransform="rotate(45)">
+                                    <line x1="0" y1="0" x2="0" y2="16" stroke="#2CC0AB" strokeWidth="4" />
+                                </pattern>
                             </defs>
                             <circle cx="85" cy="85" r="70" fill="#189987" fillOpacity="0.42" />
-                            <g clipPath="url(#heroStripeCircle)" stroke="#2CC0AB" strokeWidth="4">
-                                <line x1="-20" y1="45" x2="65" y2="130" />
-                                <line x1="-8" y1="33" x2="77" y2="118" />
-                                <line x1="4" y1="21" x2="89" y2="106" />
-                                <line x1="16" y1="9" x2="101" y2="94" />
-                                <line x1="28" y1="-3" x2="113" y2="82" />
-                                <line x1="40" y1="-15" x2="125" y2="70" />
-                                <line x1="52" y1="-27" x2="137" y2="58" />
-                                <line x1="64" y1="-39" x2="149" y2="46" />
-                                <line x1="76" y1="-51" x2="161" y2="34" />
-                                <line x1="88" y1="-63" x2="173" y2="22" />
-                                <line x1="100" y1="-75" x2="185" y2="10" />
-                            </g>
+                            <circle cx="85" cy="85" r="70" fill="url(#heroStripes)" />
                         </svg>
                     </div>
 
                     {/* Center visual card across split */}
                     <div className="pointer-events-none absolute inset-y-0 left-250 z-20 hidden -translate-x-1/2 items-center md:flex">
-                        <div className="relative h-[400px] w-[350px] rounded-[22px] overflow-hidden">
+                        <div className="relative h-[380px] w-[500px] rounded-[22px] overflow-hidden">
                             <div
                                 className="absolute inset-0 pr-100"
                                 style={{
@@ -319,9 +307,9 @@ export default (props) => {
                                 }}
                             />
                             <img
-                                src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/0lfkrcpg_expires_30_days.png"
+                                src="/iStock-1216256788-crop.webp"
                                 alt="Student"
-                                className="absolute -bottom-1 left-40 z-10 h-[400px] w-auto -translate-x-1/2 object-contain"
+                                className="absolute inset-0 z-10 w-full h-full object-cover"
                             />
                         </div>
                     </div>
@@ -342,7 +330,7 @@ export default (props) => {
                                     Explore Our Course Offerings
                                 </h2>
                                 <p className="mt-2 text-sm text-slate-500">
-                                    There are many variations of passages of Lorem Ipsum.
+                                    Explore top-rated courses designed to help you gain real-world skills and advance your career.
                                 </p>
                             </motion.div>
 
@@ -391,20 +379,6 @@ export default (props) => {
                                             <span className="text-xl sm:text-[20px] font-bold leading-none text-[#111111]">{course.price}</span>
                                             {course.oldPrice ? <span className="text-xs sm:text-sm text-slate-400 line-through">{course.oldPrice}</span> : null}
                                         </div>
-                                        {course.youtube_url ? (
-                                            <a
-                                                className="rounded-xl bg-[#0b8276] px-4 sm:px-6 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-[#096b61] transition-colors"
-                                                href={course.youtube_url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                            >
-                                                View Course
-                                            </a>
-                                        ) : (
-                                            <button className="rounded-xl bg-[#0b8276] px-4 sm:px-6 py-2 text-xs sm:text-sm font-semibold text-white opacity-70 cursor-not-allowed" disabled>
-                                                View Course
-                                            </button>
-                                        )}
                                     </div>
                                 </motion.div>
                             ))}
@@ -417,24 +391,24 @@ export default (props) => {
                     <div className="mx-auto w-full max-w-[1200px]">
                         <div className="text-center">
                             <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-[#111b2f]">Who is it for?</h2>
-                            <p className="mt-2 text-base text-slate-500">Made for everyone who helps children learn and grow.</p>
+                            <p className="mt-2 text-base text-slate-500">Built for learners, educators, and institutions who believe in smarter education.</p>
                         </div>
                         <div className="mt-8 sm:mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
                             {[
                                 {
                                     title: "Schools & Classes",
                                     desc: "Bring your school online! Manage classes, teachers, and create a fun learning journey.",
-                                    img: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/zdfkwoq9_expires_30_days.png",
+                                    img: "/schools_classes.png",
                                 },
                                 {
                                     title: "Teachers & Tutors",
                                     desc: "Create magical lessons and share your knowledge with young learners around the world.",
-                                    img: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/y2ugpgwn_expires_30_days.png",
+                                    img: "/teachers_tutors.png",
                                 },
                                 {
                                     title: "Kids & Parents",
                                     desc: "A safe, colorful, and exciting place where children love to learn new things.",
-                                    img: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/pb4ocxvm_expires_30_days.png",
+                                    img: "/kids_parents.png",
                                 },
                             ].map((item) => (
                                 <div key={item.title} className="rounded-2xl bg-white/80 p-4 text-center shadow-sm hover:shadow-md transition-shadow">
@@ -459,7 +433,7 @@ export default (props) => {
                         <motion.div className="mx-auto max-w-3xl text-center" variants={fadeUp}>
                             <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold text-[#111b2f]">How It Works?</h2>
                             <p className="mt-3 text-sm sm:text-base text-slate-500">
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
+                                Start your learning journey in just a few simple steps and achieve your goals faster than ever.
                             </p>
                         </motion.div>
 
@@ -500,7 +474,7 @@ export default (props) => {
                     <div className="mx-auto w-full max-w-[1200px]">
                         <div className="text-center">
                             <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-[#111b2f]">Simple, transparent pricing</h2>
-                            <p className="mt-2 text-base text-slate-500">Choose the perfect plan for your learning community.</p>
+                            <p className="mt-2 text-base text-slate-500">Simple pricing. Powerful learning. No hidden costs.</p>
                         </div>
                         <div className="mt-8 sm:mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {plansLoading ? (
@@ -517,11 +491,11 @@ export default (props) => {
 
                                     if (isHighlighted) {
                                         return (
-                                            <div key={plan?._id || `${planName}-${idx}`} className="relative flex flex-col items-center rounded-xl shadow-xl overflow-hidden">
-                                                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-                                                    <span className="bg-[#FF8A33] text-white text-sm font-bold py-2 px-6 rounded-xl">Most Popular</span>
+                                            <div key={plan?._id || `${planName}-${idx}`} className="relative flex flex-col items-center rounded-xl shadow-xl">
+                                                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                                                    <span className="bg-[#FF8A33] text-white text-sm font-bold py-2 px-6 rounded-xl shadow-lg whitespace-nowrap">Most Popular</span>
                                                 </div>
-                                                <div className="flex flex-col items-center bg-slate-900 py-8 sm:py-10 px-6 w-full h-full">
+                                                <div className="flex flex-col items-center bg-slate-900 py-8 sm:py-10 px-6 w-full h-full rounded-xl overflow-hidden">
                                                     <h3 className="text-[#F7FCFF] text-2xl font-bold">{planName}</h3>
                                                     <div className="flex items-baseline justify-center mt-2">
                                                         <span className="text-[#F7FCFF] text-5xl sm:text-[56px] font-bold">{priceLabel}</span>
@@ -576,7 +550,7 @@ export default (props) => {
                         <motion.div className="mx-auto max-w-3xl text-center" variants={fadeUp}>
                             <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold text-[#111b2f]">Our Students Reviews</h2>
                             <p className="mt-3 text-sm sm:text-base text-slate-500">
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
+                                Hear from our students who have transformed their learning journey with EduMart.
                             </p>
                         </motion.div>
 
@@ -593,17 +567,17 @@ export default (props) => {
                                     {
                                         name: "Emma",
                                         role: "student",
-                                        avatar: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/344cmw5b_expires_30_days.png",
+                                        avatar: "https://i.pravatar.cc/150?u=emma",
                                     },
                                     {
                                         name: "John Doe",
                                         role: "CEO",
-                                        avatar: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/atih781j_expires_30_days.png",
+                                        avatar: "https://i.pravatar.cc/150?u=john",
                                     },
                                     {
                                         name: "Zoey",
                                         role: "Web Developer",
-                                        avatar: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/xz2lhbfq_expires_30_days.png",
+                                        avatar: "https://i.pravatar.cc/150?u=zoey",
                                     },
                                 ].map((review) => (
                                     <motion.div
@@ -615,7 +589,7 @@ export default (props) => {
                                         <div className="flex flex-col items-center gap-3">
                                             <img src={review.avatar} alt={review.name} className="h-12 w-12 rounded-full object-cover" />
                                             <p className="text-sm italic leading-relaxed text-slate-500">
-                                                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis, pulvinar dapibus leo."
+                                                "This platform completely changed how I learn. The courses are practical, engaging, and truly valuable."
                                             </p>
                                         </div>
                                         <h3 className="mt-4 text-xl sm:text-[24px] font-semibold text-slate-700">{review.name}</h3>
@@ -656,7 +630,7 @@ export default (props) => {
                                 Stay Updated with EduMart
                             </h2>
                             <p className="mt-3 text-base text-white/80 max-w-2xl mx-auto">
-                                Subscribe to our newsletter and get the latest updates on new courses, features, and exclusive offers directly in your inbox.
+                                Get exclusive updates, new course launches, and learning tips directly in your inbox.
                             </p>
                         </motion.div>
 

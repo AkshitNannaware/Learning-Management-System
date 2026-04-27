@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { MapPin, Phone, Mail, Clock } from "lucide-react";
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const PHONE_REGEX = /^[6-9]\d{9}$|^\+91[6-9]\d{9}$|^0\d{10}$/;
@@ -105,11 +106,7 @@ export default (props) => {
               {/* Registered Office Card */}
               <div className="flex flex-col items-start bg-[#f7efeb] py-[29px] px-7 mb-[19px] gap-[30px] rounded-lg shadow-md hover:shadow-lg transition-shadow w-full">
                 <div className="flex items-start gap-4">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/mwkw9r9b_expires_30_days.png"}
-                    className="w-12 h-12 object-fill"
-                    alt="office"
-                  />
+                  <MapPin className="w-12 h-12 text-[#0b8276] p-2 bg-[#e3f0ed] rounded-lg" />
                   <div className="flex flex-col shrink-0 items-start py-1 gap-[11px]">
                     <span className="text-[#111b2f] text-lg font-bold">
                       {"Registered Office"}
@@ -124,11 +121,7 @@ export default (props) => {
               {/* Phone Card */}
               <div className="flex flex-col items-start bg-[#f7efeb] py-[29px] px-7 mb-5 gap-[30px] rounded-lg shadow-md hover:shadow-lg transition-shadow w-full">
                 <div className="flex items-start gap-4">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/iy0hc2ur_expires_30_days.png"}
-                    className="w-12 h-12 object-fill"
-                    alt="phone"
-                  />
+                  <Phone className="w-12 h-12 text-[#0b8276] p-2 bg-[#e3f0ed] rounded-lg" />
                   <div className="flex flex-col shrink-0 items-start">
                     <div className="flex flex-col items-start py-[5px]">
                       <span className="text-[#111b2f] text-lg font-bold">
@@ -147,11 +140,7 @@ export default (props) => {
               {/* Email & Website Card */}
               <div className="flex flex-col items-start bg-[#f7efeb] py-[29px] px-7 mb-5 gap-[30px] rounded-lg shadow-md hover:shadow-lg transition-shadow w-full">
                 <div className="flex items-start gap-4">
-                  <img
-                    src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/9h7mafvm_expires_30_days.png"}
-                    className="w-12 h-12 object-fill"
-                    alt="email"
-                  />
+                  <Mail className="w-12 h-12 text-[#0b8276] p-2 bg-[#e3f0ed] rounded-lg" />
                   <div className="flex flex-col shrink-0 items-start gap-[9px]">
                     <span className="text-[#111b2f] text-lg font-bold">
                       {"Email & Website"}
@@ -164,11 +153,7 @@ export default (props) => {
 
               {/* Support Hours Card */}
               <div className="flex items-start bg-[#f7efeb] pt-[27px] pb-[41px] px-7 rounded-lg shadow-md hover:shadow-lg transition-shadow w-full">
-                <img
-                  src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/0whcppz2_expires_30_days.png"}
-                  className="w-12 h-12 mr-4 object-fill"
-                  alt="support"
-                />
+                <Clock className="w-12 h-12 text-[#0b8276] p-2 bg-[#e3f0ed] rounded-lg mr-4" />
                 <div className="flex flex-col shrink-0 items-start py-1 gap-[9px]">
                   <span className="text-[#111b2f] text-lg font-bold">
                     {"Support Availability"}

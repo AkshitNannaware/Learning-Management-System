@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { Video, BookOpen, FileText } from "lucide-react";
 
 export default (props) => {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ export default (props) => {
               </div>
             </div>
             <img
-              src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/tiz0xrlu_expires_30_days.png"}
+              src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=800"
               className="flex-1 h-[300px] sm:h-[350px] lg:h-[394px] mt-0 lg:mt-[51px] object-cover rounded-lg"
               alt="About EduMart"
             />
@@ -130,11 +131,9 @@ export default (props) => {
             </button>
             <div className="flex flex-col self-stretch mb-[67px] gap-[15px]">
               <div className="flex items-start self-stretch gap-3.5">
-                <img
-                  src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/bhewvn19_expires_30_days.png"}
-                  className="w-10 h-10 object-fill"
-                  alt="icon"
-                />
+                <div className="w-10 h-10 flex items-center justify-center bg-[#EEF2F6] rounded-lg">
+                  <Video size={24} className="text-[#0b8276]" />
+                </div>
                 <div className="flex flex-1 flex-col gap-1">
                   <div className="flex flex-col items-start self-stretch py-1">
                     <span className="text-[#111b2f] text-base font-bold">
@@ -149,11 +148,9 @@ export default (props) => {
                 </div>
               </div>
               <div className="flex items-start self-stretch gap-3.5">
-                <img
-                  src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/wl4z82nr_expires_30_days.png"}
-                  className="w-10 h-10 object-fill"
-                  alt="icon"
-                />
+                <div className="w-10 h-10 flex items-center justify-center bg-[#EEF2F6] rounded-lg">
+                  <BookOpen size={24} className="text-[#0b8276]" />
+                </div>
                 <div className="flex flex-1 flex-col gap-1">
                   <div className="flex flex-col items-start self-stretch py-[5px] pl-[1px]">
                     <span className="text-[#111b2f] text-base font-bold">
@@ -168,11 +165,9 @@ export default (props) => {
                 </div>
               </div>
               <div className="flex items-start self-stretch gap-3.5">
-                <img
-                  src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/mur6nhdk_expires_30_days.png"}
-                  className="w-10 h-10 object-fill"
-                  alt="icon"
-                />
+                <div className="w-10 h-10 flex items-center justify-center bg-[#EEF2F6] rounded-lg">
+                  <FileText size={24} className="text-[#0b8276]" />
+                </div>
                 <div className="flex flex-1 flex-col gap-1">
                   <div className="flex flex-col items-start self-stretch py-[5px] pl-[1px]">
                     <span className="text-[#111b2f] text-base font-bold">
@@ -213,11 +208,9 @@ export default (props) => {
 
           <div className="flex flex-col lg:flex-row items-stretch self-stretch gap-6">
             <div className="flex flex-1 flex-col items-start bg-white py-[34px] px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/2ueyrujl_expires_30_days.png"}
-                className="w-[52px] h-[52px] mb-[26px] rounded-lg object-fill"
-                alt="icon"
-              />
+              <div className="w-[52px] h-[52px] mb-[26px] bg-[#EEF2F6] flex items-center justify-center rounded-lg">
+                <BookOpen size={28} className="text-[#0b8276]" />
+              </div>
               <div className="flex flex-col items-start pb-[1px] mb-[19px]">
                 <span className="text-[#111b2f] text-xl font-bold">
                   {"Quality Education"}
@@ -230,11 +223,9 @@ export default (props) => {
               </div>
             </div>
             <div className="flex flex-1 flex-col items-start bg-white py-[34px] px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/gfi4vl2l_expires_30_days.png"}
-                className="w-[52px] h-[52px] mb-[26px] rounded-lg object-fill"
-                alt="icon"
-              />
+              <div className="w-[52px] h-[52px] mb-[26px] bg-[#EEF2F6] flex items-center justify-center rounded-lg">
+                <Video size={28} className="text-[#0b8276]" />
+              </div>
               <div className="flex flex-col items-start pb-[1px] mb-[19px]">
                 <span className="text-[#111b2f] text-xl font-bold">
                   {"Accessibility"}
@@ -247,11 +238,9 @@ export default (props) => {
               </div>
             </div>
             <div className="flex flex-1 flex-col items-start bg-white py-[34px] px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/lqmlgkjp_expires_30_days.png"}
-                className="w-[52px] h-[52px] mb-[26px] rounded-lg object-fill"
-                alt="icon"
-              />
+              <div className="w-[52px] h-[52px] mb-[26px] bg-[#EEF2F6] flex items-center justify-center rounded-lg">
+                <FileText size={28} className="text-[#0b8276]" />
+              </div>
               <div className="flex flex-col items-start pb-[1px] mb-[23px]">
                 <span className="text-[#111b2f] text-xl font-bold">
                   {"Innovation"}
@@ -390,7 +379,7 @@ export default (props) => {
           <div className="flex flex-col sm:grid sm:grid-cols-2 lg:flex lg:flex-row items-stretch gap-6">
             <div className="flex flex-1 flex-col items-center bg-white py-6 px-4 rounded-lg shadow-md hover:shadow-lg transition-shadow">
               <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/vwiue9y6_expires_30_days.png"}
+                src="https://i.pravatar.cc/150?u=rahul"
                 className="w-24 h-24 mb-6 rounded-full object-cover"
                 alt="Team member"
               />
@@ -412,7 +401,7 @@ export default (props) => {
             </div>
             <div className="flex flex-1 flex-col items-center bg-white py-6 px-4 rounded-lg shadow-md hover:shadow-lg transition-shadow">
               <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/wzh17xdx_expires_30_days.png"}
+                src="https://i.pravatar.cc/150?u=priya"
                 className="w-24 h-24 mb-6 rounded-full object-cover"
                 alt="Team member"
               />
@@ -434,7 +423,7 @@ export default (props) => {
             </div>
             <div className="flex flex-1 flex-col items-center bg-white py-6 px-4 rounded-lg shadow-md hover:shadow-lg transition-shadow">
               <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/x943adnz_expires_30_days.png"}
+                src="https://i.pravatar.cc/150?u=amit"
                 className="w-24 h-24 mb-6 rounded-full object-cover"
                 alt="Team member"
               />
@@ -456,7 +445,7 @@ export default (props) => {
             </div>
             <div className="flex flex-1 flex-col items-center bg-white py-6 px-4 rounded-lg shadow-md hover:shadow-lg transition-shadow">
               <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/3jop35i9_expires_30_days.png"}
+                src="https://i.pravatar.cc/150?u=neha"
                 className="w-24 h-24 mb-6 rounded-full object-cover"
                 alt="Team member"
               />

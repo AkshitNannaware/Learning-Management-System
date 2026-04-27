@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Check, X } from "lucide-react";
 import { api } from "../lib/api";
 
 export default (props) => {
@@ -215,31 +216,19 @@ export default (props) => {
 
                   <div className="flex flex-col gap-3.5">
                     <div className="flex items-center gap-[13px]">
-                      <img
-                        src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/nxulcuv4_expires_30_days.png"}
-                        className="w-5 h-5 object-fill"
-                        alt="check"
-                      />
+                      <Check className="w-5 h-5 text-green-500" />
                       <span className="text-[#111b2f] text-sm">
                         {"Unlimited courses and landing pages"}
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <img
-                        src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/8973s6ul_expires_30_days.png"}
-                        className="w-5 h-5 object-fill"
-                        alt="check"
-                      />
+                      <Check className="w-5 h-5 text-green-500" />
                       <span className="text-[#111b2f] text-sm">
                         {"Stripe and Razorpay payment support"}
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <img
-                        src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/qz5imtdx_expires_30_days.png"}
-                        className="w-5 h-5 object-fill"
-                        alt="check"
-                      />
+                      <Check className="w-5 h-5 text-green-500" />
                       <span className="text-[#111b2f] text-sm">
                         {"Analytics, coupons, and team seats"}
                       </span>
@@ -450,21 +439,9 @@ export default (props) => {
                   {"Custom domain"}
                 </span>
               </div>
-              <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/ttt7zy82_expires_30_days.png"}
-                className="w-[100px] sm:w-[230px] h-6 object-contain"
-                alt="check"
-              />
-              <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/wcp1vi84_expires_30_days.png"}
-                className="w-[100px] sm:w-[230px] h-6 object-contain"
-                alt="check"
-              />
-              <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/4qslfmeg_expires_30_days.png"}
-                className="w-[100px] sm:w-[230px] h-6 object-contain"
-                alt="check"
-              />
+              <Check className="w-6 h-6 text-green-500 mx-auto" />
+              <Check className="w-6 h-6 text-green-500 mx-auto" />
+              <Check className="w-6 h-6 text-green-500 mx-auto" />
             </div>
 
             <div className="flex items-center self-stretch mb-9 mx-4 sm:mx-10 gap-3">
@@ -473,21 +450,9 @@ export default (props) => {
                   {"Advanced analytics"}
                 </span>
               </div>
-              <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/jram7mev_expires_30_days.png"}
-                className="w-[100px] sm:w-[230px] h-6 object-contain"
-                alt="check"
-              />
-              <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/ls8fih8a_expires_30_days.png"}
-                className="w-[100px] sm:w-[230px] h-6 object-contain"
-                alt="check"
-              />
-              <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/7rpj7m2u_expires_30_days.png"}
-                className="w-[100px] sm:w-[230px] h-6 object-contain"
-                alt="check"
-              />
+              <Check className="w-6 h-6 text-green-500 mx-auto" />
+              <Check className="w-6 h-6 text-green-500 mx-auto" />
+              <Check className="w-6 h-6 text-green-500 mx-auto" />
             </div>
 
             <div className="flex items-center self-stretch mb-[37px] mx-4 sm:mx-10">
@@ -496,21 +461,13 @@ export default (props) => {
                   {"Multi-tenant setup"}
                 </span>
               </div>
-              <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/wwkc0c92_expires_30_days.png"}
-                className="w-[100px] sm:w-[230px] h-6 mr-3 object-contain"
-                alt="cross"
-              />
+              <X className="w-6 h-6 text-red-500 mx-auto" />
               <div className="flex flex-col shrink-0 items-start py-[5px] px-8 sm:px-[87px] mr-[11px]">
                 <span className="text-slate-500 text-sm">
                   {"Optional"}
                 </span>
               </div>
-              <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/BywfetPpbr/1xtslfas_expires_30_days.png"}
-                className="w-[100px] sm:w-[230px] h-6 object-contain"
-                alt="check"
-              />
+              <Check className="w-6 h-6 text-green-500 mx-auto" />
             </div>
 
             <div className="flex items-center self-stretch mb-[57px] mx-4 sm:mx-10">

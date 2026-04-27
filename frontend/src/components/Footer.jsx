@@ -12,8 +12,8 @@ const Footer = () => {
           <div className="lg:col-span-1">
             <div className="flex items-center">
               <img
-                src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/ffSyZzeazd/8khssezv_expires_30_days.png"}
-                className="mr-3 h-10 w-10 object-fill sm:h-12 sm:w-12"
+                src={"/logo.png"}
+                className="mr-3 h-10 w-10 object-contain sm:h-12 sm:w-12"
                 alt="Logo"
               />
               <span className="text-2xl font-bold text-white sm:text-[32px]">EduMart</span>

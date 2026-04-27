@@ -5,9 +5,9 @@ import { Menu, X } from "lucide-react";
 export default function Header() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  
+
   const navItems = [
-    { path: "/home", label: "Home" }, 
+    { path: "/home", label: "Home" },
     { path: "/features", label: "Features" },
     { path: "/pricing", label: "Pricing" },
     { path: "/about", label: "About Us" },
@@ -23,9 +23,8 @@ export default function Header() {
         <div className="mx-auto flex w-full max-w-[1340px] items-center justify-between px-4 py-5 sm:px-8 lg:px-12">
           <div className="flex items-center gap-8 xl:gap-10 pr-10">
             <Link to="/home" className="flex shrink-0 items-center no-underline" onClick={() => setMenuOpen(false)}>
-              <img src="/Image.jpg" alt="Logo" className="h-15 w-auto" />
+              <img src="/logo.png" alt="Logo" className="h-20 w-auto" />
             </Link>
-
             <nav className="hidden items-center gap-7 lg:flex">
               {navItems.map((item) => (
                 <Link key={item.path} to={item.path} className={`text-[18px] font-semibold no-underline pt-2 ${isActive(item.path) ? "text-[#04776d]" : "text-slate-700"}`}>
@@ -34,7 +33,6 @@ export default function Header() {
               ))}
             </nav>
           </div>
-
           <div className="hidden items-center gap-4 lg:flex">
             <Link
               to="/login"
@@ -49,7 +47,6 @@ export default function Header() {
               Register
             </Link>
           </div>
-
           <button
             type="button"
             onClick={() => setMenuOpen((prev) => !prev)}
