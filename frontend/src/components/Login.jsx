@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { CheckCircle2, Eye, EyeOff, Sparkles } from 'lucide-react'
 import { api, getDashboardPathByRole, setAuthSession } from '../lib/api'
+import { GoogleLogin } from '@react-oauth/google'
 
 // Simple toast notification (replace with a library like react-toastify for production)
 function showToast(message) {
@@ -106,6 +107,36 @@ export default function Login() {
             <div className="mb-6">
               <h2 className="text-2xl font-extrabold text-[#111b2f] sm:text-3xl">Welcome back</h2>
               <p className="mt-2 text-sm text-slate-500">Enter your details to access your account.</p>
+            </div>
+
+             {/* Google Login Button - Improved UI */}
+            <div className="flex flex-col items-center gap-3 mb-1">
+              <GoogleLogin
+                onSuccess={async (credentialResponse) => {
+                  try {
+                    const data = await api('/auth/google-login', {
+                      method: 'POST',
+                      body: JSON.stringify({ credential: credentialResponse.credential }),
+                    })
+                    setAuthSession(data.access_token, data.role, data.tenant_id)
+                    navigate(getDashboardPathByRole(data.role))
+                  } catch (err) {
+                    showToast('Google Login Failed')
+                  }
+                }}
+                onError={() => {
+                  showToast('Google Login Failed')
+                }}
+                useOneTap
+                width="100%"
+                theme="outline"
+                size="large"
+              />
+              <div className="flex items-center w-full my-2">
+                <div className="flex-grow border-t border-gray-200"></div>
+                <span className="mx-3 text-xs text-gray-400 font-medium">or login with email</span>
+                <div className="flex-grow border-t border-gray-200"></div>
+              </div>
             </div>
 
             <form onSubmit={onSubmit} className="space-y-5">

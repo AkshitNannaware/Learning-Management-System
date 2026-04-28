@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { User, Mail, BookOpen, Lock, Eye, EyeOff, CheckCircle2, GraduationCap } from 'lucide-react'
 import { api, getDashboardPathByRole, setAuthSession } from '../lib/api'
+import { GoogleLogin } from '@react-oauth/google'
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const PHONE_REGEX = /^\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}$/
@@ -114,11 +115,11 @@ export default function InstructorSignup() {
   }
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden overflow-y-auto bg-gradient-to-br from-[#0e7c67] via-[#1a5c3a] to-[#0e5c4a] p-4 font-['Inter',_'Segoe_UI',_Roboto,_sans-serif] sm:p-6 lg:p-8">
-      <div className="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-[1300px] grid-cols-1 items-start gap-8 lg:min-h-[calc(100vh-4rem)] lg:grid-cols-[1fr_460px] lg:items-center lg:gap-13">
+    <div className="min-h-screen w-full overflow-hidden bg-gradient-to-br from-[#0e7c67] via-[#1a5c3a] to-[#0e5c4a] font-['Inter',_'Segoe_UI',_Roboto,_sans-serif]">
+      <div className="h-screen w-full max-w-[1300px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_460px] gap-8 p-4 sm:p-6 lg:p-8 overflow-hidden">
         {/* Left Section - Brand Section */}
-        <section className="text-white">
-          <div className="inline-flex items-center gap-2 rounded-[12px] bg-white/15 px-3 py-1.5 text-[12px] font-semibold text-[#ffb76a]">
+        <section className="text-white flex flex-col justify-center h-full overflow-y-auto">
+          <div className="inline-flex items-center gap-2 rounded-[12px] bg-white/15 px-3 py-1.5 text-[12px] font-semibold text-[#ffb76a] w-fit">
             <GraduationCap className="h-4 w-4" />
             Instructor Onboarding
           </div>
@@ -149,26 +150,60 @@ export default function InstructorSignup() {
         </section>
 
         {/* Card Section - Instructor Signup Form */}
-        <section className="relative mx-auto w-full max-w-[520px] lg:h-full lg:max-w-none">
-          <div className="relative flex w-full flex-col rounded-2xl bg-white p-5 shadow-2xl sm:p-8 lg:h-full lg:max-h-[880px] lg:p-10">
-            {/* Tabs */}
-            <div className="flex gap-1.5 p-1.5 rounded-xl bg-gray-100 mb-7">
-              <Link
-                to="/login"
-                className="flex-1 text-center border-0 rounded-lg py-3 px-2.5 bg-transparent text-gray-600 text-sm font-semibold cursor-pointer no-underline transition-all hover:bg-gray-200 hover:text-gray-900"
-              >
-                Login
-              </Link>
-              <button type="button" className="flex-1 border-0 rounded-lg py-3 px-2.5 bg-[#ff8a33] text-white shadow-sm text-sm font-semibold cursor-pointer transition-all hover:bg-[#e57a23]">
-                Instructor Sign Up
-              </button>
+        <section className="h-full flex items-center">
+          <div className="relative w-full bg-white rounded-2xl shadow-2xl flex flex-col h-[90vh] max-h-[880px]">
+            {/* Header Section - Static */}
+            <div className="p-5 sm:p-8 pb-0 flex-shrink-0">
+              {/* Tabs */}
+              <div className="flex gap-1.5 p-1.5 rounded-xl bg-gray-100 mb-7">
+                <Link
+                  to="/login"
+                  className="flex-1 text-center border-0 rounded-lg py-3 px-2.5 bg-transparent text-gray-600 text-sm font-semibold cursor-pointer no-underline transition-all hover:bg-gray-200 hover:text-gray-900"
+                >
+                  Login
+                </Link>
+                <button type="button" className="flex-1 border-0 rounded-lg py-3 px-2.5 bg-[#ff8a33] text-white shadow-sm text-sm font-semibold cursor-pointer transition-all hover:bg-[#e57a23]">
+                  Instructor Sign Up
+                </button>
+              </div>
+
+              <h2 className="m-0 text-[#111b2f] text-2xl sm:text-[30px] leading-[1.15] font-extrabold">Create Instructor Account</h2>
+              <p className="mt-2 text-slate-500 text-sm">Fill details to join as instructor.</p>
             </div>
 
-            <h2 className="m-0 text-[#111b2f] text-2xl sm:text-[30px] leading-[1.15] font-extrabold">Create Instructor Account</h2>
-            <p className="mt-2 text-slate-500 text-sm">Fill details to join as instructor.</p>
+            {/* Scrollable Form Fields */}
+            <div className="flex-1 overflow-y-auto px-5 sm:px-8">
+              {/* Google Sign Up Button */}
+              <div className="flex flex-col items-center gap-3 mb-1">
+                <GoogleLogin
+                  onSuccess={async (credentialResponse) => {
+                    try {
+                      const data = await api('/auth/google-signup', {
+                        method: 'POST',
+                        body: JSON.stringify({ credential: credentialResponse.credential, role: 'instructor' }),
+                      })
+                      setAuthSession(data.access_token, data.role, data.tenant_id)
+                      navigate(getDashboardPathByRole(data.role))
+                    } catch (err) {
+                      showToast('Google Sign Up Failed')
+                    }
+                  }}
+                  onError={() => {
+                    showToast('Google Sign Up Failed')
+                  }}
+                  useOneTap
+                  width="100%"
+                  theme="outline"
+                  size="large"
+                />
+                <div className="flex items-center w-full my-2">
+                  <div className="flex-grow border-t border-gray-200"></div>
+                  <span className="mx-3 text-xs text-gray-400 font-medium">or sign up with email</span>
+                  <div className="flex-grow border-t border-gray-200"></div>
+                </div>
+              </div>
 
-            <div className="mt-6 flex-1 overflow-y-auto pr-1">
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4 pb-4">
                 <Field
                   icon={<User className="h-4 w-4" />}
                   label="Full Name"
@@ -195,7 +230,12 @@ export default function InstructorSignup() {
                 <div>
                   <label className="flex flex-col gap-2">
                     <span className="text-[#111b2f] text-sm font-semibold">Phone Number</span>
-                    <div className="border border-gray-200 rounded-md p-3.5 text-sm text-[#111b2f] outline-none transition-all focus-within:border-[#0b8276] focus-within:ring-2 focus-within:ring-[#0b8276]/20 flex items-center gap-2">
+                    <div className={`border rounded-md p-3.5 text-sm text-[#111b2f] outline-none transition-all flex items-center gap-2 ${
+                      submitted && !isPhoneValid 
+                        ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                        : 'border-gray-200 focus-within:border-[#0b8276] focus-within:ring-2 focus-within:ring-[#0b8276]/20'
+                    }`}>
+                      <span className="text-slate-400">📞</span>
                       <input
                         type="tel"
                         value={phone}
@@ -229,6 +269,9 @@ export default function InstructorSignup() {
                     value={formData.password}
                     onChange={(v) => handleChange('password', v)}
                     placeholder="Create password"
+                    submitted={submitted}
+                    isValid={formData.password}
+                    errorMessage="Password is required"
                     rightControl={
                       <button
                         type="button"
@@ -239,22 +282,24 @@ export default function InstructorSignup() {
                       </button>
                     }
                   />
-                  <div className="mt-2 space-y-1">
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          passwordStrength <= 1
-                            ? 'w-1/4 bg-orange-500'
-                            : passwordStrength === 2
-                            ? 'w-2/4 bg-yellow-500'
-                            : passwordStrength === 3
-                            ? 'w-3/4 bg-teal-500'
-                            : 'w-full bg-green-600'
-                        }`}
-                      />
+                  {formData.password && (
+                    <div className="mt-2 space-y-1">
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            passwordStrength <= 1
+                              ? 'w-1/4 bg-orange-500'
+                              : passwordStrength === 2
+                              ? 'w-2/4 bg-yellow-500'
+                              : passwordStrength === 3
+                              ? 'w-3/4 bg-teal-500'
+                              : 'w-full bg-green-600'
+                          }`}
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-400">Use 8+ chars with uppercase, number, and special character.</p>
                     </div>
-                    <p className="text-[11px] text-slate-400">Use 8+ chars with uppercase, number, and special character.</p>
-                  </div>
+                  )}
                 </div>
 
                 <Field
@@ -264,6 +309,9 @@ export default function InstructorSignup() {
                   value={formData.confirmPassword}
                   onChange={(v) => handleChange('confirmPassword', v)}
                   placeholder="Re-enter password"
+                  submitted={submitted}
+                  isValid={formData.confirmPassword && formData.password === formData.confirmPassword}
+                  errorMessage="Passwords do not match"
                   rightControl={
                     <button
                       type="button"
@@ -274,38 +322,39 @@ export default function InstructorSignup() {
                     </button>
                   }
                 />
-                {submitted && formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                  <span className="text-xs font-medium text-red-500 -mt-2">Passwords do not match.</span>
-                )}
                 {formData.password && formData.confirmPassword && formData.password === formData.confirmPassword && (
                   <span className="text-xs font-medium text-[#0b8276] -mt-2">✓ Passwords match</span>
                 )}
-
-                <label className="flex items-start gap-2 text-xs text-slate-500 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.agreeToTerms}
-                    onChange={(e) => handleChange('agreeToTerms', e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#0b8276] focus:ring-[#0b8276]/20"
-                  />
-                  I agree to the Terms and Privacy Policy for instructor account access.
-                </label>
-
-                {submitted && !isFormValid && (
-                  <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
-                    Please fill all fields correctly and confirm terms before submitting.
-                  </p>
-                )}
-
-                <button 
-                  type="submit" 
-                  disabled={!isFormValid || loading} 
-                  className="border-0 rounded-md bg-[#ff8a33] text-white text-base font-bold p-3.5 cursor-pointer mt-1 transition-all hover:bg-[#e57a23] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? 'Creating Instructor Account...' : 'Create Instructor Account'}
-                </button>
-                {error && <p className="text-xs font-medium text-red-500 text-center">{error}</p>}
               </form>
+            </div>
+
+            {/* Footer Section - Static with Terms and Button */}
+            <div className="p-5 sm:p-8 pt-0 flex-shrink-0">
+              <label className="flex items-start gap-2 text-xs text-slate-500 cursor-pointer mb-4">
+                <input
+                  type="checkbox"
+                  checked={formData.agreeToTerms}
+                  onChange={(e) => handleChange('agreeToTerms', e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#0b8276] focus:ring-[#0b8276]/20"
+                />
+                I agree to the Terms and Privacy Policy for instructor account access.
+              </label>
+
+              {submitted && !isFormValid && (
+                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 mb-3">
+                  Please fill all fields correctly and confirm terms before submitting.
+                </p>
+              )}
+
+              <button 
+                type="submit" 
+                onClick={handleSubmit}
+                disabled={!isFormValid || loading} 
+                className="w-full border-0 rounded-md bg-[#ff8a33] text-white text-base font-bold p-3.5 cursor-pointer transition-all hover:bg-[#e57a23] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? 'Creating Instructor Account...' : 'Create Instructor Account'}
+              </button>
+              {error && <p className="text-xs font-medium text-red-500 text-center mt-3">{error}</p>}
             </div>
           </div>
         </section>
@@ -321,8 +370,8 @@ function Field({ icon, label, type = 'text', value, onChange, placeholder, right
         <span className="text-[#111b2f] text-sm font-semibold">{label}</span>
         <div className={`border rounded-md p-3.5 text-sm text-[#111b2f] outline-none transition-all flex items-center gap-2 ${
           submitted && !isValid 
-            ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
-            : 'border-gray-200 focus:border-[#0b8276] focus:ring-2 focus:ring-[#0b8276]/20'
+            ? 'border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20' 
+            : 'border-gray-200 focus-within:border-[#0b8276] focus-within:ring-2 focus-within:ring-[#0b8276]/20'
         }`}>
           <span className="text-slate-400">{icon}</span>
           <input

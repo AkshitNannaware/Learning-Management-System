@@ -10,6 +10,7 @@ export default function Header() {
     { path: "/home", label: "Home" },
     { path: "/features", label: "Features" },
     { path: "/pricing", label: "Pricing" },
+    { path: "/blogs", label: "Blogs" },
     { path: "/about", label: "About Us" },
     { path: "/contact", label: "Contact Us" }
   ];
@@ -25,7 +26,7 @@ export default function Header() {
             <Link to="/home" className="flex shrink-0 items-center no-underline" onClick={() => setMenuOpen(false)}>
               <img src="/logo.png" alt="Logo" className="h-20 w-auto" />
             </Link>
-            <nav className="hidden items-center gap-7 lg:flex">
+            <nav className="hidden items-center pl-10 gap-7 lg:flex">
               {navItems.map((item) => (
                 <Link key={item.path} to={item.path} className={`text-[18px] font-semibold no-underline pt-2 ${isActive(item.path) ? "text-[#04776d]" : "text-slate-700"}`}>
                   {item.label}

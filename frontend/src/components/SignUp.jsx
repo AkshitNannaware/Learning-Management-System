@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { api, getDashboardPathByRole, setAuthSession } from '../lib/api'
+import { GoogleLogin } from '@react-oauth/google'
 
 // Simple toast notification (replace with a library like react-toastify for production)
 function showToast(message) {
@@ -66,10 +67,10 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden overflow-y-auto bg-gradient-to-br from-[#0e7c67] via-[#1a5c3a] to-[#0e5c4a] p-4 font-['Inter',_'Segoe_UI',_Roboto,_sans-serif] sm:p-6 lg:p-8">
-      <div className="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-[1300px] grid-cols-1 items-start gap-8 lg:min-h-[calc(100vh-4rem)] lg:grid-cols-[1fr_460px] lg:items-center lg:gap-13">
+    <div className="min-h-screen w-full overflow-hidden bg-gradient-to-br from-[#0e7c67] via-[#1a5c3a] to-[#0e5c4a] font-['Inter',_'Segoe_UI',_Roboto,_sans-serif]">
+      <div className="h-screen w-full max-w-[1300px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_460px] gap-8 p-4 sm:p-6 lg:p-8 overflow-hidden">
         {/* Left Section - Brand Section */}
-        <section className="text-white">
+        <section className="text-white flex flex-col justify-center h-full overflow-y-auto">
           <h1 className="m-0 text-[44px] leading-[1.15] font-extrabold tracking-[-1.2px] whitespace-pre-line sm:text-[54px] lg:text-[64px]">
             Start Teaching &{'\n'}Growing Your{'\n'}
             <span className="text-[#ff8a33]">Online Classroom</span>
@@ -95,27 +96,60 @@ export default function SignUp() {
         </section>
 
         {/* Card Section - Signup Form */}
-        <section className="relative w-full max-w-[520px] mx-auto lg:h-full lg:max-w-none">
-          <div className="relative flex w-full flex-col rounded-2xl bg-white p-5 shadow-2xl sm:p-8 lg:h-full lg:max-h-[820px] lg:p-10">
-            {/* Tabs */}
-            <div className="flex gap-1.5 p-1.5 rounded-xl bg-gray-100 mb-7">
-              <Link 
-                to="/login" 
-                className="flex-1 text-center border-0 rounded-lg py-3 px-2.5 bg-transparent text-gray-600 text-sm font-semibold cursor-pointer no-underline transition-all hover:bg-gray-200 hover:text-gray-900"
-              >
-                Login
-              </Link>
-              <button type="button" className="flex-1 border-0 rounded-lg py-3 px-2.5 bg-[#ff8a33] text-white shadow-sm text-sm font-semibold cursor-pointer transition-all hover:bg-[#e57a23]">
-                Sign Up
-              </button>
+        <section className="h-full flex items-center">
+          <div className="relative w-full bg-white rounded-2xl shadow-2xl flex flex-col h-[90vh] max-h-[820px]">
+            {/* Header Section - Static */}
+            <div className="p-5 sm:p-8 pb-0 flex-shrink-0">
+              {/* Tabs */}
+              <div className="flex gap-1.5 p-1.5 rounded-xl bg-gray-100 mb-7">
+                <Link 
+                  to="/login" 
+                  className="flex-1 text-center border-0 rounded-lg py-3 px-2.5 bg-transparent text-gray-600 text-sm font-semibold cursor-pointer no-underline transition-all hover:bg-gray-200 hover:text-gray-900"
+                >
+                  Login
+                </Link>
+                <button type="button" className="flex-1 border-0 rounded-lg py-3 px-2.5 bg-[#ff8a33] text-white shadow-sm text-sm font-semibold cursor-pointer transition-all hover:bg-[#e57a23]">
+                  Sign Up
+                </button>
+              </div>
+
+              <h2 className="m-0 text-[#111b2f] text-2xl sm:text-[30px] leading-[1.15] font-extrabold">Create your account</h2>
+              <p className="mt-2 text-slate-500 text-sm">
+                Start your learning platform journey with a few quick details.
+              </p>
             </div>
 
-            <h2 className="m-0 text-[#111b2f] text-2xl sm:text-[30px] leading-[1.15] font-extrabold">Create your account</h2>
-            <p className="mt-2 text-slate-500 text-sm">
-              Start your learning platform journey with a few quick details.
-            </p>
+            {/* Scrollable Form Fields */}
+            <div className="flex-1 overflow-y-auto px-5 sm:px-8">
+              {/* Google Sign Up Button */}
+              <div className="flex flex-col items-center gap-3 mb-1">
+                <GoogleLogin
+                  onSuccess={async (credentialResponse) => {
+                    try {
+                      const data = await api('/auth/google-signup', {
+                        method: 'POST',
+                        body: JSON.stringify({ credential: credentialResponse.credential }),
+                      })
+                      navigate('/login')
+                    } catch (err) {
+                      showToast('Google Sign Up Failed')
+                    }
+                  }}
+                  onError={() => {
+                    showToast('Google Sign Up Failed')
+                  }}
+                  useOneTap
+                  width="100%"
+                  theme="outline"
+                  size="large"
+                />
+                <div className="flex items-center w-full my-2">
+                  <div className="flex-grow border-t border-gray-200"></div>
+                  <span className="mx-3 text-xs text-gray-400 font-medium">or sign up with email</span>
+                  <div className="flex-grow border-t border-gray-200"></div>
+                </div>
+              </div>
 
-            <div className="mt-6 flex-1 overflow-y-auto pr-1">
               <form className="flex flex-col gap-4" onSubmit={onSubmit}>
                 <label className="flex flex-col gap-2">
                   <span className="text-[#111b2f] text-sm font-semibold">Full Name</span>
@@ -158,8 +192,6 @@ export default function SignUp() {
                     <span className="text-xs font-medium text-red-500">Enter a valid phone number.</span>
                   )}
                 </label>
-
-                {/* Institution Code field removed */}
 
                 <label className="flex flex-col gap-2">
                   <span className="text-[#111b2f] text-sm font-semibold">Password</span>
@@ -206,30 +238,36 @@ export default function SignUp() {
                   {submitted && password !== confirmPassword && (
                     <span className="text-xs font-medium text-red-500">Passwords do not match.</span>
                   )}
-                  {submitted && password !== confirmPassword && showToast('Password and Confirm Password do not match')}
                   {password && confirmPassword && password === confirmPassword && (
                     <span className="mt-1.5 text-[#0b8276] text-xs font-medium">✓ Passwords match</span>
                   )}
                 </label>
 
-                <label className="flex items-center gap-2.5 text-slate-600 text-sm cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    defaultChecked 
-                    className="h-4 w-4 rounded border-gray-300 text-[#0b8276] focus:ring-[#0b8276]/20"
-                  />
-                  I agree to the Terms &amp; Privacy Policy
-                </label>
-
-                <button 
-                  type="submit" 
-                  disabled={!canSubmit || loading} 
-                  className="border-0 rounded-md bg-[#ff8a33] text-white text-base font-bold p-3.5 cursor-pointer mt-1 transition-all hover:bg-[#e57a23] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? 'Creating account...' : 'Create account'}
-                </button>
-                {error && <p className="text-xs font-medium text-red-500 text-center">{error}</p>}
+                {/* Add bottom padding for better scroll experience */}
+                <div className="h-4"></div>
               </form>
+            </div>
+
+            {/* Footer Section - Static with Terms and Button */}
+            <div className="p-5 sm:p-8 pt-0 flex-shrink-0">
+              <label className="flex items-center gap-2.5 text-slate-600 text-sm cursor-pointer mb-4">
+                <input 
+                  type="checkbox" 
+                  defaultChecked 
+                  className="h-4 w-4 rounded border-gray-300 text-[#0b8276] focus:ring-[#0b8276]/20"
+                />
+                I agree to the Terms &amp; Privacy Policy
+              </label>
+
+              <button 
+                type="submit" 
+                onClick={onSubmit}
+                disabled={!canSubmit || loading} 
+                className="w-full border-0 rounded-md bg-[#ff8a33] text-white text-base font-bold p-3.5 cursor-pointer transition-all hover:bg-[#e57a23] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? 'Creating account...' : 'Create account'}
+              </button>
+              {error && <p className="text-xs font-medium text-red-500 text-center mt-3">{error}</p>}
             </div>
           </div>
         </section>
